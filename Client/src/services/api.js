@@ -1,0 +1,103 @@
+const API_BASE_URL = 'http://localhost:5000/api';
+
+// Generic fetch wrapper
+const fetchApi = async (endpoint, options = {}) => {
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  };
+
+  if (options.body && typeof options.body === 'object') {
+    config.body = JSON.stringify(options.body);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Something went wrong');
+  }
+
+  return data;
+};
+
+// Dashboard API
+export const dashboardApi = {
+  getStats: () => fetchApi('/dashboard/stats'),
+  getActivity: () => fetchApi('/dashboard/activity'),
+};
+
+// Events API
+export const eventsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchApi(`/events${query ? `?${query}` : ''}`);
+  },
+  getOne: (id) => fetchApi(`/events/${id}`),
+  create: (data) => fetchApi('/events', { method: 'POST', body: data }),
+  update: (id, data) => fetchApi(`/events/${id}`, { method: 'PUT', body: data }),
+  delete: (id) => fetchApi(`/events/${id}`, { method: 'DELETE' }),
+  assignTeamLead: (id, teamLeadId) =>
+    fetchApi(`/events/${id}/assign-lead`, { method: 'PUT', body: { teamLeadId } }),
+  updateLifecycle: (id, status) =>
+    fetchApi(`/events/${id}/lifecycle`, { method: 'PUT', body: { status } }),
+};
+
+// Teams API
+export const teamsApi = {
+  // Team Leads
+  getTeamLeads: () => fetchApi('/teams/leads'),
+  createTeamLead: (data) => fetchApi('/teams/leads', { method: 'POST', body: data }),
+
+  // Event Staff / Members
+  getEventStaff: (teamLeadId) =>
+    fetchApi(`/teams/members${teamLeadId ? `?teamLeadId=${teamLeadId}` : ''}`),
+  createEventStaff: (data) => fetchApi('/teams/members', { method: 'POST', body: data }),
+
+  // User operations
+  updateUser: (id, data) => fetchApi(`/teams/users/${id}`, { method: 'PUT', body: data }),
+  deleteUser: (id) => fetchApi(`/teams/users/${id}`, { method: 'DELETE' }),
+  resetPassword: (id, newPassword) =>
+    fetchApi(`/teams/users/${id}/reset-password`, { method: 'PUT', body: { newPassword } }),
+
+  // Permissions
+  getPermissions: () => fetchApi('/teams/permissions'),
+  updatePermissions: (permissions) =>
+    fetchApi('/teams/permissions', { method: 'PUT', body: { permissions } }),
+};
+
+// Users API
+export const usersApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchApi(`/users${query ? `?${query}` : ''}`);
+  },
+  getOne: (id) => fetchApi(`/users/${id}`),
+  toggleStatus: (id) => fetchApi(`/users/${id}/toggle-status`, { method: 'PUT' }),
+};
+
+// Access Control API
+export const accessControlApi = {
+  getRestrictedUsers: () => fetchApi('/access-control/restricted'),
+  restrictUser: (userId, reason) =>
+    fetchApi('/access-control/restrict', { method: 'POST', body: { userId, reason } }),
+  unrestrictUser: (id) => fetchApi(`/access-control/unrestrict/${id}`, { method: 'PUT' }),
+
+  getSuspendedUsers: () => fetchApi('/access-control/suspended'),
+  suspendUser: (userId, reason) =>
+    fetchApi('/access-control/suspend', { method: 'POST', body: { userId, reason } }),
+  unsuspendUser: (id) => fetchApi(`/access-control/unsuspend/${id}`, { method: 'PUT' }),
+
+  deleteUser: (id) => fetchApi(`/access-control/users/${id}`, { method: 'DELETE' }),
+};
+
+export default {
+  dashboard: dashboardApi,
+  events: eventsApi,
+  teams: teamsApi,
+  users: usersApi,
+  accessControl: accessControlApi,
+};
