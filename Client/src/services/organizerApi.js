@@ -88,6 +88,8 @@ export const getCommunicationHistory = (eventId, params = {}) => {
 };
 export const createAnnouncement = (data) => fetchApi('/organizer/communication/announcement', { method: 'POST', body: data });
 export const getEmailTemplates = () => fetchApi('/organizer/communication/templates');
+export const testEmailConfig = () => fetchApi('/organizer/communication/test');
+export const debugParticipants = (eventId) => fetchApi(`/organizer/communication/debug-participants/${eventId}`);
 
 // Team Access (Team Lead Only)
 export const getTeamMembers = (eventId) => fetchApi(`/organizer/team/${eventId}`);

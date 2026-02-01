@@ -13,13 +13,18 @@ import {
   Filter,
   Search,
   ChevronDown,
+  Settings,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { 
   sendEmail, 
   getCommunicationHistory, 
   createAnnouncement, 
   getEmailTemplates,
-  getAssignedEvents 
+  getAssignedEvents,
+  testEmailConfig,
+  debugParticipants 
 } from '../../services/organizerApi';
 
 // Helper to check if ID is a valid MongoDB ObjectId
@@ -34,6 +39,8 @@ const Communication = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [emailConfigStatus, setEmailConfigStatus] = useState(null);
+  const [checkingConfig, setCheckingConfig] = useState(false);
 
   const [emailData, setEmailData] = useState({
     subject: '',
@@ -50,6 +57,7 @@ const Communication = () => {
   useEffect(() => {
     fetchEvents();
     fetchTemplates();
+    checkEmailConfiguration();
   }, []);
 
   useEffect(() => {
@@ -62,7 +70,8 @@ const Communication = () => {
 
   const fetchEvents = async () => {
     try {
-      const organizerId = localStorage.getItem('userId');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const organizerId = user._id || user.id;
       const response = await getAssignedEvents(organizerId);
       if (response.data.success) {
         setEvents(response.data.data);
@@ -100,6 +109,34 @@ const Communication = () => {
     }
   };
 
+  const checkEmailConfiguration = async () => {
+    setCheckingConfig(true);
+    try {
+      const response = await testEmailConfig();
+      setEmailConfigStatus(response.data.success ? 'configured' : 'error');
+    } catch (error) {
+      console.error('Email config check failed:', error);
+      setEmailConfigStatus('error');
+    } finally {
+      setCheckingConfig(false);
+    }
+  };
+
+  const handleDebugParticipants = async () => {
+    if (!selectedEvent || !isValidObjectId(selectedEvent)) {
+      alert('Please select a valid event first');
+      return;
+    }
+    try {
+      const response = await debugParticipants(selectedEvent);
+      console.log('🔍 DEBUG - Participants Info:', response.data);
+      alert(`Debug Info (Check Console):\n\nEvent: ${response.data.data.eventTitle}\nTotal Participants: ${response.data.data.totalParticipants}\n\nSee browser console for full details.`);
+    } catch (error) {
+      console.error('Debug failed:', error);
+      alert('Failed to fetch debug info');
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
       alert('Please select a real event first. Demo events cannot send emails.');
@@ -109,9 +146,19 @@ const Communication = () => {
       alert('Please provide both subject and message.');
       return;
     }
+    
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const organizerId = user._id || user.id;
+    console.log('📝 User object:', user);
+    console.log('📝 Organizer ID:', organizerId);
+    
+    if (!organizerId) {
+      alert('User ID not found. Please log in again.');
+      return;
+    }
+    
     setSending(true);
     try {
-      const organizerId = localStorage.getItem('userId');
       const response = await sendEmail({
         eventId: selectedEvent,
         organizerId,
@@ -135,9 +182,16 @@ const Communication = () => {
       alert('Please select a real event first. Demo events cannot create announcements.');
       return;
     }
+    
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const organizerId = user._id || user.id;
+    if (!organizerId) {
+      alert('User ID not found. Please log in again.');
+      return;
+    }
+    
     setSending(true);
     try {
-      const organizerId = localStorage.getItem('userId');
       const response = await createAnnouncement({
         eventId: selectedEvent,
         organizerId,
@@ -167,11 +221,6 @@ const Communication = () => {
     { _id: '3', subject: 'Certificate Available', type: 'EMAIL', recipientFilter: 'ATTENDED', recipientCount: 95, status: 'SENT', sentAt: new Date(Date.now() - 172800000).toISOString() },
   ];
 
-  const demoTemplates = [
-    { id: '1', name: 'Event Reminder', subject: 'Reminder: {{eventName}} is coming up!' },
-    { id: '2', name: 'Thank You', subject: 'Thank you for attending {{eventName}}' },
-    { id: '3', name: 'Certificate Ready', subject: 'Your certificate for {{eventName}} is ready!' },
-  ];
 
   const displayEvents = events.length > 0 ? events : [];
   const displayHistory = history.length > 0 ? history : [];
@@ -201,7 +250,52 @@ const Communication = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 px-4 sm:px-0">
+      {/* Email Configuration Status Banner */}
+      {emailConfigStatus && (
+        <div className={`rounded-xl p-4 flex items-start gap-3 ${
+          emailConfigStatus === 'configured' 
+            ? 'bg-green-50 border border-green-200' 
+            : 'bg-red-50 border border-red-200'
+        }`}>
+          <div className={`p-2 rounded-lg ${
+            emailConfigStatus === 'configured' ? 'bg-green-100' : 'bg-red-100'
+          }`}>
+            {emailConfigStatus === 'configured' ? (
+              <CheckCircle2 size={20} className="text-green-600" />
+            ) : (
+              <XCircle size={20} className="text-red-600" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className={`font-medium text-sm md:text-base ${
+              emailConfigStatus === 'configured' ? 'text-green-800' : 'text-red-800'
+            }`}>
+              {emailConfigStatus === 'configured' ? 'Email Service Configured' : 'Email Service Not Configured'}
+            </h3>
+            <p className={`text-xs md:text-sm mt-1 ${
+              emailConfigStatus === 'configured' ? 'text-green-700' : 'text-red-700'
+            }`}>
+              {emailConfigStatus === 'configured' 
+                ? 'Your email service is ready to send messages to participants.' 
+                : 'Please configure your email settings in the .env file. Check server console for instructions.'}
+            </p>
+          </div>
+          <button
+            onClick={checkEmailConfiguration}
+            disabled={checkingConfig}
+            className={`p-2 rounded-lg transition-colors ${
+              emailConfigStatus === 'configured' 
+                ? 'hover:bg-green-100' 
+                : 'hover:bg-red-100'
+            }`}
+            title="Recheck configuration"
+          >
+            <Settings size={18} className={checkingConfig ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      )}
+
       {/* Demo Mode Banner */}
       {usingDemoData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
@@ -209,8 +303,8 @@ const Communication = () => {
             <Mail size={20} className="text-yellow-600" />
           </div>
           <div>
-            <h3 className="font-medium text-yellow-800">Demo Mode</h3>
-            <p className="text-sm text-yellow-700 mt-1">
+            <h3 className="font-medium text-yellow-800 text-sm md:text-base">Demo Mode</h3>
+            <p className="text-xs md:text-sm text-yellow-700 mt-1">
               Showing sample data. Create events from the Admin panel and get assigned to send real communications.
             </p>
           </div>
@@ -218,99 +312,110 @@ const Communication = () => {
       )}
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Communication</h1>
-          <p className="text-gray-500 mt-1">Send emails and announcements to participants</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Communication</h1>
+          <p className="text-sm md:text-base text-gray-500 mt-1">Send emails and announcements to participants</p>
         </div>
-        <select
-          value={selectedEvent}
-          onChange={(e) => setSelectedEvent(e.target.value)}
-          className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          {displayEvents.map((event) => (
-            <option key={event._id || event.id} value={event._id || event.id}>
-              {event.title || event.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={handleDebugParticipants}
+            className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            title="Debug participants"
+          >
+            🔍 Debug
+          </button>
+          <select
+            value={selectedEvent}
+            onChange={(e) => setSelectedEvent(e.target.value)}
+            className="px-3 md:px-4 py-2 text-sm md:text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {displayEvents.map((event) => (
+              <option key={event._id || event.id} value={event._id || event.id}>
+                {event.title || event.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Emails Sent</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{displayHistory.length}</p>
+              <p className="text-xs md:text-sm text-gray-500">Emails Sent</p>
+              <p className="text-xl md:text-2xl font-bold text-gray-800 mt-1">{displayHistory.length}</p>
             </div>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <Mail size={20} className="text-blue-600" />
+            <div className="p-2 md:p-3 bg-blue-50 rounded-lg md:rounded-xl">
+              <Mail size={18} className="text-blue-600 md:w-5 md:h-5" />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Recipients Reached</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">
+              <p className="text-xs md:text-sm text-gray-500">Recipients Reached</p>
+              <p className="text-xl md:text-2xl font-bold text-green-600 mt-1">
                 {displayHistory.reduce((sum, h) => sum + (h.recipientCount || 0), 0)}
               </p>
             </div>
-            <div className="p-3 bg-green-50 rounded-xl">
-              <Users size={20} className="text-green-600" />
+            <div className="p-2 md:p-3 bg-green-50 rounded-lg md:rounded-xl">
+              <Users size={18} className="text-green-600 md:w-5 md:h-5" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-5 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Templates Available</p>
-              <p className="text-2xl font-bold text-purple-600 mt-1">{displayTemplates.length}</p>
+              <p className="text-xs md:text-sm text-gray-500">Templates Available</p>
+              <p className="text-xl md:text-2xl font-bold text-purple-600 mt-1">{displayTemplates.length}</p>
             </div>
-            <div className="p-3 bg-purple-50 rounded-xl">
-              <FileText size={20} className="text-purple-600" />
+            <div className="p-2 md:p-3 bg-purple-50 rounded-lg md:rounded-xl">
+              <FileText size={18} className="text-purple-600 md:w-5 md:h-5" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Compose Section */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             {/* Tabs */}
             <div className="border-b border-gray-100">
               <div className="flex">
                 <button
                   onClick={() => setActiveTab('compose')}
-                  className={`flex-1 py-4 text-center font-medium transition-colors ${
+                  className={`flex-1 py-3 md:py-4 text-center text-sm md:text-base font-medium transition-colors ${
                     activeTab === 'compose'
                       ? 'text-primary-600 border-b-2 border-primary-600'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  <Mail size={18} className="inline-block mr-2" />
-                  Compose Email
+                  <Mail size={16} className="inline-block mr-2 md:w-[18px] md:h-[18px]" />
+                  <span className="hidden sm:inline">Compose Email</span>
+                  <span className="sm:hidden">Email</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('announcement')}
-                  className={`flex-1 py-4 text-center font-medium transition-colors ${
+                  className={`flex-1 py-3 md:py-4 text-center text-sm md:text-base font-medium transition-colors ${
                     activeTab === 'announcement'
                       ? 'text-primary-600 border-b-2 border-primary-600'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  <MessageSquare size={18} className="inline-block mr-2" />
-                  Announcement
+                  <MessageSquare size={16} className="inline-block mr-2 md:w-[18px] md:h-[18px]" />
+                  <span className="hidden sm:inline">Announcement</span>
+                  <span className="sm:hidden">Announce</span>
                 </button>
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 md:p-6">
               {activeTab === 'compose' && (
                 <div className="space-y-5">
                   {/* Template Selector */}
@@ -340,19 +445,19 @@ const Communication = () => {
                   {/* Recipient Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Recipients</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
                       {recipientFilters.map((filter) => (
                         <button
                           key={filter.value}
                           onClick={() => setEmailData({ ...emailData, recipientFilter: filter.value })}
-                          className={`flex items-center gap-2 p-3 rounded-xl border text-sm transition-colors ${
+                          className={`flex items-center gap-1.5 md:gap-2 p-2 md:p-3 rounded-lg md:rounded-xl border text-xs md:text-sm transition-colors ${
                             emailData.recipientFilter === filter.value
                               ? 'border-primary-500 bg-primary-50 text-primary-700'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          <filter.icon size={16} />
-                          {filter.label}
+                          <filter.icon size={14} className="flex-shrink-0 md:w-4 md:h-4" />
+                          <span className="truncate">{filter.label}</span>
                         </button>
                       ))}
                     </div>

@@ -12,6 +12,9 @@ import accessControlRoutes from './routes/accessControl.js';
 import organizerRoutes from './routes/organizer.js';
 import participantRoutes from './routes/participants.js';
 
+// Import email service
+import { testEmailConnection } from './utils/emailService.js';
+
 // Load env variables
 dotenv.config();
 
@@ -63,9 +66,13 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
+connectDB().then(async () => {
+  app.listen(PORT, async () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    
+    // Test email configuration
+    console.log('\n📧 Testing email configuration...');
+    await testEmailConnection();
   });
 });
 
