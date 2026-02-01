@@ -10,6 +10,8 @@ import {
   TeamLeads,
   Members,
   Permissions,
+  TeamManagement,
+  EventTeamDetails,
   AccessControl,
   Reports,
   Settings,
@@ -55,6 +57,8 @@ function App() {
           <Route path="events/:id/lifecycle" element={<EventLifecycle />} />
           
           {/* Team Management */}
+          <Route path="team" element={<TeamManagement />} />
+          <Route path="team/events/:eventId" element={<EventTeamDetails />} />
           <Route path="team/leads" element={<TeamLeads />} />
           <Route path="team/members" element={<Members />} />
           <Route path="team/permissions" element={<Permissions />} />

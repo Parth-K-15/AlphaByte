@@ -528,13 +528,33 @@ router.put('/team/:eventId/:memberId/permissions', async (req, res) => {
   try {
     const { eventId, memberId } = req.params;
     const { permissions } = req.body;
+    
+    if (!isValidObjectId(eventId) || !isValidObjectId(memberId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid ID format' 
+      });
+    }
+    
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    
     const member = event.teamMembers?.find(m => m.user.toString() === memberId || m._id?.toString() === memberId);
     if (!member) return res.status(404).json({ success: false, message: 'Team member not found' });
+    
+    // Update the member's permissions
     member.permissions = { ...member.permissions, ...permissions };
     await event.save();
-    res.json({ success: true, data: { permissions: member.permissions }, message: 'Permissions updated successfully' });
+    
+    // Return the updated event with populated team members
+    const updatedEvent = await Event.findById(eventId)
+      .populate('teamMembers.user', 'name email role');
+    
+    res.json({ 
+      success: true, 
+      data: { permissions: member.permissions }, 
+      message: 'Permissions updated successfully' 
+    });
   } catch (error) {
     console.error('Error updating permissions:', error);
     res.status(500).json({ success: false, message: 'Error updating permissions', error: error.message });

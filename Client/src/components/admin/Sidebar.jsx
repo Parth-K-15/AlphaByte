@@ -61,12 +61,7 @@ const Sidebar = () => {
     {
       title: 'Team Management',
       icon: Users,
-      key: 'team',
-      children: [
-        { title: 'Team Leads', icon: UserCog, path: '/admin/team/leads' },
-        { title: 'Organizers / Members', icon: UsersRound, path: '/admin/team/members' },
-        { title: 'Role Permissions', icon: Shield, path: '/admin/team/permissions' },
-      ],
+      path: '/admin/team',
     },
     {
       title: 'Access Control',
