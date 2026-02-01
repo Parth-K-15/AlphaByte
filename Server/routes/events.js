@@ -342,4 +342,61 @@ router.put('/:id/assign-lead', async (req, res) => {
   }
 });
 
+// @desc    Update event lifecycle status
+// @route   PUT /api/events/:id/lifecycle
+router.put('/:id/lifecycle', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid event ID format'
+      });
+    }
+
+    const validStatuses = ['draft', 'upcoming', 'ongoing', 'completed', 'cancelled'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+
+    const event = await Event.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    )
+      .populate('teamLead', 'name email phone')
+      .populate('createdBy', 'name email');
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+
+    const participantCount = await Participant.countDocuments({ event: event._id });
+
+    res.json({
+      success: true,
+      message: 'Event status updated successfully',
+      data: {
+        ...event.toObject(),
+        participantCount
+      }
+    });
+  } catch (error) {
+    console.error('Error updating event lifecycle:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating event lifecycle',
+      error: error.message
+    });
+  }
+});
+
 export default router;
