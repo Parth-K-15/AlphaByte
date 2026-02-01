@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
 import OrganizerLayout from './layouts/OrganizerLayout';
+import ParticipantLayout from './layouts/ParticipantLayout';
 import {
   Dashboard,
   Events,
@@ -23,6 +24,16 @@ import {
   Certificates,
   TeamAccess,
 } from './pages/organizer';
+import {
+  EventsHome,
+  EventDetails as ParticipantEventDetails,
+  MyRegistrations,
+  QRScanner,
+  Certificates as ParticipantCertificates,
+  History,
+  Profile,
+  Calendar,
+} from './pages/participant';
 
 function App() {
   return (
@@ -86,6 +97,32 @@ function App() {
           
           {/* Team Access (Team Lead Only) */}
           <Route path="team" element={<TeamAccess />} />
+        </Route>
+
+        {/* Participant Routes */}
+        <Route path="/participant" element={<ParticipantLayout />}>
+          <Route index element={<EventsHome />} />
+          
+          {/* Event Discovery */}
+          <Route path="event/:eventId" element={<ParticipantEventDetails />} />
+          
+          {/* Calendar */}
+          <Route path="calendar" element={<Calendar />} />
+          
+          {/* My Registrations */}
+          <Route path="registrations" element={<MyRegistrations />} />
+          
+          {/* QR Scanner for Attendance */}
+          <Route path="scan" element={<QRScanner />} />
+          
+          {/* History */}
+          <Route path="history" element={<History />} />
+          
+          {/* Certificates */}
+          <Route path="certificates" element={<ParticipantCertificates />} />
+          
+          {/* Profile */}
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </Router>
