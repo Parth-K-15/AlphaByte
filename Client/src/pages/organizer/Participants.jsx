@@ -57,7 +57,8 @@ const Participants = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await getAssignedEvents();
+      const organizerId = localStorage.getItem('userId');
+      const response = await getAssignedEvents(organizerId);
       if (response.data.success) {
         setEvents(response.data.data);
         if (!selectedEvent && response.data.data.length > 0) {
@@ -254,7 +255,7 @@ const Participants = () => {
             >
               {displayEvents.map((event) => (
                 <option key={event._id || event.id} value={event._id || event.id}>
-                  {event.name}
+                  {event.title || event.name}
                 </option>
               ))}
             </select>

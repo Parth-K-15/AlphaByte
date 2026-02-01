@@ -53,8 +53,10 @@ export const teamsApi = {
   createTeamLead: (data) => fetchApi('/teams/leads', { method: 'POST', body: data }),
 
   // Event Staff / Members
+  getMembers: () => fetchApi('/teams/members'),
   getEventStaff: (teamLeadId) =>
     fetchApi(`/teams/members${teamLeadId ? `?teamLeadId=${teamLeadId}` : ''}`),
+  createMember: (data) => fetchApi('/teams/members', { method: 'POST', body: data }),
   createEventStaff: (data) => fetchApi('/teams/members', { method: 'POST', body: data }),
 
   // User operations

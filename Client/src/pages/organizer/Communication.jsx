@@ -62,7 +62,8 @@ const Communication = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await getAssignedEvents();
+      const organizerId = localStorage.getItem('userId');
+      const response = await getAssignedEvents(organizerId);
       if (response.data.success) {
         setEvents(response.data.data);
         if (!selectedEvent && response.data.data.length > 0) {
@@ -104,20 +105,26 @@ const Communication = () => {
       alert('Please select a real event first. Demo events cannot send emails.');
       return;
     }
+    if (!emailData.subject || !emailData.message) {
+      alert('Please provide both subject and message.');
+      return;
+    }
     setSending(true);
     try {
+      const organizerId = localStorage.getItem('userId');
       const response = await sendEmail({
         eventId: selectedEvent,
+        organizerId,
         ...emailData,
       });
       if (response.data.success) {
-        alert('Email sent successfully!');
+        alert(`Email sent successfully to ${response.data.data.recipientCount || 0} participants!`);
         setEmailData({ subject: '', message: '', recipientFilter: 'ALL', template: '' });
         fetchHistory();
       }
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Failed to send email');
+      alert(error.message || 'Failed to send email. Please check if there are participants matching your filter.');
     } finally {
       setSending(false);
     }
@@ -130,8 +137,10 @@ const Communication = () => {
     }
     setSending(true);
     try {
+      const organizerId = localStorage.getItem('userId');
       const response = await createAnnouncement({
         eventId: selectedEvent,
+        organizerId,
         ...announcementData,
       });
       if (response.data.success) {
@@ -221,7 +230,7 @@ const Communication = () => {
         >
           {displayEvents.map((event) => (
             <option key={event._id || event.id} value={event._id || event.id}>
-              {event.name}
+              {event.title || event.name}
             </option>
           ))}
         </select>

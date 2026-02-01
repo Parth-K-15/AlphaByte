@@ -50,6 +50,7 @@ function App() {
           {/* Events Management */}
           <Route path="events" element={<Events />} />
           <Route path="events/create" element={<CreateEvent />} />
+          <Route path="events/:id/edit" element={<CreateEvent />} />
           <Route path="events/lifecycle" element={<EventLifecycle />} />
           <Route path="events/:id/lifecycle" element={<EventLifecycle />} />
           

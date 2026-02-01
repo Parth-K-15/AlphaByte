@@ -9,7 +9,7 @@ const Members = () => {
   const [teamLeads, setTeamLeads] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({ name: '', email: '', teamLead: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', teamLead: '', password: '12345678' });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ const Members = () => {
     try {
       await teamsApi.createMember(formData);
       setShowAddModal(false);
-      setFormData({ name: '', email: '', teamLead: '' });
+      setFormData({ name: '', email: '', teamLead: '', password: '12345678' });
       fetchData();
     } catch (error) {
       console.error('Error adding member:', error);
@@ -253,6 +253,17 @@ const Members = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input 
+                  type="text" 
+                  placeholder="Default: 12345678" 
+                  className="input-field"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <p className="text-xs text-gray-500 mt-1">Default password: 12345678</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

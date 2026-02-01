@@ -28,7 +28,10 @@ const fetchApi = async (endpoint, options = {}) => {
 export const getDashboardStats = () => fetchApi('/organizer/dashboard');
 
 // Events
-export const getAssignedEvents = () => fetchApi('/organizer/events');
+export const getAssignedEvents = (organizerId) => {
+  const query = organizerId ? `?organizerId=${organizerId}` : '';
+  return fetchApi(`/organizer/events${query}`);
+};
 export const getEventDetails = (eventId) => fetchApi(`/organizer/events/${eventId}`);
 export const updateEventInfo = (eventId, data) => fetchApi(`/organizer/events/${eventId}`, { method: 'PUT', body: data });
 
@@ -55,7 +58,18 @@ export const getAttendanceLogs = (eventId, params = {}) => {
   return fetchApi(`/organizer/attendance/${eventId}${query ? `?${query}` : ''}`);
 };
 export const getLiveAttendanceCount = (eventId) => fetchApi(`/organizer/attendance/${eventId}/live`);
-export const markManualAttendance = (eventId, participantId) => fetchApi(`/organizer/attendance/${eventId}/manual/${participantId}`, { method: 'POST' });
+export const markManualAttendance = (eventId, participantId) => {
+  const organizerId = localStorage.getItem('userId');
+  return fetchApi(`/organizer/attendance/${eventId}/manual/${participantId}`, { 
+    method: 'POST', 
+    body: { organizerId } 
+  });
+};
+export const unmarkAttendance = (eventId, participantId) => {
+  return fetchApi(`/organizer/attendance/${eventId}/unmark/${participantId}`, { 
+    method: 'DELETE'
+  });
+};
 
 // Certificates
 export const generateCertificates = (eventId, data) => fetchApi(`/organizer/certificates/${eventId}/generate`, { method: 'POST', body: data });

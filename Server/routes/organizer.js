@@ -204,12 +204,46 @@ router.post('/attendance/:eventId/manual/:participantId', async (req, res) => {
     if (!participant) return res.status(404).json({ success: false, message: 'Participant not found for this event' });
     const existing = await Attendance.findOne({ event: eventId, participant: participantId });
     if (existing) return res.status(400).json({ success: false, message: 'Attendance already marked' });
-    const attendance = await Attendance.create({ event: eventId, participant: participantId, markedBy: organizerId || 'manual', sessionId: 'manual' });
+    
+    // Use organizerId if provided, otherwise get from event's teamLead
+    let markedById = organizerId;
+    if (!markedById || !isValidObjectId(markedById)) {
+      const event = await Event.findById(eventId);
+      markedById = event?.teamLead || event?.createdBy;
+    }
+    
+    const attendance = await Attendance.create({ 
+      event: eventId, 
+      participant: participantId, 
+      markedBy: markedById, 
+      sessionId: 'manual',
+      scannedAt: Date.now()
+    });
     await Participant.findByIdAndUpdate(participantId, { attendanceStatus: 'ATTENDED', attendedAt: Date.now() });
     res.json({ success: true, message: 'Attendance marked manually', data: attendance });
   } catch (error) {
     console.error('Error marking manual attendance:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => {
+  try {
+    const { eventId, participantId } = req.params;
+    if (!isValidObjectId(eventId) || !isValidObjectId(participantId)) return res.status(400).json({ success: false, message: 'Invalid ID format' });
+    
+    const attendance = await Attendance.findOneAndDelete({ event: eventId, participant: participantId });
+    if (!attendance) return res.status(404).json({ success: false, message: 'Attendance record not found' });
+    
+    await Participant.findByIdAndUpdate(participantId, { 
+      attendanceStatus: 'NOT_ATTENDED', 
+      attendedAt: null 
+    });
+    
+    res.json({ success: true, message: 'Attendance unmarked successfully' });
+  } catch (error) {
+    console.error('Error unmarking attendance:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -232,7 +266,14 @@ router.get('/attendance/:eventId/live', async (req, res) => {
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const attendanceCount = await Attendance.countDocuments({ event: eventId });
     const registeredCount = await Participant.countDocuments({ event: eventId });
-    res.json({ success: true, data: { attended: attendanceCount, registered: registeredCount, percentage: registeredCount > 0 ? Math.round((attendanceCount / registeredCount) * 100) : 0 } });
+    res.json({ 
+      success: true, 
+      data: { 
+        present: attendanceCount, 
+        total: registeredCount, 
+        percentage: registeredCount > 0 ? Math.round((attendanceCount / registeredCount) * 100) : 0 
+      } 
+    });
   } catch (error) {
     console.error('Error fetching live count:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -440,7 +481,7 @@ router.post('/team/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
-    const { email, name, permissions } = req.body;
+    const { email, name, password, permissions } = req.body;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ success: false, message: 'Invalid email format' });
     const event = await Event.findById(eventId);
@@ -451,16 +492,16 @@ router.post('/team/:eventId', async (req, res) => {
       if (existingMember) return res.status(400).json({ success: false, message: 'User is already a team member for this event' });
     }
     if (!user) {
-      const tempPassword = Math.random().toString(36).slice(-8);
-      const hashedPassword = await bcrypt.hash(tempPassword, 10);
-      user = await User.create({ email, name: name || email.split('@')[0], password: hashedPassword, role: 'ORGANIZER', isActive: false, phone: '', invitedBy: event.teamLead, invitedAt: new Date() });
-      console.log(`User invited: ${email}, temp password: ${tempPassword}`);
+      const memberPassword = password || '12345678';
+      const hashedPassword = await bcrypt.hash(memberPassword, 10);
+      user = await User.create({ email, name: name || email.split('@')[0], password: hashedPassword, role: 'EVENT_STAFF', isActive: true, phone: '' });
+      console.log(`User created: ${email}, password: ${memberPassword}`);
     }
     const newMember = { user: user._id, role: 'TEAM_MEMBER', permissions: permissions || { canViewParticipants: true, canManageAttendance: true, canSendEmails: false, canGenerateCertificates: false, canEditEvent: false }, addedAt: new Date() };
     if (!event.teamMembers) event.teamMembers = [];
     event.teamMembers.push(newMember);
     await event.save();
-    res.status(201).json({ success: true, message: user.isActive ? 'Team member added successfully' : 'Invitation sent! User will need to activate their account.', data: { _id: newMember.user, user: { _id: user._id, name: user.name, email: user.email }, role: newMember.role, permissions: newMember.permissions, addedAt: newMember.addedAt } });
+    res.status(201).json({ success: true, message: 'Team member added successfully', data: { _id: newMember.user, user: { _id: user._id, name: user.name, email: user.email }, role: newMember.role, permissions: newMember.permissions, addedAt: newMember.addedAt } });
   } catch (error) {
     console.error('Error adding team member:', error);
     res.status(500).json({ success: false, message: 'Error adding team member', error: error.message });

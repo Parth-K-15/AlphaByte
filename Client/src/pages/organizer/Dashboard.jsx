@@ -54,7 +54,7 @@ const EventCard = ({ event }) => {
     <div className="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div>
-          <h4 className="font-semibold text-gray-800">{event.name}</h4>
+          <h4 className="font-semibold text-gray-800">{event.title || event.name}</h4>
           <p className="text-sm text-gray-500 mt-1">{event.date}</p>
         </div>
         <span className={`px-2 py-1 rounded-lg text-xs font-medium ${statusColors[event.status]}`}>

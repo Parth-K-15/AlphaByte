@@ -21,13 +21,14 @@ const EventDetails = () => {
     branch: ''
   });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [userEmail] = useState(localStorage.getItem('participantEmail') || '');
 
   useEffect(() => {
     fetchEventDetails();
-    if (formData.email) {
+    if (userEmail) {
       checkRegistration();
     }
-  }, [eventId, formData.email]);
+  }, [eventId]);
 
   const fetchEventDetails = async () => {
     try {
@@ -49,11 +50,11 @@ const EventDetails = () => {
   };
 
   const checkRegistration = async () => {
-    if (!formData.email) return;
+    if (!userEmail) return;
     
     try {
       const response = await fetch(
-        `${API_BASE}/participant/registration/${eventId}?email=${encodeURIComponent(formData.email)}`
+        `${API_BASE}/participant/registration/${eventId}?email=${encodeURIComponent(userEmail)}`
       );
       const data = await response.json();
       
@@ -109,7 +110,7 @@ const EventDetails = () => {
 
     try {
       const response = await fetch(
-        `${API_BASE}/participant/registration/${eventId}?email=${encodeURIComponent(formData.email)}`,
+        `${API_BASE}/participant/registration/${eventId}?email=${encodeURIComponent(userEmail)}`,
         { method: 'DELETE' }
       );
 

@@ -83,17 +83,11 @@ const EventCard = ({ event }) => {
         {/* Actions */}
         <div className="flex items-center gap-2 mt-4">
           <Link
-            to={`/organizer/events/${event._id || event.id}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-100 transition-colors font-medium text-sm"
-          >
-            <Eye size={16} />
-            View Details
-          </Link>
-          <Link
             to={`/organizer/attendance/qr?event=${event._id || event.id}`}
-            className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium text-sm"
           >
-            <QrCode size={18} className="text-gray-600" />
+            <QrCode size={16} />
+            Attendance
           </Link>
         </div>
       </div>
@@ -113,7 +107,8 @@ const MyEvents = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await getAssignedEvents();
+      const organizerId = localStorage.getItem('userId');
+      const response = await getAssignedEvents(organizerId);
       if (response.data.success) {
         setEvents(response.data.data);
       }

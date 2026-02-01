@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Calendar,
@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   LogOut,
   UserCog,
-} from 'lucide-react';
+} from "lucide-react";
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -25,66 +25,65 @@ const Sidebar = () => {
 
   const menuItems = [
     {
-      title: 'Dashboard',
+      title: "Dashboard",
       icon: LayoutDashboard,
-      path: '/organizer',
+      path: "/organizer",
     },
     {
-      title: 'My Events',
+      title: "My Events",
       icon: Calendar,
       submenu: [
-        { title: 'All Events', path: '/organizer/events' },
-        { title: 'Event Details', path: '/organizer/events/details' },
-        { title: 'Timeline Updates', path: '/organizer/events/updates' },
+        { title: "All Events", path: "/organizer/events" },
+        { title: "Timeline Updates", path: "/organizer/events/updates" },
       ],
-      key: 'events',
+      key: "events",
     },
     {
-      title: 'Participants',
+      title: "Participants",
       icon: Users,
-      path: '/organizer/participants',
+      path: "/organizer/participants",
     },
     {
-      title: 'Attendance',
+      title: "Attendance",
       icon: QrCode,
-      submenu: [
-        { title: 'Show QR Code', path: '/organizer/attendance/qr' },
-        { title: 'Attendance Log', path: '/organizer/attendance/log' },
-      ],
-      key: 'attendance',
+      path: "/organizer/attendance/qr",
     },
     {
-      title: 'Communication',
+      title: "Communication",
       icon: Mail,
       submenu: [
-        { title: 'Send Emails', path: '/organizer/communication/email' },
-        { title: 'Announcements', path: '/organizer/communication/announcements' },
+        { title: "Send Emails", path: "/organizer/communication/email" },
+        {
+          title: "Announcements",
+          path: "/organizer/communication/announcements",
+        },
       ],
-      key: 'communication',
+      key: "communication",
     },
     {
-      title: 'Certificates',
+      title: "Certificates",
       icon: Award,
       submenu: [
-        { title: 'Generate', path: '/organizer/certificates/generate' },
-        { title: 'Distribution', path: '/organizer/certificates/distribution' },
+        { title: "Generate", path: "/organizer/certificates/generate" },
+        { title: "Distribution", path: "/organizer/certificates/distribution" },
       ],
-      key: 'certificates',
+      key: "certificates",
     },
     {
-      title: 'Team Access',
+      title: "Team Access",
       icon: UserCog,
-      path: '/organizer/team',
+      path: "/organizer/team",
     },
   ];
 
   const isActive = (path) => location.pathname === path;
-  const isParentActive = (submenu) => submenu?.some((item) => location.pathname === item.path);
+  const isParentActive = (submenu) =>
+    submenu?.some((item) => location.pathname === item.path);
 
   return (
     <aside
       className={`bg-gray-800 text-white transition-all duration-300 flex flex-col shadow-2xl ${
-        collapsed ? 'w-20' : 'w-64'
+        collapsed ? "w-20" : "w-64"
       }`}
     >
       {/* Logo */}
@@ -99,7 +98,7 @@ const Sidebar = () => {
           className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
         >
           <ChevronLeft
-            className={`transition-transform duration-300 ${collapsed ? 'rotate-180' : ''}`}
+            className={`transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}
             size={20}
           />
         </button>
@@ -116,8 +115,8 @@ const Sidebar = () => {
                     onClick={() => toggleMenu(item.key)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
                       isParentActive(item.submenu)
-                        ? 'bg-primary-600 text-white shadow-lg'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                        ? "bg-primary-600 text-white shadow-lg"
+                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -127,7 +126,7 @@ const Sidebar = () => {
                     {!collapsed && (
                       <ChevronDown
                         size={16}
-                        className={`transition-transform ${openMenus[item.key] ? 'rotate-180' : ''}`}
+                        className={`transition-transform ${openMenus[item.key] ? "rotate-180" : ""}`}
                       />
                     )}
                   </button>
@@ -139,8 +138,8 @@ const Sidebar = () => {
                             to={subItem.path}
                             className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
                               isActive(subItem.path)
-                                ? 'bg-gray-800 text-primary-400 font-medium'
-                                : 'text-gray-500 hover:text-white hover:bg-gray-800'
+                                ? "bg-gray-800 text-primary-400 font-medium"
+                                : "text-gray-500 hover:text-white hover:bg-gray-800"
                             }`}
                           >
                             {subItem.title}
@@ -155,8 +154,8 @@ const Sidebar = () => {
                   to={item.path}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                     isActive(item.path)
-                      ? 'bg-primary-600 text-white shadow-lg'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                      ? "bg-primary-600 text-white shadow-lg"
+                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
                   }`}
                 >
                   <item.icon size={20} />
@@ -172,7 +171,7 @@ const Sidebar = () => {
       <div className="p-4 border-t border-gray-800">
         <button
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:bg-red-600 hover:text-white transition-colors w-full ${
-            collapsed ? 'justify-center' : ''
+            collapsed ? "justify-center" : ""
           }`}
         >
           <LogOut size={20} />
