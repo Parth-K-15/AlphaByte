@@ -1,12 +1,123 @@
 import express from 'express';
-import { getDashboardStats, getRecentActivity } from '../controllers/dashboardController.js';
+import User from '../models/User.js';
+import Event from '../models/Event.js';
+import Participant from '../models/Participant.js';
 
 const router = express.Router();
 
-// GET /api/dashboard/stats - Get dashboard statistics
-router.get('/stats', getDashboardStats);
+// @desc    Get dashboard stats
+// @route   GET /api/dashboard/stats
+router.get('/stats', async (req, res) => {
+  try {
+    const totalEvents = await Event.countDocuments();
+    const totalParticipants = await Participant.countDocuments();
+    const totalOrganizers = await User.countDocuments({
+      role: { $in: ['TEAM_LEAD', 'EVENT_STAFF'] }
+    });
+    
+    const now = new Date();
+    const activeEvents = await Event.countDocuments({
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    });
 
-// GET /api/dashboard/activity - Get recent activity
-router.get('/activity', getRecentActivity);
+    const recentEvents = await Event.find()
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .populate('teamLead', 'name email');
+
+    const eventRegistrations = await Event.aggregate([
+      {
+        $project: {
+          name: '$title',
+          registrations: { $size: { $ifNull: ['$participants', []] } }
+        }
+      },
+      { $limit: 6 }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          totalEvents,
+          totalParticipants,
+          totalOrganizers,
+          totalSiteViews: 12500,
+        },
+        eventRegistrations,
+        recentEvents
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching dashboard stats',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get recent activity
+// @route   GET /api/dashboard/activity
+router.get('/activity', async (req, res) => {
+  try {
+    const recentEvents = await Event.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('createdBy', 'name')
+      .populate('teamLead', 'name');
+
+    const recentUsers = await User.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('name role createdAt');
+
+    const activities = [];
+
+    recentEvents.forEach(event => {
+      activities.push({
+        action: 'New event created',
+        detail: event.title,
+        time: event.createdAt,
+        type: 'event',
+        status: 'success'
+      });
+
+      if (event.teamLead) {
+        activities.push({
+          action: 'Team lead assigned',
+          detail: `${event.teamLead.name} → ${event.title}`,
+          time: event.updatedAt,
+          type: 'assignment',
+          status: 'info'
+        });
+      }
+    });
+
+    recentUsers.forEach(user => {
+      activities.push({
+        action: `New ${user.role.toLowerCase().replace('_', ' ')} added`,
+        detail: user.name,
+        time: user.createdAt,
+        type: 'user',
+        status: 'info'
+      });
+    });
+
+    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    res.json({
+      success: true,
+      data: activities.slice(0, 10)
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching recent activity',
+      error: error.message
+    });
+  }
+});
 
 export default router;
