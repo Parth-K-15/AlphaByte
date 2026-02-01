@@ -93,6 +93,12 @@ const EventDetails = () => {
     }
   };
 
+  const getLifecycleStageIndex = (status) => {
+    const stages = ['draft', 'upcoming', 'ongoing', 'completed', 'cancelled'];
+    const index = stages.indexOf(status?.toLowerCase());
+    return index === -1 ? 0 : index;
+  };
+
   // Demo event data
   const demoEvent = {
     id: 1,
@@ -190,6 +196,28 @@ const EventDetails = () => {
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <Link
+        to="/organizer/events"
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+      >
+        <div className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </div>
+        <span className="font-medium">Back to Events</span>
+      </Link>
+
       {/* Event Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10" />
@@ -296,9 +324,78 @@ const EventDetails = () => {
 
         <div className="p-6">
           {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Event Info */}
-              <div className="space-y-6">
+            <div className="space-y-8">
+              {/* Event Lifecycle Timeline */}
+              <div>
+                <h3 className="font-semibold text-gray-800 text-lg mb-4">Event Status</h3>
+                <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 border border-gray-100">
+                  {/* Progress Line */}
+                  <div className="relative mb-8">
+                    <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 rounded-full" />
+                    <div
+                      className="absolute top-5 left-0 h-1 bg-primary-500 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${(getLifecycleStageIndex(displayEvent.status) / 4) * 100}%`,
+                      }}
+                    />
+                    <div className="relative flex justify-between">
+                      {[
+                        { key: 'draft', label: 'Draft', icon: '📝', color: 'gray' },
+                        { key: 'upcoming', label: 'Upcoming', icon: '⏰', color: 'blue' },
+                        { key: 'ongoing', label: 'Ongoing', icon: '▶️', color: 'green' },
+                        { key: 'completed', label: 'Completed', icon: '✅', color: 'purple' },
+                        { key: 'cancelled', label: 'Cancelled', icon: '❌', color: 'red' },
+                      ].map((stage, index) => {
+                        const isCurrent = displayEvent.status === stage.key;
+                        const currentIndex = getLifecycleStageIndex(displayEvent.status);
+                        const isPast = index < currentIndex && displayEvent.status !== 'cancelled';
+                        const isCancelled = displayEvent.status === 'cancelled' && stage.key === 'cancelled';
+                        
+                        return (
+                          <div key={stage.key} className="flex flex-col items-center">
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all duration-300 ${
+                                isCurrent || isCancelled
+                                  ? stage.color === 'gray'
+                                    ? 'bg-gray-900 text-white shadow-lg scale-110'
+                                    : stage.color === 'blue'
+                                    ? 'bg-blue-600 text-white shadow-lg scale-110'
+                                    : stage.color === 'green'
+                                    ? 'bg-green-600 text-white shadow-lg scale-110'
+                                    : stage.color === 'purple'
+                                    ? 'bg-purple-600 text-white shadow-lg scale-110'
+                                    : 'bg-red-600 text-white shadow-lg scale-110'
+                                  : isPast
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-gray-200 text-gray-400'
+                              }`}
+                            >
+                              {stage.icon}
+                            </div>
+                            <span
+                              className={`mt-2 text-xs font-medium ${
+                                isCurrent || isCancelled ? 'text-gray-900' : isPast ? 'text-green-600' : 'text-gray-400'
+                              }`}
+                            >
+                              {stage.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Current Status Info */}
+                  <div className="bg-white rounded-lg p-4 border border-gray-100">
+                    <p className="text-sm text-gray-500 mb-1">Current Status</p>
+                    <p className="text-lg font-semibold text-gray-900 capitalize">{displayEvent.status}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Event Info */}
+                <div className="space-y-6">
                 <h3 className="font-semibold text-gray-800 text-lg">Event Information</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -393,6 +490,7 @@ const EventDetails = () => {
                 )}
               </div>
             </div>
+          </div>
           )}
 
           {activeTab === 'timeline' && (
