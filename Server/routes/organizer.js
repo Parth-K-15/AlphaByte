@@ -9,6 +9,7 @@ import EventUpdate from '../models/EventUpdate.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
+import { sendBulkEmails, testEmailConnection } from '../utils/emailService.js';
 
 const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
@@ -412,6 +413,66 @@ router.get('/communication/templates', async (req, res) => {
   }
 });
 
+// Test email configuration
+router.get('/communication/test', async (req, res) => {
+  try {
+    const result = await testEmailConnection();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Email configuration test failed',
+      error: error.message 
+    });
+  }
+});
+
+// Debug endpoint to check participants
+router.get('/communication/debug-participants/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+    }
+    
+    const event = await Event.findById(eventId);
+    const allParticipants = await Participant.find({ event: eventId });
+    const attended = await Attendance.find({ event: eventId });
+    const certified = await Certificate.find({ event: eventId });
+    
+    // Also get ALL participants to check if event field issue
+    const allParticipantsInDB = await Participant.find({}).limit(5);
+    
+    res.json({
+      success: true,
+      data: {
+        eventId,
+        eventExists: !!event,
+        eventTitle: event?.title || 'N/A',
+        totalParticipants: allParticipants.length,
+        participants: allParticipants.map(p => ({
+          id: p._id,
+          name: p.name,
+          email: p.email,
+          eventField: p.event?.toString(),
+          registrationStatus: p.registrationStatus,
+          attendanceStatus: p.attendanceStatus
+        })),
+        attendanceRecords: attended.length,
+        certificateRecords: certified.length,
+        sampleParticipantsInDB: allParticipantsInDB.map(p => ({
+          id: p._id,
+          name: p.name,
+          eventId: p.event?.toString()
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.get('/communication/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -427,38 +488,132 @@ router.get('/communication/:eventId', async (req, res) => {
 router.post('/communication/email', async (req, res) => {
   try {
     const { eventId, subject, message, recipientFilter = 'ALL', template = 'CUSTOM', organizerId } = req.body;
-    if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
-    const allParticipants = await Participant.find({ event: eventId });
-    let recipients = [];
-    switch (recipientFilter) {
-      case 'REGISTERED': recipients = allParticipants.filter(p => p.registrationStatus === 'CONFIRMED'); break;
-      case 'ATTENDED': const attendedIds = (await Attendance.find({ event: eventId })).map(a => a.participant.toString()); recipients = allParticipants.filter(p => attendedIds.includes(p._id.toString())); break;
-      case 'NOT_ATTENDED': const attendedIds2 = (await Attendance.find({ event: eventId })).map(a => a.participant.toString()); recipients = allParticipants.filter(p => !attendedIds2.includes(p._id.toString())); break;
-      case 'CERTIFIED': const certifiedIds = (await Certificate.find({ event: eventId, status: 'SENT' })).map(c => c.participant.toString()); recipients = allParticipants.filter(p => certifiedIds.includes(p._id.toString())); break;
-      case 'NOT_CERTIFIED': const certifiedIds2 = (await Certificate.find({ event: eventId })).map(c => c.participant.toString()); recipients = allParticipants.filter(p => !certifiedIds2.includes(p._id.toString())); break;
-      default: recipients = allParticipants;
+    console.log('\n📧 Email Send Request:');
+    console.log('Event ID:', eventId);
+    console.log('Subject:', subject);
+    console.log('Recipient Filter:', recipientFilter);
+    console.log('Organizer ID:', organizerId);
+    
+    if (!isValidObjectId(eventId)) {
+      console.log('❌ Invalid event ID format');
+      return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     }
+
+    // Get event details
+    const event = await Event.findById(eventId);
+    if (!event) {
+      console.log('❌ Event not found:', eventId);
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+    console.log('✅ Event found:', event.title);
+
+    // Get all participants
+    const allParticipants = await Participant.find({ event: eventId });
+    console.log(`📊 Total participants for event '${event.title}' (${eventId}): ${allParticipants.length}`);
+    if (allParticipants.length > 0) {
+      console.log('First participant:', { name: allParticipants[0].name, email: allParticipants[0].email, status: allParticipants[0].registrationStatus });
+    }
+    let recipients = [];
+
+    // Filter recipients based on criteria
+    switch (recipientFilter) {
+      case 'REGISTERED':
+        recipients = allParticipants.filter(p => p.registrationStatus === 'CONFIRMED');
+        break;
+      case 'ATTENDED':
+        const attendedIds = (await Attendance.find({ event: eventId })).map(a => a.participant.toString());
+        recipients = allParticipants.filter(p => attendedIds.includes(p._id.toString()));
+        break;
+      case 'NOT_ATTENDED':
+        const attendedIds2 = (await Attendance.find({ event: eventId })).map(a => a.participant.toString());
+        recipients = allParticipants.filter(p => !attendedIds2.includes(p._id.toString()));
+        break;
+      case 'CERTIFIED':
+        const certifiedIds = (await Certificate.find({ event: eventId, status: 'SENT' })).map(c => c.participant.toString());
+        recipients = allParticipants.filter(p => certifiedIds.includes(p._id.toString()));
+        break;
+      case 'NOT_CERTIFIED':
+        const certifiedIds2 = (await Certificate.find({ event: eventId })).map(c => c.participant.toString());
+        recipients = allParticipants.filter(p => !certifiedIds2.includes(p._id.toString()));
+        break;
+      default:
+        recipients = allParticipants;
+    }
+
     const recipientCount = recipients.length;
-    if (recipientCount === 0) return res.status(400).json({ success: false, message: 'No recipients found for the selected filter' });
-    const communication = await Communication.create({ event: eventId, subject, message, type: 'EMAIL', template, recipientFilter, recipientCount, sentBy: organizerId, status: 'SENT' });
-    res.json({ success: true, message: `Email sent to ${recipientCount} participants`, data: communication });
+    console.log(`Recipients after filter '${recipientFilter}': ${recipientCount}`);
+    
+    if (recipientCount === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `No recipients found for filter '${recipientFilter}'. Total participants: ${allParticipants.length}. Please check if participants match this filter criteria.` 
+      });
+    }
+
+    // Send emails using the email service
+    console.log(`Sending emails to ${recipientCount} participants...`);
+    const emailResults = await sendBulkEmails(recipients, subject, message, event);
+
+    // Save communication record
+    const communication = await Communication.create({
+      event: eventId,
+      subject,
+      message,
+      type: 'EMAIL',
+      template,
+      recipientFilter,
+      recipientCount: emailResults.sent,
+      sentBy: organizerId,
+      status: emailResults.sent > 0 ? 'SENT' : 'FAILED'
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully sent ${emailResults.sent} emails. ${emailResults.failed > 0 ? `Failed to send ${emailResults.failed} emails.` : ''}`,
+      data: {
+        ...communication.toObject(),
+        emailResults: {
+          sent: emailResults.sent,
+          failed: emailResults.failed,
+          total: recipientCount
+        }
+      }
+    });
+
   } catch (error) {
     console.error('Error sending email:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while sending emails',
+      error: error.message 
+    });
   }
 });
 
 router.post('/communication/announcement', async (req, res) => {
   try {
-    const { eventId, subject, message, organizerId } = req.body;
+    const { eventId, message, type = 'INFO', organizerId } = req.body;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
-    const announcement = await Communication.create({ event: eventId, subject, message, type: 'ANNOUNCEMENT', template: 'CUSTOM', recipientFilter: 'ALL', recipientCount: 0, sentBy: organizerId, status: 'SENT' });
+    
+    // Create announcement with message as subject too (for consistency)
+    const subject = `[${type}] ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`;
+    const announcement = await Communication.create({ 
+      event: eventId, 
+      subject, 
+      message, 
+      type: 'ANNOUNCEMENT', 
+      template: 'CUSTOM', 
+      recipientFilter: 'ALL', 
+      recipientCount: 0, 
+      sentBy: organizerId, 
+      status: 'SENT' 
+    });
     res.json({ success: true, message: 'Announcement created successfully', data: announcement });
   } catch (error) {
     console.error('Error creating announcement:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
