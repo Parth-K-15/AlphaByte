@@ -9,6 +9,7 @@ import eventRoutes from './routes/events.js';
 import teamRoutes from './routes/teams.js';
 import userRoutes from './routes/users.js';
 import accessControlRoutes from './routes/accessControl.js';
+import organizerRoutes from './routes/organizer.js';
 
 // Load env variables
 dotenv.config();
@@ -40,6 +41,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/access-control', accessControlRoutes);
+app.use('/api/organizer', organizerRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

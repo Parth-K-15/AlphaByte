@@ -1,0 +1,8 @@
+export { default as Dashboard } from './Dashboard';
+export { default as MyEvents } from './MyEvents';
+export { default as EventDetails } from './EventDetails';
+export { default as Participants } from './Participants';
+export { default as AttendanceQR } from './AttendanceQR';
+export { default as Communication } from './Communication';
+export { default as Certificates } from './Certificates';
+export { default as TeamAccess } from './TeamAccess';

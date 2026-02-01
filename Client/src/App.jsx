@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './layouts/AdminLayout';
+import OrganizerLayout from './layouts/OrganizerLayout';
 import {
   Dashboard,
   Events,
@@ -12,6 +13,16 @@ import {
   Reports,
   Settings,
 } from './pages/admin';
+import {
+  Dashboard as OrganizerDashboard,
+  MyEvents,
+  EventDetails,
+  Participants,
+  AttendanceQR,
+  Communication,
+  Certificates,
+  TeamAccess,
+} from './pages/organizer';
 
 function App() {
   return (
@@ -46,6 +57,35 @@ function App() {
           
           {/* Settings */}
           <Route path="settings" element={<Settings />} />
+        </Route>
+
+        {/* Organizer Routes */}
+        <Route path="/organizer" element={<OrganizerLayout />}>
+          <Route index element={<OrganizerDashboard />} />
+          
+          {/* My Events */}
+          <Route path="events" element={<MyEvents />} />
+          <Route path="events/:eventId" element={<EventDetails />} />
+          <Route path="events/details" element={<EventDetails />} />
+          <Route path="events/updates" element={<EventDetails />} />
+          
+          {/* Participants */}
+          <Route path="participants" element={<Participants />} />
+          
+          {/* Attendance */}
+          <Route path="attendance/qr" element={<AttendanceQR />} />
+          <Route path="attendance/log" element={<AttendanceQR />} />
+          
+          {/* Communication */}
+          <Route path="communication/email" element={<Communication />} />
+          <Route path="communication/announcements" element={<Communication />} />
+          
+          {/* Certificates */}
+          <Route path="certificates/generate" element={<Certificates />} />
+          <Route path="certificates/distribution" element={<Certificates />} />
+          
+          {/* Team Access (Team Lead Only) */}
+          <Route path="team" element={<TeamAccess />} />
         </Route>
       </Routes>
     </Router>

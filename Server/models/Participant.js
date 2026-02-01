@@ -7,6 +7,11 @@ const participantSchema = new mongoose.Schema(
       required: true,
     },
 
+    name: {
+      type: String,
+      required: true,
+    },
+
     email: {
       type: String,
       required: true,
@@ -15,11 +20,37 @@ const participantSchema = new mongoose.Schema(
     phone: String,
 
     college: String,
+    year: String,
+    branch: String,
 
     event: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event",
       required: true,
+    },
+
+    registrationStatus: {
+      type: String,
+      enum: ['PENDING', 'CONFIRMED', 'CANCELLED'],
+      default: 'PENDING'
+    },
+
+    registrationType: {
+      type: String,
+      enum: ['ONLINE', 'WALK_IN'],
+      default: 'ONLINE'
+    },
+
+    attendanceStatus: {
+      type: String,
+      enum: ['PENDING', 'ATTENDED', 'ABSENT'],
+      default: 'PENDING'
+    },
+
+    certificateStatus: {
+      type: String,
+      enum: ['PENDING', 'GENERATED', 'SENT'],
+      default: 'PENDING'
     },
 
     assignedTeamLead: {
