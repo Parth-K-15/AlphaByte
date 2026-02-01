@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
   Calendar,
@@ -18,6 +19,13 @@ const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState({ events: true });
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const toggleMenu = (menu) => {
     setOpenMenus((prev) => ({ ...prev, [menu]: !prev[menu] }));
@@ -170,6 +178,7 @@ const Sidebar = () => {
       {/* Logout */}
       <div className="p-4 border-t border-gray-800">
         <button
+          onClick={handleLogout}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:bg-red-600 hover:text-white transition-colors w-full ${
             collapsed ? "justify-center" : ""
           }`}

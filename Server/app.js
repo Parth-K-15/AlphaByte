@@ -11,6 +11,7 @@ import userRoutes from './routes/users.js';
 import accessControlRoutes from './routes/accessControl.js';
 import organizerRoutes from './routes/organizer.js';
 import participantRoutes from './routes/participants.js';
+import authRoutes from './routes/auth.js';
 
 // Load env variables
 dotenv.config();
@@ -37,6 +38,7 @@ const connectDB = async () => {
 };
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/teams', teamRoutes);

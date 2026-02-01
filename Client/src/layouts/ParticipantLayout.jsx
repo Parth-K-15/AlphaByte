@@ -1,9 +1,14 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const ParticipantLayout = () => {
   const navigate = useNavigate();
-  const [userEmail] = useState(() => localStorage.getItem('participantEmail') || '');
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const navItems = [
     { path: '/participant', label: 'Home', icon: '🏠', exact: true },
@@ -28,15 +33,11 @@ const ParticipantLayout = () => {
 
             {/* User Info */}
             <div className="flex items-center space-x-4">
-              {userEmail ? (
+              {user ? (
                 <>
-                  <span className="text-sm text-gray-600">{userEmail}</span>
+                  <span className="text-sm text-gray-600">{user.email}</span>
                   <button
-                    onClick={() => {
-                      localStorage.removeItem('participantEmail');
-                      navigate('/participant');
-                      window.location.reload();
-                    }}
+                    onClick={handleLogout}
                     className="text-sm text-red-600 hover:text-red-800"
                   >
                     Logout
@@ -44,7 +45,7 @@ const ParticipantLayout = () => {
                 </>
               ) : (
                 <NavLink
-                  to="/participant/profile"
+                  to="/login"
                   className="text-sm text-indigo-600 hover:text-indigo-800"
                 >
                   Login / Register

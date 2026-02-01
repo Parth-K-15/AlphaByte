@@ -17,7 +17,7 @@ const activeSessions = new Map();
 router.get('/dashboard', async (req, res) => {
   try {
     const organizerId = req.query.organizerId;
-    let eventQuery = organizerId ? { $or: [{ teamLead: organizerId }, { teamMembers: organizerId }] } : {};
+    let eventQuery = organizerId ? { $or: [{ teamLead: organizerId }, { 'teamMembers.user': organizerId }] } : {};
     const events = await Event.find(eventQuery);
     const eventIds = events.map(e => e._id);
     const totalEvents = events.length;
@@ -38,7 +38,7 @@ router.get('/dashboard', async (req, res) => {
 router.get('/events', async (req, res) => {
   try {
     const organizerId = req.query.organizerId;
-    let query = organizerId ? { $or: [{ teamLead: organizerId }, { teamMembers: organizerId }] } : {};
+    let query = organizerId ? { $or: [{ teamLead: organizerId }, { 'teamMembers.user': organizerId }] } : {};
     const events = await Event.find(query).populate('teamLead', 'name email').populate('teamMembers', 'name email').sort({ createdAt: -1 });
     const eventsWithCounts = await Promise.all(events.map(async (event) => {
       const participantCount = await Participant.countDocuments({ event: event._id });

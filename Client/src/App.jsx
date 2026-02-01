@@ -1,11 +1,15 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import OrganizerLayout from './layouts/OrganizerLayout';
 import ParticipantLayout from './layouts/ParticipantLayout';
+import { SignIn, SignUp } from './pages/auth';
 import {
   Dashboard,
   Events,
   CreateEvent,
+  EventDetails as AdminEventDetails,
   EventLifecycle,
   TeamLeads,
   Members,
@@ -37,19 +41,46 @@ import {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Redirect root to admin dashboard */}
-        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Redirect root to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
+          {/* Auth Routes - Public */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <SignIn />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <SignUp />
+              </PublicRoute>
+            }
+          />
+
+          {/* Admin Routes - Protected */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           
           {/* Events Management */}
           <Route path="events" element={<Events />} />
           <Route path="events/create" element={<CreateEvent />} />
+          <Route path="events/:id" element={<AdminEventDetails />} />
           <Route path="events/:id/edit" element={<CreateEvent />} />
           <Route path="events/lifecycle" element={<EventLifecycle />} />
           <Route path="events/:id/lifecycle" element={<EventLifecycle />} />
@@ -71,8 +102,15 @@ function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
 
-        {/* Organizer Routes */}
-        <Route path="/organizer" element={<OrganizerLayout />}>
+        {/* Organizer Routes - Protected */}
+        <Route
+          path="/organizer"
+          element={
+            <ProtectedRoute allowedRoles={['TEAM_LEAD', 'EVENT_STAFF']}>
+              <OrganizerLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<OrganizerDashboard />} />
           
           {/* My Events */}
@@ -100,8 +138,15 @@ function App() {
           <Route path="team" element={<TeamAccess />} />
         </Route>
 
-        {/* Participant Routes */}
-        <Route path="/participant" element={<ParticipantLayout />}>
+        {/* Participant Routes - Protected */}
+        <Route
+          path="/participant"
+          element={
+            <ProtectedRoute allowedRoles={['PARTICIPANT']}>
+              <ParticipantLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<EventsHome />} />
           
           {/* Event Discovery */}
@@ -126,7 +171,8 @@ function App() {
           <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 }
 

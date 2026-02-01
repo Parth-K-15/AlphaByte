@@ -189,10 +189,13 @@ const Events = () => {
 
                       {showActions === (event._id || event.id) && (
                         <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 py-2 min-w-[160px]">
-                          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <Link
+                            to={`/admin/events/${event._id || event.id}`}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
                             <Eye size={16} />
                             View Details
-                          </button>
+                          </Link>
                           <Link
                             to={`/admin/events/${event._id || event.id}/edit`}
                             className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"

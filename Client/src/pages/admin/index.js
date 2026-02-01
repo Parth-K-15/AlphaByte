@@ -2,6 +2,7 @@
 export { default as Dashboard } from './Dashboard';
 export { default as Events } from './Events';
 export { default as CreateEvent } from './CreateEvent';
+export { default as EventDetails } from './EventDetails';
 export { default as EventLifecycle } from './EventLifecycle';
 export { default as TeamLeads } from './TeamLeads';
 export { default as Members } from './Members';

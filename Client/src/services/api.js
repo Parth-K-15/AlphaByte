@@ -1,10 +1,17 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
+// Get auth token from localStorage
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // Generic fetch wrapper
 const fetchApi = async (endpoint, options = {}) => {
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeader(),
       ...options.headers,
     },
     ...options,
@@ -22,6 +29,14 @@ const fetchApi = async (endpoint, options = {}) => {
   }
 
   return data;
+};
+
+// Auth API
+export const authApi = {
+  signup: (data) => fetchApi('/auth/signup', { method: 'POST', body: data }),
+  login: (data) => fetchApi('/auth/login', { method: 'POST', body: data }),
+  logout: () => fetchApi('/auth/logout', { method: 'POST' }),
+  getMe: () => fetchApi('/auth/me'),
 };
 
 // Dashboard API
