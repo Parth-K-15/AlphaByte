@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = 'http://localhost:5000/api';
 
 const Calendar = () => {
   const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
-  const email = localStorage.getItem('participantEmail') || '';
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchCalendarEvents();
-  }, [currentDate]);
+    if (user?.email) {
+      fetchCalendarEvents();
+    }
+  }, [currentDate, user?.email]);
 
   const fetchCalendarEvents = async () => {
     try {
@@ -25,8 +28,8 @@ const Calendar = () => {
         year: year.toString()
       });
       
-      if (email) {
-        params.append('email', email);
+      if (user?.email) {
+        params.append('email', user.email);
       }
 
       const response = await fetch(`${API_BASE}/participant/calendar?${params}`);

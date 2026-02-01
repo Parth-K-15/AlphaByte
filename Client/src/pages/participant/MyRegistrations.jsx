@@ -1,28 +1,28 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = 'http://localhost:5000/api';
 
 const MyRegistrations = () => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState(localStorage.getItem('participantEmail') || '');
-  const [inputEmail, setInputEmail] = useState('');
+  const { user } = useAuth();
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    if (email) {
+    if (user?.email) {
       fetchRegistrations();
     } else {
       setLoading(false);
     }
-  }, [email]);
+  }, [user]);
 
   const fetchRegistrations = async () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${API_BASE}/participant/my-events?email=${encodeURIComponent(email)}`
+        `${API_BASE}/participant/my-events?email=${encodeURIComponent(user.email)}`
       );
       const data = await response.json();
       
@@ -39,13 +39,7 @@ const MyRegistrations = () => {
     }
   };
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
-    if (inputEmail) {
-      localStorage.setItem('participantEmail', inputEmail);
-      setEmail(inputEmail);
-    }
-  };
+
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -74,31 +68,14 @@ const MyRegistrations = () => {
     });
   };
 
-  // If no email, show email input form
-  if (!email) {
+  // If no user, show message
+  if (!user) {
     return (
       <div className="max-w-md mx-auto mt-12">
         <div className="bg-white rounded-xl shadow-sm p-8 text-center">
           <div className="text-6xl mb-4">🎟️</div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">My Registrations</h2>
-          <p className="text-gray-500 mb-6">Enter your email to view your registered events</p>
-          
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <input
-              type="email"
-              value={inputEmail}
-              onChange={(e) => setInputEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
-            <button
-              type="submit"
-              className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            >
-              View Registrations
-            </button>
-          </form>
+          <p className="text-gray-500 mb-6">Please sign in to view your registrations</p>
         </div>
       </div>
     );

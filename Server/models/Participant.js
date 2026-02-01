@@ -15,9 +15,15 @@ const participantSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
+      unique: true,
     },
 
     phone: String,
+
+    password: {
+      type: String,
+      required: true,
+    },
 
     college: String,
     year: String,
@@ -26,7 +32,6 @@ const participantSchema = new mongoose.Schema(
     event: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event",
-      required: true,
     },
 
     registrationStatus: {
@@ -66,6 +71,11 @@ const participantSchema = new mongoose.Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // Lead or EVENT_STAFF who added participant
+    },
+
+    isSuspended: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

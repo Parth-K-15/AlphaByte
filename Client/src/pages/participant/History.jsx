@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -7,23 +8,22 @@ const History = () => {
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState(localStorage.getItem('participantEmail') || '');
-  const [inputEmail, setInputEmail] = useState('');
+  const { user } = useAuth();
   const [filter, setFilter] = useState('all'); // all, attended, certificates
 
   useEffect(() => {
-    if (email) {
+    if (user?.email) {
       fetchHistory();
     } else {
       setLoading(false);
     }
-  }, [email]);
+  }, [user]);
 
   const fetchHistory = async () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${API_BASE}/participant/history?email=${encodeURIComponent(email)}`
+        `${API_BASE}/participant/history?email=${encodeURIComponent(user.email)}`
       );
       const data = await response.json();
       
@@ -38,13 +38,7 @@ const History = () => {
     }
   };
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
-    if (inputEmail) {
-      localStorage.setItem('participantEmail', inputEmail);
-      setEmail(inputEmail);
-    }
-  };
+
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -61,8 +55,8 @@ const History = () => {
     return true;
   });
 
-  // If no email, show email input
-  if (!email) {
+  // If no user, show message
+  if (!user) {
     return (
       <div className="max-w-md mx-auto mt-12">
         <div className="bg-white rounded-xl shadow-sm p-8 text-center">

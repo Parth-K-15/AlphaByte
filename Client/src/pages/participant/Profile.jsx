@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -6,8 +7,7 @@ const Profile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [email, setEmail] = useState(localStorage.getItem('participantEmail') || '');
-  const [inputEmail, setInputEmail] = useState('');
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [formData, setFormData] = useState({
@@ -19,18 +19,18 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    if (email) {
+    if (user?.email) {
       fetchProfile();
     } else {
       setLoading(false);
     }
-  }, [email]);
+  }, [user]);
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${API_BASE}/participant/profile?email=${encodeURIComponent(email)}`
+        `${API_BASE}/participant/profile?email=${encodeURIComponent(user.email)}`
       );
       const data = await response.json();
       
@@ -54,13 +54,7 @@ const Profile = () => {
     }
   };
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
-    if (inputEmail) {
-      localStorage.setItem('participantEmail', inputEmail);
-      setEmail(inputEmail);
-    }
-  };
+
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -71,7 +65,7 @@ const Profile = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email,
+          email: user.email,
           ...formData
         })
       });
@@ -102,31 +96,14 @@ const Profile = () => {
     });
   };
 
-  // If no email, show email input
-  if (!email) {
+  // If no user, show message
+  if (!user) {
     return (
       <div className="max-w-md mx-auto mt-12">
         <div className="bg-white rounded-xl shadow-sm p-8 text-center">
           <div className="text-6xl mb-4">👤</div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">My Profile</h2>
-          <p className="text-gray-500 mb-6">Enter your email to view or create your profile</p>
-          
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <input
-              type="email"
-              value={inputEmail}
-              onChange={(e) => setInputEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              required
-            />
-            <button
-              type="submit"
-              className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700"
-            >
-              Continue
-            </button>
-          </form>
+          <p className="text-gray-500 mb-6">Please sign in to view your profile</p>
         </div>
       </div>
     );
@@ -148,7 +125,7 @@ const Profile = () => {
           {profile?.fullName?.[0]?.toUpperCase() || '👤'}
         </div>
         <h1 className="text-2xl font-bold">{profile?.fullName || 'New Participant'}</h1>
-        <p className="text-pink-100">{email}</p>
+        <p className="text-pink-100">{user.email}</p>
         {profile?.memberSince && (
           <p className="text-sm text-pink-200 mt-2">Member since {formatDate(profile.memberSince)}</p>
         )}

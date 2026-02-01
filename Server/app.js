@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 
 // Import routes
+import authRoutes from './routes/auth.js';
 import dashboardRoutes from './routes/dashboard.js';
 import eventRoutes from './routes/events.js';
 import teamRoutes from './routes/teams.js';
@@ -37,6 +38,7 @@ const connectDB = async () => {
 };
 
 // API Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/teams', teamRoutes);

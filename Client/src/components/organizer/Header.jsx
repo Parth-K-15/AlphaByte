@@ -1,9 +1,18 @@
 import { useState } from 'react';
-import { Bell, Search, ChevronDown, User } from 'lucide-react';
+import { Bell, Search, ChevronDown, User, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
+  };
 
   const notifications = [
     { id: 1, message: 'New participant registered', time: '5 min ago', unread: true },
@@ -74,8 +83,8 @@ const Header = () => {
               <User size={20} className="text-primary-600" />
             </div>
             <div className="hidden md:block text-left">
-              <p className="text-sm font-medium text-gray-800">Organizer</p>
-              <p className="text-xs text-gray-500">Team Lead</p>
+              <p className="text-sm font-medium text-gray-800">{user?.name || 'Organizer'}</p>
+              <p className="text-xs text-gray-500">{user?.role || 'TEAM_LEAD'}</p>
             </div>
             <ChevronDown size={16} className="text-gray-400" />
           </button>
@@ -89,9 +98,13 @@ const Header = () => {
                 Help & Support
               </a>
               <hr className="my-2" />
-              <a href="#" className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+              <button 
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+              >
+                <LogOut size={16} />
                 Logout
-              </a>
+              </button>
             </div>
           )}
         </div>

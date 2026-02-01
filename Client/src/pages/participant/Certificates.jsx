@@ -1,28 +1,28 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = 'http://localhost:5000/api';
 
 const Certificates = () => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState(localStorage.getItem('participantEmail') || '');
-  const [inputEmail, setInputEmail] = useState('');
+  const { user } = useAuth();
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    if (email) {
+    if (user?.email) {
       fetchCertificates();
     } else {
       setLoading(false);
     }
-  }, [email]);
+  }, [user]);
 
   const fetchCertificates = async () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${API_BASE}/participant/certificates?email=${encodeURIComponent(email)}`
+        `${API_BASE}/participant/certificates?email=${encodeURIComponent(user.email)}`
       );
       const data = await response.json();
       
@@ -39,13 +39,7 @@ const Certificates = () => {
     }
   };
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
-    if (inputEmail) {
-      localStorage.setItem('participantEmail', inputEmail);
-      setEmail(inputEmail);
-    }
-  };
+
 
   const handleDownload = async (certificate) => {
     try {
