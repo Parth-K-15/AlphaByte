@@ -36,6 +36,92 @@ router.get('/stats', async (req, res) => {
       { $limit: 6 }
     ]);
 
+    // Registration trends over the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const registrationTrends = await Participant.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sevenDaysAgo }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      },
+      {
+        $project: {
+          date: '$_id',
+          registrations: '$count',
+          _id: 0
+        }
+      }
+    ]);
+
+    // Registration status breakdown
+    const registrationsByStatus = await Participant.aggregate([
+      {
+        $group: {
+          _id: '$registrationStatus',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          status: '$_id',
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // Top events by registration
+    const topEvents = await Participant.aggregate([
+      {
+        $group: {
+          _id: '$event',
+          registrations: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'events',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'eventDetails'
+        }
+      },
+      {
+        $unwind: '$eventDetails'
+      },
+      {
+        $project: {
+          name: '$eventDetails.title',
+          registrations: 1,
+          _id: 0
+        }
+      },
+      {
+        $sort: { registrations: -1 }
+      },
+      { $limit: 6 }
+    ]);
+
+    // Recent registrations
+    const recentRegistrations = await Participant.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('event', 'title')
+      .select('name email event registrationStatus createdAt');
+
     res.json({
       success: true,
       data: {
@@ -44,9 +130,14 @@ router.get('/stats', async (req, res) => {
           totalParticipants,
           totalOrganizers,
           totalSiteViews: 12500,
+          activeEvents,
         },
         eventRegistrations,
-        recentEvents
+        recentEvents,
+        registrationTrends,
+        registrationsByStatus,
+        topEvents,
+        recentRegistrations
       }
     });
   } catch (error) {

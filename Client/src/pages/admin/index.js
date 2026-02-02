@@ -7,6 +7,8 @@ export { default as EventLifecycle } from './EventLifecycle';
 export { default as TeamLeads } from './TeamLeads';
 export { default as Members } from './Members';
 export { default as Permissions } from './Permissions';
+export { default as TeamManagement } from './TeamManagement';
+export { default as EventTeamDetails } from './EventTeamDetails';
 export { default as AccessControl } from './AccessControl';
 export { default as Reports } from './Reports';
 export { default as Settings } from './Settings';

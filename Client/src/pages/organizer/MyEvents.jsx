@@ -83,6 +83,13 @@ const EventCard = ({ event }) => {
         {/* Actions */}
         <div className="flex items-center gap-2 mt-4">
           <Link
+            to={`/organizer/events/${event._id || event.id}`}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-primary-600 text-primary-600 rounded-xl hover:bg-primary-50 transition-colors font-medium text-sm"
+          >
+            <Eye size={16} />
+            View Details
+          </Link>
+          <Link
             to={`/organizer/attendance/qr?event=${event._id || event.id}`}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium text-sm"
           >
