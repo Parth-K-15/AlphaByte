@@ -1,10 +1,17 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
+// Get auth token from localStorage
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // Generic fetch wrapper
 const fetchApi = async (endpoint, options = {}) => {
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeader(),
       ...options.headers,
     },
     ...options,
@@ -22,6 +29,14 @@ const fetchApi = async (endpoint, options = {}) => {
   }
 
   return data;
+};
+
+// Auth API
+export const authApi = {
+  signup: (data) => fetchApi('/auth/signup', { method: 'POST', body: data }),
+  login: (data) => fetchApi('/auth/login', { method: 'POST', body: data }),
+  logout: () => fetchApi('/auth/logout', { method: 'POST' }),
+  getMe: () => fetchApi('/auth/me'),
 };
 
 // Dashboard API
@@ -42,8 +57,20 @@ export const eventsApi = {
   delete: (id) => fetchApi(`/events/${id}`, { method: 'DELETE' }),
   assignTeamLead: (id, teamLeadId) =>
     fetchApi(`/events/${id}/assign-lead`, { method: 'PUT', body: { teamLeadId } }),
+  addTeamLead: (id, data) =>
+    fetchApi(`/events/${id}/team-leads`, { method: 'POST', body: data }),
+  removeTeamLead: (id, userId) =>
+    fetchApi(`/events/${id}/team-leads/${userId}`, { method: 'DELETE' }),
   updateLifecycle: (id, status) =>
     fetchApi(`/events/${id}/lifecycle`, { method: 'PUT', body: { status } }),
+  addTeamMember: (id, data) =>
+    fetchApi(`/events/${id}/team-members`, { method: 'POST', body: data }),
+  removeTeamMember: (id, userId) =>
+    fetchApi(`/events/${id}/team-members/${userId}`, { method: 'DELETE' }),
+  updateEventPermissions: (id, permissions) =>
+    fetchApi(`/events/${id}/permissions`, { method: 'PUT', body: permissions }),
+  updateTeamMemberPermissions: (id, userId, permissions) =>
+    fetchApi(`/events/${id}/team-members/${userId}/permissions`, { method: 'PUT', body: { permissions } }),
 };
 
 // Teams API
@@ -53,8 +80,10 @@ export const teamsApi = {
   createTeamLead: (data) => fetchApi('/teams/leads', { method: 'POST', body: data }),
 
   // Event Staff / Members
+  getMembers: () => fetchApi('/teams/members'),
   getEventStaff: (teamLeadId) =>
     fetchApi(`/teams/members${teamLeadId ? `?teamLeadId=${teamLeadId}` : ''}`),
+  createMember: (data) => fetchApi('/teams/members', { method: 'POST', body: data }),
   createEventStaff: (data) => fetchApi('/teams/members', { method: 'POST', body: data }),
 
   // User operations

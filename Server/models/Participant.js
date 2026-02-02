@@ -58,19 +58,9 @@ const participantSchema = new mongoose.Schema(
       default: 'PENDING'
     },
 
-    assignedTeamLead: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-
-    assignedTeamMember: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Lead or EVENT_STAFF who added participant
+      ref: "User", // Lead or EVENT_STAFF who added walk-in participant
     },
 
     isSuspended: {

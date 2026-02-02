@@ -1,195 +1,290 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import Participant from '../models/Participant.js';
+import ParticipantAuth from '../models/ParticipantAuth.js';
 
 const router = express.Router();
 
-// JWT Secret (should be in .env)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
+// JWT Secret (use environment variable in production)
+const JWT_SECRET = process.env.JWT_SECRET || 'alphabyte_jwt_secret_key_2026';
+const JWT_EXPIRES_IN = '7d';
 
-// Sign Up
+// @desc    Participant Signup
+// @route   POST /api/auth/signup
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, phone, password, role } = req.body;
+    const { name, email, password, phone, college, branch, year } = req.body;
 
-    // Validate input
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and password are required',
+      });
     }
 
-    if (role !== 'admin' && role !== 'participant') {
-      return res.status(400).json({ message: 'Invalid role' });
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address',
+      });
     }
 
-    // Check if user already exists
-    if (role === 'admin') {
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ message: 'User already exists with this email' });
-      }
-    } else {
-      const existingParticipant = await Participant.findOne({ email });
-      if (existingParticipant) {
-        return res.status(400).json({ message: 'Participant already exists with this email' });
-      }
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long',
+      });
+    }
+
+    // Check if participant already exists
+    const existingParticipant = await ParticipantAuth.findOne({ email: email.toLowerCase() });
+    if (existingParticipant) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists',
+      });
+    }
+
+    // Also check User collection (admin/staff can't signup as participant)
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already registered as a staff member. Please login instead.',
+      });
     }
 
     // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user/participant
-    let newUser;
-    if (role === 'admin') {
-      newUser = await User.create({
-        name,
-        email,
-        phone,
-        password: hashedPassword,
-        role: 'ADMIN',
-      });
-    } else {
-      newUser = await Participant.create({
-        fullName: name,
-        name,
-        email,
-        phone,
-        password: hashedPassword,
-      });
-    }
+    // Create new participant in ParticipantAuth collection
+    const participant = await ParticipantAuth.create({
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      phone,
+      college,
+      branch,
+      year,
+    });
 
-    // Create JWT token
+    // Generate JWT token
     const token = jwt.sign(
-      { 
-        id: newUser._id, 
-        email: newUser.email, 
-        role: role === 'admin' ? 'ADMIN' : 'PARTICIPANT' 
-      },
+      { id: participant._id, role: 'PARTICIPANT', isParticipant: true },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
-    // Return user data (without password)
-    const userData = {
-      id: newUser._id,
-      name: newUser.name,
-      email: newUser.email,
-      phone: newUser.phone,
-      role: role === 'admin' ? 'ADMIN' : 'PARTICIPANT',
-    };
-
     res.status(201).json({
+      success: true,
       message: 'Account created successfully',
-      token,
-      user: userData,
+      data: {
+        token,
+        user: {
+          id: participant._id,
+          name: participant.name,
+          email: participant.email,
+          role: 'PARTICIPANT',
+        },
+      },
     });
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({ message: 'Server error during signup' });
+    res.status(500).json({
+      success: false,
+      message: 'Error creating account',
+      error: error.message,
+    });
   }
 });
 
-// Login
+// @desc    Login for all roles
+// @route   POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
 
-    // Validate input
-    if (!email || !password || !role) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required',
+      });
     }
 
-    if (role !== 'admin' && role !== 'participant') {
-      return res.status(400).json({ message: 'Invalid role' });
-    }
+    // First check User collection (Admin, Team Lead, Event Staff)
+    let user = await User.findOne({ email: email.toLowerCase() });
+    let isParticipant = false;
+    let role = null;
 
-    // Find user based on role
-    let user;
-    if (role === 'admin') {
-      user = await User.findOne({ email });
+    if (!user) {
+      // Check ParticipantAuth collection
+      user = await ParticipantAuth.findOne({ email: email.toLowerCase() });
+      if (user) {
+        isParticipant = true;
+        role = 'PARTICIPANT';
+      }
     } else {
-      user = await Participant.findOne({ email });
+      role = user.role;
     }
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
+      });
     }
 
-    // Check password
+    // Check if account is suspended
+    if (user.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: `Account suspended: ${user.suspensionReason || 'Contact admin for more information'}`,
+      });
+    }
+
+    // Check if account is active
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is deactivated. Contact admin for assistance.',
+      });
+    }
+
+    // Compare password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
+      });
     }
 
-    // Check if user is active (for admin users)
-    if (role === 'admin' && user.isActive === false) {
-      return res.status(403).json({ message: 'Your account has been deactivated' });
-    }
-
-    // Check if user is suspended
-    if (user.isSuspended) {
-      return res.status(403).json({ message: 'Your account has been suspended' });
-    }
-
-    // Create JWT token
+    // Generate JWT token
     const token = jwt.sign(
-      { 
-        id: user._id, 
-        email: user.email, 
-        role: role === 'admin' ? user.role : 'PARTICIPANT' 
-      },
+      { id: user._id, role: role, isParticipant },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
-    // Return user data (without password)
-    const userData = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: role === 'admin' ? user.role : 'PARTICIPANT',
-    };
+    // Determine redirect path based on role
+    let redirectPath = '/participant';
+    switch (role) {
+      case 'ADMIN':
+        redirectPath = '/admin/dashboard';
+        break;
+      case 'TEAM_LEAD':
+        redirectPath = '/organizer';
+        break;
+      case 'EVENT_STAFF':
+        redirectPath = '/organizer';
+        break;
+      case 'PARTICIPANT':
+        redirectPath = '/participant';
+        break;
+    }
 
     res.json({
+      success: true,
       message: 'Login successful',
-      token,
-      user: userData,
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: role,
+          phone: user.phone,
+          college: user.college,
+          branch: user.branch,
+          year: user.year,
+        },
+        redirectPath,
+      },
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
+    res.status(500).json({
+      success: false,
+      message: 'Error logging in',
+      error: error.message,
+    });
   }
 });
 
-// Verify Token (optional - for checking if user is still logged in)
-router.get('/verify', async (req, res) => {
+// @desc    Logout (frontend clears token)
+// @route   POST /api/auth/logout
+router.post('/logout', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Logged out successfully',
+  });
+});
+
+// @desc    Get current user profile
+// @route   GET /api/auth/me
+router.get('/me', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided',
+      });
     }
 
+    const token = authHeader.split(' ')[1];
+
+    // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
-    
-    // Find user based on role
+
+    // Get user from appropriate collection
     let user;
-    if (decoded.role === 'PARTICIPANT') {
-      user = await Participant.findById(decoded.id).select('-password');
+    if (decoded.isParticipant) {
+      user = await ParticipantAuth.findById(decoded.id).select('-password');
+      if (user) {
+        user = { ...user.toObject(), role: 'PARTICIPANT' };
+      }
     } else {
       user = await User.findById(decoded.id).select('-password');
     }
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
     }
 
-    res.json({ user });
+    res.json({
+      success: true,
+      data: user,
+    });
   } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token',
+      });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired',
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user',
+      error: error.message,
+    });
   }
 });
 

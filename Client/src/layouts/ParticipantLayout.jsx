@@ -5,6 +5,11 @@ const ParticipantLayout = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const navItems = [
     { path: '/participant', label: 'Home', icon: '🏠', exact: true },
     { path: '/participant/calendar', label: 'Calendar', icon: '📅' },
@@ -30,12 +35,9 @@ const ParticipantLayout = () => {
             <div className="flex items-center space-x-4">
               {user ? (
                 <>
-                  <span className="text-sm text-gray-600">{user.name}</span>
+                  <span className="text-sm text-gray-600">{user.email}</span>
                   <button
-                    onClick={() => {
-                      logout();
-                      navigate('/auth');
-                    }}
+                    onClick={handleLogout}
                     className="text-sm text-red-600 hover:text-red-800"
                   >
                     Logout
@@ -43,7 +45,7 @@ const ParticipantLayout = () => {
                 </>
               ) : (
                 <NavLink
-                  to="/auth"
+                  to="/login"
                   className="text-sm text-indigo-600 hover:text-indigo-800"
                 >
                   Login / Register

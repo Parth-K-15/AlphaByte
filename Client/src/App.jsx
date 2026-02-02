@@ -1,22 +1,21 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import OrganizerLayout from './layouts/OrganizerLayout';
 import ParticipantLayout from './layouts/ParticipantLayout';
-import {
-  Landing,
-  SignIn,
-  SignUp,
-} from './pages/auth';
+import { SignIn, SignUp } from './pages/auth';
 import {
   Dashboard,
   Events,
   CreateEvent,
+  EventDetails as AdminEventDetails,
   EventLifecycle,
   TeamLeads,
   Members,
   Permissions,
+  TeamManagement,
+  EventTeamDetails,
   AccessControl,
   Reports,
   Settings,
@@ -47,110 +46,136 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Redirect root to auth landing */}
-          <Route path="/" element={<Navigate to="/auth" replace />} />
-          
-          {/* Auth Routes */}
-          <Route path="/auth" element={<Landing />} />
-          <Route path="/auth/signin/:role" element={<SignIn />} />
-          <Route path="/auth/signup/:role" element={<SignUp />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'TEAM_LEAD', 'EVENT_STAFF']}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            
-            {/* Events Management */}
-            <Route path="events" element={<Events />} />
-            <Route path="events/create" element={<CreateEvent />} />
-            <Route path="events/lifecycle" element={<EventLifecycle />} />
-            <Route path="events/:id/lifecycle" element={<EventLifecycle />} />
-            
-            {/* Team Management */}
-            <Route path="team/leads" element={<TeamLeads />} />
-            <Route path="team/members" element={<Members />} />
-            <Route path="team/permissions" element={<Permissions />} />
-            
-            {/* Access Control */}
-            <Route path="access" element={<AccessControl />} />
-            <Route path="access/restrict" element={<AccessControl />} />
-            <Route path="access/suspended" element={<AccessControl />} />
-            
-            {/* Analytics & Reports */}
-            <Route path="reports" element={<Reports />} />
-            
-            {/* Settings */}
-            <Route path="settings" element={<Settings />} />
-          </Route>
+          {/* Redirect root to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* Organizer Routes */}
-          <Route path="/organizer" element={
+          {/* Auth Routes - Public */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <SignIn />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <SignUp />
+              </PublicRoute>
+            }
+          />
+
+          {/* Admin Routes - Protected */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          
+          {/* Events Management */}
+          <Route path="events" element={<Events />} />
+          <Route path="events/create" element={<CreateEvent />} />
+          <Route path="events/:id" element={<AdminEventDetails />} />
+          <Route path="events/:id/edit" element={<CreateEvent />} />
+          <Route path="events/lifecycle" element={<EventLifecycle />} />
+          <Route path="events/:id/lifecycle" element={<EventLifecycle />} />
+          
+          {/* Team Management */}
+          <Route path="team" element={<TeamManagement />} />
+          <Route path="team/events/:eventId" element={<EventTeamDetails />} />
+          <Route path="team/leads" element={<TeamLeads />} />
+          <Route path="team/members" element={<Members />} />
+          <Route path="team/permissions" element={<Permissions />} />
+          
+          {/* Access Control */}
+          <Route path="access" element={<AccessControl />} />
+          <Route path="access/restrict" element={<AccessControl />} />
+          <Route path="access/suspended" element={<AccessControl />} />
+          
+          {/* Analytics & Reports */}
+          <Route path="reports" element={<Reports />} />
+          
+          {/* Settings */}
+          <Route path="settings" element={<Settings />} />
+        </Route>
+
+        {/* Organizer Routes - Protected */}
+        <Route
+          path="/organizer"
+          element={
             <ProtectedRoute allowedRoles={['TEAM_LEAD', 'EVENT_STAFF']}>
               <OrganizerLayout />
             </ProtectedRoute>
-          }>
-            <Route index element={<OrganizerDashboard />} />
-            
-            {/* My Events */}
-            <Route path="events" element={<MyEvents />} />
-            <Route path="events/:eventId" element={<EventDetails />} />
-            <Route path="events/details" element={<EventDetails />} />
-            <Route path="events/updates" element={<EventDetails />} />
-            
-            {/* Participants */}
-            <Route path="participants" element={<Participants />} />
-            
-            {/* Attendance */}
-            <Route path="attendance/qr" element={<AttendanceQR />} />
-            <Route path="attendance/log" element={<AttendanceQR />} />
-            
-            {/* Communication */}
-            <Route path="communication/email" element={<Communication />} />
-            <Route path="communication/announcements" element={<Communication />} />
-            
-            {/* Certificates */}
-            <Route path="certificates/generate" element={<Certificates />} />
-            <Route path="certificates/distribution" element={<Certificates />} />
-            
-            {/* Team Access (Team Lead Only) */}
-            <Route path="team" element={<TeamAccess />} />
-          </Route>
+          }
+        >
+          <Route index element={<OrganizerDashboard />} />
+          
+          {/* My Events */}
+          <Route path="events" element={<MyEvents />} />
+          <Route path="events/:eventId" element={<EventDetails />} />
+          <Route path="events/details" element={<EventDetails />} />
+          <Route path="events/updates" element={<EventDetails />} />
+          
+          {/* Participants */}
+          <Route path="participants" element={<Participants />} />
+          
+          {/* Attendance */}
+          <Route path="attendance/qr" element={<AttendanceQR />} />
+          <Route path="attendance/log" element={<AttendanceQR />} />
+          
+          {/* Communication */}
+          <Route path="communication/email" element={<Communication />} />
+          <Route path="communication/announcements" element={<Communication />} />
+          
+          {/* Certificates */}
+          <Route path="certificates/generate" element={<Certificates />} />
+          <Route path="certificates/distribution" element={<Certificates />} />
+          
+          {/* Team Access (Team Lead Only) */}
+          <Route path="team" element={<TeamAccess />} />
+        </Route>
 
-          {/* Participant Routes */}
-          <Route path="/participant" element={
+        {/* Participant Routes - Protected */}
+        <Route
+          path="/participant"
+          element={
             <ProtectedRoute allowedRoles={['PARTICIPANT']}>
               <ParticipantLayout />
             </ProtectedRoute>
-          }>
-            <Route index element={<EventsHome />} />
-            
-            {/* Event Discovery */}
-            <Route path="event/:eventId" element={<ParticipantEventDetails />} />
-            
-            {/* Calendar */}
-            <Route path="calendar" element={<Calendar />} />
-            
-            {/* My Registrations */}
-            <Route path="registrations" element={<MyRegistrations />} />
-            
-            {/* QR Scanner for Attendance */}
-            <Route path="scan" element={<QRScanner />} />
-            
-            {/* History */}
-            <Route path="history" element={<History />} />
-            
-            {/* Certificates */}
-            <Route path="certificates" element={<ParticipantCertificates />} />
-            
-            {/* Profile */}
-            <Route path="profile" element={<Profile />} />
-          </Route>
+          }
+        >
+          <Route index element={<EventsHome />} />
+          
+          {/* Event Discovery */}
+          <Route path="event/:eventId" element={<ParticipantEventDetails />} />
+          
+          {/* Calendar */}
+          <Route path="calendar" element={<Calendar />} />
+          
+          {/* My Registrations */}
+          <Route path="registrations" element={<MyRegistrations />} />
+          
+          {/* QR Scanner for Attendance */}
+          <Route path="scan" element={<QRScanner />} />
+          
+          {/* History */}
+          <Route path="history" element={<History />} />
+          
+          {/* Certificates */}
+          <Route path="certificates" element={<ParticipantCertificates />} />
+          
+          {/* Profile */}
+          <Route path="profile" element={<Profile />} />
+        </Route>
       </Routes>
-    </Router>
+      </Router>
     </AuthProvider>
   );
 }

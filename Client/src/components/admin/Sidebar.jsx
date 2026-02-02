@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
   Calendar,
@@ -31,6 +32,13 @@ const Sidebar = () => {
     access: false,
   });
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const toggleMenu = (menu) => {
     setExpandedMenus((prev) => ({
@@ -61,12 +69,7 @@ const Sidebar = () => {
     {
       title: 'Team Management',
       icon: Users,
-      key: 'team',
-      children: [
-        { title: 'Team Leads', icon: UserCog, path: '/admin/team/leads' },
-        { title: 'Organizers / Members', icon: UsersRound, path: '/admin/team/members' },
-        { title: 'Role Permissions', icon: Shield, path: '/admin/team/permissions' },
-      ],
+      path: '/admin/team',
     },
     {
       title: 'Access Control',
@@ -180,7 +183,10 @@ const Sidebar = () => {
 
       {/* Logout */}
       <div className="p-3 border-t border-sidebar-light">
-        <button className="sidebar-item w-full text-red-400 hover:bg-red-500/20 hover:text-red-300">
+        <button 
+          onClick={handleLogout}
+          className="sidebar-item w-full text-red-400 hover:bg-red-500/20 hover:text-red-300"
+        >
           <LogOut size={20} />
           {!collapsed && <span>Logout</span>}
         </button>

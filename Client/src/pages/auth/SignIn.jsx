@@ -1,155 +1,191 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, Loader2, LogIn, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-function SignIn() {
-  const { role } = useParams(); // 'admin' or 'participant'
+const SignIn = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const isAdmin = role === 'admin';
-  const roleColor = isAdmin ? 'indigo' : 'purple';
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
     setError('');
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
+    if (!validateForm()) return;
+
+    setLoading(true);
     try {
-      await login(formData.email, formData.password, role);
+      const result = await login(formData.email, formData.password);
       
-      // Redirect based on role
-      if (isAdmin) {
-        navigate('/admin/dashboard');
+      if (result.success) {
+        navigate(result.redirectPath);
       } else {
-        navigate('/participant');
+        setError(result.message || 'Invalid email or password');
       }
     } catch (err) {
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+      setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Back Button */}
-        <Link to="/auth" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-8">
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back to role selection
-        </Link>
-
-        {/* Sign In Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {isAdmin ? 'Admin' : 'Participant'} Sign In
-            </h1>
-            <p className="text-gray-600">Welcome back! Please sign in to continue.</p>
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo/Branding */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
+            <LogIn size={32} className="text-white" />
           </div>
+          <h1 className="text-2xl font-bold text-gray-800">Welcome Back</h1>
+          <p className="text-gray-500 mt-1">Sign in to continue to your dashboard</p>
+        </div>
 
-          {/* Error Message */}
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-8">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
               {error}
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="you@example.com"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
+                    errors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                  }`}
                 />
               </div>
+              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary-600 hover:underline"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
+                    errors.password ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                  }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+              {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 px-4 bg-${roleColor}-600 hover:bg-${roleColor}-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-              style={{
-                backgroundColor: isAdmin ? '#4f46e5' : '#9333ea',
-              }}
+              className="w-full py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
+
+          {/* Role Info */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+            <p className="text-xs text-gray-500 text-center">
+              <strong>Admin:</strong> /admin • <strong>Organizer:</strong> /organizer • <strong>Participant:</strong> /participant
+            </p>
+          </div>
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center">
             <p className="text-gray-600">
-              Don't have an account?{' '}
-              <Link
-                to={`/auth/signup/${role}`}
-                className={`font-semibold text-${roleColor}-600 hover:text-${roleColor}-700`}
-                style={{
-                  color: isAdmin ? '#4f46e5' : '#9333ea',
-                }}
-              >
-                Sign Up
+              New participant?{' '}
+              <Link to="/signup" className="text-primary-600 font-semibold hover:underline">
+                Create Account
               </Link>
             </p>
           </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-gray-400 text-sm mt-6">
+          Event Lifecycle & Participation Management Platform
+        </p>
       </div>
     </div>
   );
-}
+};
 
 export default SignIn;

@@ -9,6 +9,7 @@ import EventUpdate from '../models/EventUpdate.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
+import { sendBulkEmails, testEmailConnection } from '../utils/emailService.js';
 
 const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
@@ -17,7 +18,7 @@ const activeSessions = new Map();
 router.get('/dashboard', async (req, res) => {
   try {
     const organizerId = req.query.organizerId;
-    let eventQuery = organizerId ? { $or: [{ teamLead: organizerId }, { teamMembers: organizerId }] } : {};
+    let eventQuery = organizerId ? { $or: [{ teamLead: organizerId }, { 'teamMembers.user': organizerId }] } : {};
     const events = await Event.find(eventQuery);
     const eventIds = events.map(e => e._id);
     const totalEvents = events.length;
@@ -38,7 +39,7 @@ router.get('/dashboard', async (req, res) => {
 router.get('/events', async (req, res) => {
   try {
     const organizerId = req.query.organizerId;
-    let query = organizerId ? { $or: [{ teamLead: organizerId }, { teamMembers: organizerId }] } : {};
+    let query = organizerId ? { $or: [{ teamLead: organizerId }, { 'teamMembers.user': organizerId }] } : {};
     const events = await Event.find(query).populate('teamLead', 'name email').populate('teamMembers', 'name email').sort({ createdAt: -1 });
     const eventsWithCounts = await Promise.all(events.map(async (event) => {
       const participantCount = await Participant.countDocuments({ event: event._id });
@@ -204,12 +205,46 @@ router.post('/attendance/:eventId/manual/:participantId', async (req, res) => {
     if (!participant) return res.status(404).json({ success: false, message: 'Participant not found for this event' });
     const existing = await Attendance.findOne({ event: eventId, participant: participantId });
     if (existing) return res.status(400).json({ success: false, message: 'Attendance already marked' });
-    const attendance = await Attendance.create({ event: eventId, participant: participantId, markedBy: organizerId || 'manual', sessionId: 'manual' });
+    
+    // Use organizerId if provided, otherwise get from event's teamLead
+    let markedById = organizerId;
+    if (!markedById || !isValidObjectId(markedById)) {
+      const event = await Event.findById(eventId);
+      markedById = event?.teamLead || event?.createdBy;
+    }
+    
+    const attendance = await Attendance.create({ 
+      event: eventId, 
+      participant: participantId, 
+      markedBy: markedById, 
+      sessionId: 'manual',
+      scannedAt: Date.now()
+    });
     await Participant.findByIdAndUpdate(participantId, { attendanceStatus: 'ATTENDED', attendedAt: Date.now() });
     res.json({ success: true, message: 'Attendance marked manually', data: attendance });
   } catch (error) {
     console.error('Error marking manual attendance:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => {
+  try {
+    const { eventId, participantId } = req.params;
+    if (!isValidObjectId(eventId) || !isValidObjectId(participantId)) return res.status(400).json({ success: false, message: 'Invalid ID format' });
+    
+    const attendance = await Attendance.findOneAndDelete({ event: eventId, participant: participantId });
+    if (!attendance) return res.status(404).json({ success: false, message: 'Attendance record not found' });
+    
+    await Participant.findByIdAndUpdate(participantId, { 
+      attendanceStatus: 'NOT_ATTENDED', 
+      attendedAt: null 
+    });
+    
+    res.json({ success: true, message: 'Attendance unmarked successfully' });
+  } catch (error) {
+    console.error('Error unmarking attendance:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -232,7 +267,14 @@ router.get('/attendance/:eventId/live', async (req, res) => {
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const attendanceCount = await Attendance.countDocuments({ event: eventId });
     const registeredCount = await Participant.countDocuments({ event: eventId });
-    res.json({ success: true, data: { attended: attendanceCount, registered: registeredCount, percentage: registeredCount > 0 ? Math.round((attendanceCount / registeredCount) * 100) : 0 } });
+    res.json({ 
+      success: true, 
+      data: { 
+        present: attendanceCount, 
+        total: registeredCount, 
+        percentage: registeredCount > 0 ? Math.round((attendanceCount / registeredCount) * 100) : 0 
+      } 
+    });
   } catch (error) {
     console.error('Error fetching live count:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -371,6 +413,66 @@ router.get('/communication/templates', async (req, res) => {
   }
 });
 
+// Test email configuration
+router.get('/communication/test', async (req, res) => {
+  try {
+    const result = await testEmailConnection();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Email configuration test failed',
+      error: error.message 
+    });
+  }
+});
+
+// Debug endpoint to check participants
+router.get('/communication/debug-participants/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+    }
+    
+    const event = await Event.findById(eventId);
+    const allParticipants = await Participant.find({ event: eventId });
+    const attended = await Attendance.find({ event: eventId });
+    const certified = await Certificate.find({ event: eventId });
+    
+    // Also get ALL participants to check if event field issue
+    const allParticipantsInDB = await Participant.find({}).limit(5);
+    
+    res.json({
+      success: true,
+      data: {
+        eventId,
+        eventExists: !!event,
+        eventTitle: event?.title || 'N/A',
+        totalParticipants: allParticipants.length,
+        participants: allParticipants.map(p => ({
+          id: p._id,
+          name: p.name,
+          email: p.email,
+          eventField: p.event?.toString(),
+          registrationStatus: p.registrationStatus,
+          attendanceStatus: p.attendanceStatus
+        })),
+        attendanceRecords: attended.length,
+        certificateRecords: certified.length,
+        sampleParticipantsInDB: allParticipantsInDB.map(p => ({
+          id: p._id,
+          name: p.name,
+          eventId: p.event?.toString()
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.get('/communication/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -386,38 +488,132 @@ router.get('/communication/:eventId', async (req, res) => {
 router.post('/communication/email', async (req, res) => {
   try {
     const { eventId, subject, message, recipientFilter = 'ALL', template = 'CUSTOM', organizerId } = req.body;
-    if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
-    const allParticipants = await Participant.find({ event: eventId });
-    let recipients = [];
-    switch (recipientFilter) {
-      case 'REGISTERED': recipients = allParticipants.filter(p => p.registrationStatus === 'CONFIRMED'); break;
-      case 'ATTENDED': const attendedIds = (await Attendance.find({ event: eventId })).map(a => a.participant.toString()); recipients = allParticipants.filter(p => attendedIds.includes(p._id.toString())); break;
-      case 'NOT_ATTENDED': const attendedIds2 = (await Attendance.find({ event: eventId })).map(a => a.participant.toString()); recipients = allParticipants.filter(p => !attendedIds2.includes(p._id.toString())); break;
-      case 'CERTIFIED': const certifiedIds = (await Certificate.find({ event: eventId, status: 'SENT' })).map(c => c.participant.toString()); recipients = allParticipants.filter(p => certifiedIds.includes(p._id.toString())); break;
-      case 'NOT_CERTIFIED': const certifiedIds2 = (await Certificate.find({ event: eventId })).map(c => c.participant.toString()); recipients = allParticipants.filter(p => !certifiedIds2.includes(p._id.toString())); break;
-      default: recipients = allParticipants;
+    console.log('\n📧 Email Send Request:');
+    console.log('Event ID:', eventId);
+    console.log('Subject:', subject);
+    console.log('Recipient Filter:', recipientFilter);
+    console.log('Organizer ID:', organizerId);
+    
+    if (!isValidObjectId(eventId)) {
+      console.log('❌ Invalid event ID format');
+      return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     }
+
+    // Get event details
+    const event = await Event.findById(eventId);
+    if (!event) {
+      console.log('❌ Event not found:', eventId);
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+    console.log('✅ Event found:', event.title);
+
+    // Get all participants
+    const allParticipants = await Participant.find({ event: eventId });
+    console.log(`📊 Total participants for event '${event.title}' (${eventId}): ${allParticipants.length}`);
+    if (allParticipants.length > 0) {
+      console.log('First participant:', { name: allParticipants[0].name, email: allParticipants[0].email, status: allParticipants[0].registrationStatus });
+    }
+    let recipients = [];
+
+    // Filter recipients based on criteria
+    switch (recipientFilter) {
+      case 'REGISTERED':
+        recipients = allParticipants.filter(p => p.registrationStatus === 'CONFIRMED');
+        break;
+      case 'ATTENDED':
+        const attendedIds = (await Attendance.find({ event: eventId })).map(a => a.participant.toString());
+        recipients = allParticipants.filter(p => attendedIds.includes(p._id.toString()));
+        break;
+      case 'NOT_ATTENDED':
+        const attendedIds2 = (await Attendance.find({ event: eventId })).map(a => a.participant.toString());
+        recipients = allParticipants.filter(p => !attendedIds2.includes(p._id.toString()));
+        break;
+      case 'CERTIFIED':
+        const certifiedIds = (await Certificate.find({ event: eventId, status: 'SENT' })).map(c => c.participant.toString());
+        recipients = allParticipants.filter(p => certifiedIds.includes(p._id.toString()));
+        break;
+      case 'NOT_CERTIFIED':
+        const certifiedIds2 = (await Certificate.find({ event: eventId })).map(c => c.participant.toString());
+        recipients = allParticipants.filter(p => !certifiedIds2.includes(p._id.toString()));
+        break;
+      default:
+        recipients = allParticipants;
+    }
+
     const recipientCount = recipients.length;
-    if (recipientCount === 0) return res.status(400).json({ success: false, message: 'No recipients found for the selected filter' });
-    const communication = await Communication.create({ event: eventId, subject, message, type: 'EMAIL', template, recipientFilter, recipientCount, sentBy: organizerId, status: 'SENT' });
-    res.json({ success: true, message: `Email sent to ${recipientCount} participants`, data: communication });
+    console.log(`Recipients after filter '${recipientFilter}': ${recipientCount}`);
+    
+    if (recipientCount === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `No recipients found for filter '${recipientFilter}'. Total participants: ${allParticipants.length}. Please check if participants match this filter criteria.` 
+      });
+    }
+
+    // Send emails using the email service
+    console.log(`Sending emails to ${recipientCount} participants...`);
+    const emailResults = await sendBulkEmails(recipients, subject, message, event);
+
+    // Save communication record
+    const communication = await Communication.create({
+      event: eventId,
+      subject,
+      message,
+      type: 'EMAIL',
+      template,
+      recipientFilter,
+      recipientCount: emailResults.sent,
+      sentBy: organizerId,
+      status: emailResults.sent > 0 ? 'SENT' : 'FAILED'
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully sent ${emailResults.sent} emails. ${emailResults.failed > 0 ? `Failed to send ${emailResults.failed} emails.` : ''}`,
+      data: {
+        ...communication.toObject(),
+        emailResults: {
+          sent: emailResults.sent,
+          failed: emailResults.failed,
+          total: recipientCount
+        }
+      }
+    });
+
   } catch (error) {
     console.error('Error sending email:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while sending emails',
+      error: error.message 
+    });
   }
 });
 
 router.post('/communication/announcement', async (req, res) => {
   try {
-    const { eventId, subject, message, organizerId } = req.body;
+    const { eventId, message, type = 'INFO', organizerId } = req.body;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
-    const announcement = await Communication.create({ event: eventId, subject, message, type: 'ANNOUNCEMENT', template: 'CUSTOM', recipientFilter: 'ALL', recipientCount: 0, sentBy: organizerId, status: 'SENT' });
+    
+    // Create announcement with message as subject too (for consistency)
+    const subject = `[${type}] ${message.substring(0, 50)}${message.length > 50 ? '...' : ''}`;
+    const announcement = await Communication.create({ 
+      event: eventId, 
+      subject, 
+      message, 
+      type: 'ANNOUNCEMENT', 
+      template: 'CUSTOM', 
+      recipientFilter: 'ALL', 
+      recipientCount: 0, 
+      sentBy: organizerId, 
+      status: 'SENT' 
+    });
     res.json({ success: true, message: 'Announcement created successfully', data: announcement });
   } catch (error) {
     console.error('Error creating announcement:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -440,7 +636,7 @@ router.post('/team/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
-    const { email, name, permissions } = req.body;
+    const { email, name, password, permissions } = req.body;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ success: false, message: 'Invalid email format' });
     const event = await Event.findById(eventId);
@@ -451,16 +647,16 @@ router.post('/team/:eventId', async (req, res) => {
       if (existingMember) return res.status(400).json({ success: false, message: 'User is already a team member for this event' });
     }
     if (!user) {
-      const tempPassword = Math.random().toString(36).slice(-8);
-      const hashedPassword = await bcrypt.hash(tempPassword, 10);
-      user = await User.create({ email, name: name || email.split('@')[0], password: hashedPassword, role: 'ORGANIZER', isActive: false, phone: '', invitedBy: event.teamLead, invitedAt: new Date() });
-      console.log(`User invited: ${email}, temp password: ${tempPassword}`);
+      const memberPassword = password || '12345678';
+      const hashedPassword = await bcrypt.hash(memberPassword, 10);
+      user = await User.create({ email, name: name || email.split('@')[0], password: hashedPassword, role: 'EVENT_STAFF', isActive: true, phone: '' });
+      console.log(`User created: ${email}, password: ${memberPassword}`);
     }
     const newMember = { user: user._id, role: 'TEAM_MEMBER', permissions: permissions || { canViewParticipants: true, canManageAttendance: true, canSendEmails: false, canGenerateCertificates: false, canEditEvent: false }, addedAt: new Date() };
     if (!event.teamMembers) event.teamMembers = [];
     event.teamMembers.push(newMember);
     await event.save();
-    res.status(201).json({ success: true, message: user.isActive ? 'Team member added successfully' : 'Invitation sent! User will need to activate their account.', data: { _id: newMember.user, user: { _id: user._id, name: user.name, email: user.email }, role: newMember.role, permissions: newMember.permissions, addedAt: newMember.addedAt } });
+    res.status(201).json({ success: true, message: 'Team member added successfully', data: { _id: newMember.user, user: { _id: user._id, name: user.name, email: user.email }, role: newMember.role, permissions: newMember.permissions, addedAt: newMember.addedAt } });
   } catch (error) {
     console.error('Error adding team member:', error);
     res.status(500).json({ success: false, message: 'Error adding team member', error: error.message });
@@ -487,13 +683,33 @@ router.put('/team/:eventId/:memberId/permissions', async (req, res) => {
   try {
     const { eventId, memberId } = req.params;
     const { permissions } = req.body;
+    
+    if (!isValidObjectId(eventId) || !isValidObjectId(memberId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid ID format' 
+      });
+    }
+    
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    
     const member = event.teamMembers?.find(m => m.user.toString() === memberId || m._id?.toString() === memberId);
     if (!member) return res.status(404).json({ success: false, message: 'Team member not found' });
+    
+    // Update the member's permissions
     member.permissions = { ...member.permissions, ...permissions };
     await event.save();
-    res.json({ success: true, data: { permissions: member.permissions }, message: 'Permissions updated successfully' });
+    
+    // Return the updated event with populated team members
+    const updatedEvent = await Event.findById(eventId)
+      .populate('teamMembers.user', 'name email role');
+    
+    res.json({ 
+      success: true, 
+      data: { permissions: member.permissions }, 
+      message: 'Permissions updated successfully' 
+    });
   } catch (error) {
     console.error('Error updating permissions:', error);
     res.status(500).json({ success: false, message: 'Error updating permissions', error: error.message });

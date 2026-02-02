@@ -18,7 +18,9 @@ import {
   getAttendanceLogs, 
   getLiveAttendanceCount, 
   markManualAttendance,
-  getAssignedEvents 
+  unmarkAttendance,
+  getAssignedEvents,
+  getParticipants
 } from '../../services/organizerApi';
 
 // Helper to check if ID is a valid MongoDB ObjectId
@@ -35,6 +37,8 @@ const AttendanceQR = () => {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [activeTab, setActiveTab] = useState('qr');
   const [searchQuery, setSearchQuery] = useState('');
+  const [participants, setParticipants] = useState([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -48,6 +52,7 @@ const AttendanceQR = () => {
     if (selectedEvent && isValidObjectId(selectedEvent)) {
       fetchAttendanceLogs();
       fetchLiveCount();
+      fetchParticipants();
     }
   }, [selectedEvent]);
 
@@ -69,7 +74,8 @@ const AttendanceQR = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await getAssignedEvents();
+      const organizerId = localStorage.getItem('userId');
+      const response = await getAssignedEvents(organizerId);
       if (response.data.success) {
         setEvents(response.data.data);
         if (!selectedEvent && response.data.data.length > 0) {
@@ -103,6 +109,21 @@ const AttendanceQR = () => {
     }
   };
 
+  const fetchParticipants = async () => {
+    if (!selectedEvent || !isValidObjectId(selectedEvent)) return;
+    setLoadingParticipants(true);
+    try {
+      const response = await getParticipants(selectedEvent);
+      if (response.data.success) {
+        setParticipants(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+    } finally {
+      setLoadingParticipants(false);
+    }
+  };
+
   const handleGenerateQR = async () => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
       alert('Please select a real event first. Demo events cannot generate QR codes.');
@@ -133,6 +154,45 @@ const AttendanceQR = () => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleManualAttendance = async (participantId) => {
+    if (!selectedEvent || !isValidObjectId(selectedEvent)) {
+      alert('Please select a real event first.');
+      return;
+    }
+    try {
+      const response = await markManualAttendance(selectedEvent, participantId);
+      if (response.data.success) {
+        alert('Attendance marked successfully!');
+        fetchParticipants();
+        fetchAttendanceLogs();
+        fetchLiveCount();
+      }
+    } catch (error) {
+      console.error('Error marking manual attendance:', error);
+      alert(error.message || 'Failed to mark attendance');
+    }
+  };
+
+  const handleUnmarkAttendance = async (participantId) => {
+    if (!selectedEvent || !isValidObjectId(selectedEvent)) {
+      alert('Please select a real event first.');
+      return;
+    }
+    if (!confirm('Are you sure you want to unmark this attendance?')) return;
+    try {
+      const response = await unmarkAttendance(selectedEvent, participantId);
+      if (response.data.success) {
+        alert('Attendance unmarked successfully!');
+        fetchParticipants();
+        fetchAttendanceLogs();
+        fetchLiveCount();
+      }
+    } catch (error) {
+      console.error('Error unmarking attendance:', error);
+      alert(error.message || 'Failed to unmark attendance');
+    }
   };
 
   // Demo data
@@ -188,7 +248,7 @@ const AttendanceQR = () => {
         >
           {displayEvents.map((event) => (
             <option key={event._id || event.id} value={event._id || event.id}>
-              {event.name}
+              {event.title || event.name}
             </option>
           ))}
         </select>
@@ -270,8 +330,8 @@ const AttendanceQR = () => {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Clock size={18} className="inline-block mr-2" />
-              Attendance Logs
+              <UserPlus size={18} className="inline-block mr-2" />
+              Manual Attendance
             </button>
           </div>
         </div>
@@ -396,57 +456,106 @@ const AttendanceQR = () => {
                 </div>
                 <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50">
                   <Download size={18} />
-                  Export Logs
+                  Export Data
                 </button>
               </div>
 
-              {/* Logs Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">#</th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Participant</th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Email</th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Check-in Time</th>
-                      <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {filteredLogs.map((log, index) => (
-                      <tr key={log._id} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                              <span className="text-primary-600 font-medium text-sm">
-                                {log.participant?.name?.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <span className="font-medium text-gray-800">{log.participant?.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{log.participant?.email}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {new Date(log.scannedAt).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
-                            <CheckCircle size={12} />
-                            Present
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {filteredLogs.length === 0 && (
+              {/* Manual Attendance Table */}
+              {loadingParticipants ? (
                 <div className="text-center py-12">
-                  <Clock size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">No attendance records</h3>
-                  <p className="text-gray-500">Attendance logs will appear here once participants check in.</p>
+                  <RefreshCw className="animate-spin mx-auto text-gray-400 mb-4" size={48} />
+                  <p className="text-gray-500">Loading participants...</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-100">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">#</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Name</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Email</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">College</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Branch</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Date/Time</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Status</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {participants
+                        .filter((p) =>
+                          p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.college?.toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                        .map((participant, index) => {
+                          const hasAttended = participant.hasAttended || participant.attendanceStatus === 'ATTENDED';
+                          const attendedAt = participant.attendedAt;
+                          
+                          return (
+                            <tr key={participant._id} className="hover:bg-gray-50/50">
+                              <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                    <span className="text-primary-600 font-medium text-sm">
+                                      {participant.name?.charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <span className="font-medium text-gray-800">{participant.name}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{participant.email}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{participant.college || '-'}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{participant.branch || '-'}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {attendedAt ? new Date(attendedAt).toLocaleString() : '-'}
+                              </td>
+                              <td className="px-4 py-3">
+                                {hasAttended ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
+                                    <CheckCircle size={12} />
+                                    Present
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
+                                    <XCircle size={12} />
+                                    Absent
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                {hasAttended ? (
+                                  <button
+                                    onClick={() => handleUnmarkAttendance(participant._id)}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs font-medium"
+                                  >
+                                    <XCircle size={14} />
+                                    Unmark
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleManualAttendance(participant._id)}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-xs font-medium"
+                                  >
+                                    <CheckCircle size={14} />
+                                    Mark
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {!loadingParticipants && participants.length === 0 && (
+                <div className="text-center py-12">
+                  <Users size={48} className="mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">No participants found</h3>
+                  <p className="text-gray-500">Participants will appear here once they register for this event.</p>
                 </div>
               )}
             </div>
