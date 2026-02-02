@@ -5,6 +5,8 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
 
   const [profile, setProfile] = useState({
     name: 'Admin User',
@@ -22,21 +24,95 @@ const Settings = () => {
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
+    setError('');
+    setSuccess('');
   };
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswords((prev) => ({ ...prev, [name]: value }));
+    setError('');
+    setSuccess('');
   };
 
   const handleProfileSubmit = (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+    
+    // Validate fields
+    if (!profile.name || !profile.email) {
+      setError('Name and email are required');
+      return;
+    }
+    
     console.log('Profile saved:', profile);
-  };
+    // TODO: Add API call here
+    setSuccess('Profile updated successfully!');
+  };{/* Success/Error Messages */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center mt-0.5">
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-green-800 font-medium">{success}</p>
+          </div>
+          <button onClick={() => setSuccess('')} className="text-green-600 hover:text-green-800">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center mt-0.5">
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-red-800 font-medium">{error}</p>
+          </div>
+          <button onClick={() => setError('')} className="text-red-600 hover:text-red-800">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+    
+    // Validate passwords
+    if (!passwords.current || !passwords.new || !passwords.confirm) {
+      setError('All password fields are required');
+      return;
+    }
+    
+    if (passwords.new !== passwords.confirm) {
+      setError('New passwords do not match');
+      return;
+    }
+    
+    if (passwords.new.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+    
     console.log('Password changed');
+    // TODO: Add API call here
+    setSuccess('Password changed successfully!');
+    setPasswords({ current: '', new: '', confirm: '' });
   };
 
   return (

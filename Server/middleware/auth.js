@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import ParticipantAuth from '../models/ParticipantAuth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'alphabyte_jwt_secret_key_2026';
 
@@ -20,8 +21,13 @@ export const verifyToken = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Get user from database
-    const user = await User.findById(decoded.id).select('-password');
+    // Check if user is a participant or staff
+    let user;
+    if (decoded.isParticipant) {
+      user = await ParticipantAuth.findById(decoded.id).select('-password');
+    } else {
+      user = await User.findById(decoded.id).select('-password');
+    }
 
     if (!user) {
       return res.status(401).json({
@@ -48,6 +54,8 @@ export const verifyToken = async (req, res, next) => {
 
     // Attach user to request
     req.user = user;
+    req.userId = user._id;
+    req.isParticipant = decoded.isParticipant || false;
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

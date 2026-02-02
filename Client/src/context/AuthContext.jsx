@@ -43,7 +43,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('AuthContext - Login attempt:', { email, password: '***' });
       const response = await authApi.login({ email, password });
+      console.log('AuthContext - Login response:', response);
       if (response.success) {
         const { token: newToken, user: userData, redirectPath } = response.data;
         localStorage.setItem('token', newToken);
@@ -55,6 +57,7 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, message: response.message };
     } catch (error) {
+      console.error('AuthContext - Login error:', error);
       return { success: false, message: error.message || 'Login failed' };
     }
   };

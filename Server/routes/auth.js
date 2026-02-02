@@ -123,18 +123,25 @@ router.post('/login', async (req, res) => {
     let isParticipant = false;
     let role = null;
 
+    console.log('Login attempt for:', email.toLowerCase());
+    console.log('Found in User collection:', !!user);
+
     if (!user) {
       // Check ParticipantAuth collection
       user = await ParticipantAuth.findOne({ email: email.toLowerCase() });
+      console.log('Found in ParticipantAuth collection:', !!user);
       if (user) {
         isParticipant = true;
         role = 'PARTICIPANT';
+        console.log('User is participant:', user.name);
       }
     } else {
       role = user.role;
+      console.log('User role from User collection:', role);
     }
 
     if (!user) {
+      console.log('No user found with email:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
@@ -158,7 +165,11 @@ router.post('/login', async (req, res) => {
     }
 
     // Compare password
+    console.log('Comparing password...');
+    console.log('Stored hash starts with:', user.password.substring(0, 10));
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('Password valid:', isPasswordValid);
+    
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,

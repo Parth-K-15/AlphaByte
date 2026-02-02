@@ -4,7 +4,7 @@ import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import OrganizerLayout from './layouts/OrganizerLayout';
 import ParticipantLayout from './layouts/ParticipantLayout';
-import { SignIn, SignUp } from './pages/auth';
+import { SignIn, SignUp, Landing, AdminSignIn } from './pages/auth';
 import {
   Dashboard,
   Events,
@@ -44,8 +44,18 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Redirect root to login */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Redirect root to landing page */}
+          <Route path="/" element={<Navigate to="/auth" replace />} />
+
+          {/* Landing Page */}
+          <Route
+            path="/auth"
+            element={
+              <PublicRoute>
+                <Landing />
+              </PublicRoute>
+            }
+          />
 
           {/* Auth Routes - Public */}
           <Route
@@ -61,6 +71,14 @@ function App() {
             element={
               <PublicRoute>
                 <SignUp />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/admin-auth"
+            element={
+              <PublicRoute>
+                <AdminSignIn />
               </PublicRoute>
             }
           />

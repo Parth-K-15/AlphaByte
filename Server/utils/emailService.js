@@ -3,8 +3,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Check if email is configured
+const isEmailConfigured = () => {
+  return !!(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD);
+};
+
 // Create reusable transporter
 const createTransporter = () => {
+  if (!isEmailConfigured()) {
+    throw new Error('Email credentials not configured');
+  }
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -38,6 +46,10 @@ const formatDate = (date) => {
 // Send single email
 export const sendEmail = async ({ to, subject, text, html }) => {
   try {
+    if (!isEmailConfigured()) {
+      console.log('⚠️  Email not sent - service not configured');
+      return { success: false, error: 'Email service not configured' };
+    }
     const transporter = createTransporter();
     
     const mailOptions = {
@@ -206,12 +218,17 @@ export const sendCertificateEmail = async (recipient, event, certificateUrl) => 
 // Test email connection
 export const testEmailConnection = async () => {
   try {
+    if (!isEmailConfigured()) {
+      console.log('⚠️  Email service not configured (credentials missing)');
+      console.log('   Email features will be disabled. Add EMAIL_USER and EMAIL_PASSWORD to .env to enable.');
+      return { success: false, error: 'Email not configured', disabled: true };
+    }
     const transporter = createTransporter();
     await transporter.verify();
     console.log('✅ Email server is ready to send messages');
     return { success: true, message: 'Email configuration is valid' };
   } catch (error) {
-    console.error('❌ Email configuration error:', error);
+    console.error('❌ Email configuration error:', error.message);
     return { success: false, error: error.message };
   }
 };

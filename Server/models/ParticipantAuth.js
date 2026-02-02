@@ -51,6 +51,14 @@ const participantAuthSchema = new mongoose.Schema(
     suspendedAt: {
       type: Date,
     },
+
+    avatar: {
+      type: String,
+    },
+
+    avatarPublicId: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

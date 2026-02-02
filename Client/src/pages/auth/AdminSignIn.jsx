@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Lock, Eye, EyeOff, Users } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const SignIn = () => {
+const AdminSignIn = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   
@@ -40,7 +40,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Back Button */}
         <Link to="/" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-8">
@@ -53,14 +53,14 @@ const SignIn = () => {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="p-4 bg-purple-100 rounded-full">
-                <Users className="w-12 h-12 text-purple-600" />
+              <div className="p-4 bg-indigo-100 rounded-full">
+                <Shield className="w-12 h-12 text-indigo-600" />
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Participant Sign In
+              Admin Sign In
             </h1>
-            <p className="text-gray-600">Welcome back! Sign in to access your events.</p>
+            <p className="text-gray-600">Welcome back! Please sign in to continue.</p>
           </div>
 
           {/* Error Message */}
@@ -85,8 +85,8 @@ const SignIn = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="you@example.com"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="admin@example.com"
                 />
               </div>
             </div>
@@ -104,7 +104,7 @@ const SignIn = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="••••••••"
                 />
                 <button
@@ -121,19 +121,16 @@ const SignIn = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          {/* Sign Up Link */}
-          <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
-              Don't have an account?{' '}
-              <Link to="/signup" className="text-purple-600 hover:text-purple-700 font-semibold">
-                Sign up
-              </Link>
+          {/* Info */}
+          <div className="mt-6 p-4 bg-indigo-50 rounded-lg">
+            <p className="text-xs text-indigo-700 text-center">
+              Admin accounts are created by system administrators only. Contact support if you need access.
             </p>
           </div>
         </div>
@@ -142,4 +139,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default AdminSignIn;
