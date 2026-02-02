@@ -84,7 +84,7 @@ const Dashboard = () => {
   });
   const [recentEvents, setRecentEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [usingDemoData, setUsingDemoData] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
@@ -97,40 +97,23 @@ const Dashboard = () => {
         const apiStats = response.data.data.stats;
         const apiEvents = response.data.data.recentEvents || [];
         
-        // Check if we have real data
-        if (apiStats.totalEvents === 0) {
-          setUsingDemoData(true);
-          // Show 0 stats when no real data exists
-          setStats({
-            totalEvents: 0,
-            totalParticipants: 0,
-            totalAttendance: 0,
-            certificatesIssued: 0,
-          });
-        } else {
-          setStats({
-            totalEvents: apiStats.totalEvents,
-            totalParticipants: apiStats.totalParticipants,
-            totalAttendance: apiStats.totalAttendance,
-            certificatesIssued: apiStats.totalCertificates,
-          });
-          setRecentEvents(apiEvents);
-        }
+        setStats({
+          totalEvents: apiStats.totalEvents,
+          totalParticipants: apiStats.totalParticipants,
+          totalAttendance: apiStats.totalAttendance,
+          certificatesIssued: apiStats.totalCertificates,
+        });
+        setRecentEvents(apiEvents);
+      } else {
+        setError(response.data.message || 'Failed to load dashboard data');
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setUsingDemoData(true);
+      setError('Failed to connect to server. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
-
-  // Demo data for UI when no real data exists
-  const demoEvents = [
-    { id: 1, name: 'Tech Conference 2025', date: 'Jan 15, 2025', status: 'upcoming', participants: 150, attendance: 0 },
-    { id: 2, name: 'Web Development Workshop', date: 'Jan 10, 2025', status: 'ongoing', participants: 45, attendance: 82 },
-    { id: 3, name: 'AI/ML Bootcamp', date: 'Dec 28, 2024', status: 'completed', participants: 120, attendance: 95 },
-  ];
 
   const quickActions = [
     { title: 'Generate QR', icon: QrCode, path: '/organizer/attendance/qr', color: 'bg-blue-500' },
@@ -141,15 +124,13 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Demo Data Banner */}
-      {usingDemoData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
-          <AlertCircle size={20} className="text-yellow-600" />
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle size={20} className="text-red-600" />
           <div>
-            <p className="text-sm font-medium text-yellow-800">Demo Mode</p>
-            <p className="text-sm text-yellow-600">
-              Showing sample data. Create events from the Admin panel to see real data here.
-            </p>
+            <p className="text-sm font-medium text-red-800">Error</p>
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         </div>
       )}
@@ -233,9 +214,13 @@ const Dashboard = () => {
             </Link>
           </div>
           <div className="space-y-4">
-            {(recentEvents.length > 0 ? recentEvents : demoEvents).map((event) => (
+            {recentEvents.length > 0 ? recentEvents.map((event) => (
               <EventCard key={event.id || event._id} event={event} />
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No events yet. Create your first event from the Admin panel.</p>
+              </div>
+            )}
           </div>
         </div>
 

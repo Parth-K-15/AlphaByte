@@ -99,57 +99,6 @@ const EventDetails = () => {
     return index === -1 ? 0 : index;
   };
 
-  // Demo event data
-  const demoEvent = {
-    id: 1,
-    name: 'Tech Conference 2025',
-    description: 'Annual technology conference featuring the latest innovations in AI, Cloud Computing, and Web Development. Join industry experts for insightful talks and networking opportunities.',
-    date: '2025-01-15',
-    time: '10:00 AM - 6:00 PM',
-    venue: 'Convention Center, Hall A',
-    address: '123 Tech Street, Silicon Valley, CA 94000',
-    status: 'upcoming',
-    category: 'Conference',
-    type: 'Hybrid',
-    registrationFee: 50,
-    maxParticipants: 500,
-    participantCount: 150,
-    attendanceCount: 0,
-    certificateCount: 0,
-    registrationDeadline: '2025-01-14',
-    organizer: {
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1 234 567 8900',
-    },
-    website: 'https://techconf2025.com',
-    tags: ['AI', 'Cloud', 'Web Development', 'Networking'],
-  };
-
-  const demoUpdates = [
-    {
-      _id: '1',
-      message: 'Venue has been confirmed! See you at Convention Center, Hall A.',
-      type: 'ANNOUNCEMENT',
-      isPinned: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      _id: '2',
-      message: 'Early bird registration ends on January 10th.',
-      type: 'INFO',
-      isPinned: false,
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      _id: '3',
-      message: 'Parking will be limited. We recommend using public transport.',
-      type: 'WARNING',
-      isPinned: false,
-      createdAt: new Date(Date.now() - 172800000).toISOString(),
-    },
-  ];
-
   // Map real event data to display format
   const displayEvent = event ? {
     ...event,
@@ -161,8 +110,8 @@ const EventDetails = () => {
     participantCount: event.participantCount || 0,
     attendanceCount: event.attendanceCount || 0,
     certificateCount: event.certificateCount || 0,
-  } : demoEvent;
-  const displayUpdates = updates.length > 0 ? updates : demoUpdates;
+  } : null;
+  const displayUpdates = updates;
 
   const updateTypeColors = {
     INFO: 'bg-blue-100 text-blue-700 border-blue-200',

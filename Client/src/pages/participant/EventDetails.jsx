@@ -1,34 +1,70 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE = 'http://localhost:5000/api';
 
 const EventDetails = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [registration, setRegistration] = useState(null);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [profile, setProfile] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
-    email: localStorage.getItem('participantEmail') || '',
+    email: '',
     phone: '',
     college: '',
     year: '',
     branch: ''
   });
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [userEmail] = useState(localStorage.getItem('participantEmail') || '');
+
+  // Fetch user profile when component mounts
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
 
   useEffect(() => {
     fetchEventDetails();
-    if (userEmail) {
+    if (profile?.email) {
       checkRegistration();
     }
-  }, [eventId]);
+  }, [eventId, profile]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_BASE}/participant/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setProfile(data.data);
+        // Pre-fill form with user's profile data
+        setFormData({
+          fullName: data.data.name || '',
+          email: data.data.email || '',
+          phone: data.data.phone || '',
+          college: data.data.college || '',
+          year: data.data.year || '',
+          branch: data.data.branch || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   const fetchEventDetails = async () => {
     try {
@@ -50,11 +86,11 @@ const EventDetails = () => {
   };
 
   const checkRegistration = async () => {
-    if (!userEmail) return;
+    if (!profile?.email) return;
     
     try {
       const response = await fetch(
-        `${API_BASE}/participant/registration/${eventId}?email=${encodeURIComponent(userEmail)}`
+        `${API_BASE}/participant/registration/${eventId}?email=${encodeURIComponent(profile.email)}`
       );
       const data = await response.json();
       
@@ -89,7 +125,6 @@ const EventDetails = () => {
       const data = await response.json();
 
       if (data.success) {
-        localStorage.setItem('participantEmail', formData.email);
         setIsRegistered(true);
         setRegistration(data.data);
         setShowRegisterModal(false);

@@ -158,26 +158,7 @@ const Participants = () => {
     }
   };
 
-  // Demo data
-  const demoEvents = [
-    { id: '1', name: 'Tech Conference 2025' },
-    { id: '2', name: 'Web Development Workshop' },
-    { id: '3', name: 'AI/ML Bootcamp' },
-  ];
-
-  const demoParticipants = [
-    { _id: '1', name: 'John Doe', email: 'john@example.com', phone: '+1234567890', organization: 'Tech Corp', status: 'registered', attendanceStatus: 'present', registeredAt: new Date().toISOString() },
-    { _id: '2', name: 'Jane Smith', email: 'jane@example.com', phone: '+0987654321', organization: 'Dev Inc', status: 'registered', attendanceStatus: 'present', registeredAt: new Date().toISOString() },
-    { _id: '3', name: 'Mike Johnson', email: 'mike@example.com', phone: '+1122334455', organization: 'Startup XYZ', status: 'registered', attendanceStatus: 'absent', registeredAt: new Date().toISOString() },
-    { _id: '4', name: 'Sarah Williams', email: 'sarah@example.com', phone: '+5566778899', organization: 'Big Tech', status: 'walk-in', attendanceStatus: 'present', registeredAt: new Date().toISOString() },
-    { _id: '5', name: 'Chris Brown', email: 'chris@example.com', phone: '+9988776655', organization: 'Agency Pro', status: 'registered', attendanceStatus: 'absent', registeredAt: new Date().toISOString() },
-  ];
-
-  const displayEvents = (events && events.length > 0) ? events : [];
-  const displayParticipants = (participants && participants.length > 0) ? participants : [];
-  const usingDemoData = !events || events.length === 0;
-
-  const filteredParticipants = displayParticipants.filter((p) => {
+  const filteredParticipants = participants.filter((p) => {
     const matchesSearch = 
       p?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -212,21 +193,6 @@ const Participants = () => {
 
   return (
     <div className="space-y-6">
-      {/* Demo Mode Banner */}
-      {usingDemoData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
-            <Users size={20} className="text-yellow-600" />
-          </div>
-          <div>
-            <h3 className="font-medium text-yellow-800">Demo Mode</h3>
-            <p className="text-sm text-yellow-700 mt-1">
-              Showing sample participants. Create events from the Admin panel and get assigned to see real participant data here.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -253,11 +219,13 @@ const Participants = () => {
               onChange={(e) => setSelectedEvent(e.target.value)}
               className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              {displayEvents.map((event) => (
+              {events && events.length > 0 ? events.map((event) => (
                 <option key={event._id || event.id} value={event._id || event.id}>
                   {event.title || event.name}
                 </option>
-              ))}
+              )) : (
+                <option value="">No events available</option>
+              )}
             </select>
           </div>
 
@@ -305,7 +273,7 @@ const Participants = () => {
       {/* Participants Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Info Banner */}
-        {!usingDemoData && filteredParticipants.length > 0 && (
+        {filteredParticipants.length > 0 && (
           <div className="bg-blue-50 border-b border-blue-100 px-6 py-3 flex items-center gap-2">
             <CheckCircle size={16} className="text-blue-600" />
             <p className="text-sm text-blue-700">

@@ -126,58 +126,7 @@ const MyEvents = () => {
     }
   };
 
-  // Demo events for UI development
-  const demoEvents = [
-    {
-      id: 1,
-      title: 'Tech Conference 2025',
-      date: '2025-01-15',
-      time: '10:00 AM - 6:00 PM',
-      venue: 'Convention Center, Hall A',
-      status: 'upcoming',
-      participantCount: 150,
-      attendanceCount: 0,
-      certificateCount: 0,
-    },
-    {
-      id: 2,
-      title: 'Web Development Workshop',
-      date: '2025-01-10',
-      time: '9:00 AM - 1:00 PM',
-      venue: 'Tech Hub, Room 101',
-      status: 'ongoing',
-      participantCount: 45,
-      attendanceCount: 38,
-      certificateCount: 0,
-    },
-    {
-      id: 3,
-      title: 'AI/ML Bootcamp',
-      date: '2024-12-28',
-      time: '10:00 AM - 5:00 PM',
-      venue: 'Innovation Lab',
-      status: 'completed',
-      participantCount: 120,
-      attendanceCount: 112,
-      certificateCount: 112,
-    },
-    {
-      id: 4,
-      title: 'Cybersecurity Seminar',
-      date: '2025-01-20',
-      time: '2:00 PM - 5:00 PM',
-      venue: 'Virtual Event',
-      status: 'draft',
-      participantCount: 0,
-      attendanceCount: 0,
-      certificateCount: 0,
-    },
-  ];
-
-  const displayEvents = events.length > 0 ? events : [];
-  const usingDemoData = events.length === 0;
-
-  const filteredEvents = displayEvents.filter((event) => {
+  const filteredEvents = events.filter((event) => {
     const matchesFilter = filter === 'all' || event.status === filter;
     const matchesSearch = event.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           event.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -201,19 +150,6 @@ const MyEvents = () => {
           <p className="text-gray-500 mt-1">Manage your assigned events</p>
         </div>
       </div>
-
-      {/* Demo Data Banner */}
-      {usingDemoData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
-          <Calendar size={20} className="text-yellow-600" />
-          <div>
-            <p className="text-sm font-medium text-yellow-800">Demo Mode</p>
-            <p className="text-sm text-yellow-600">
-              Showing sample events. Events will appear here when you are assigned as a Team Lead or Member.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Filters and Search */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
