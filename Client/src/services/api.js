@@ -57,8 +57,20 @@ export const eventsApi = {
   delete: (id) => fetchApi(`/events/${id}`, { method: 'DELETE' }),
   assignTeamLead: (id, teamLeadId) =>
     fetchApi(`/events/${id}/assign-lead`, { method: 'PUT', body: { teamLeadId } }),
+  addTeamLead: (id, data) =>
+    fetchApi(`/events/${id}/team-leads`, { method: 'POST', body: data }),
+  removeTeamLead: (id, userId) =>
+    fetchApi(`/events/${id}/team-leads/${userId}`, { method: 'DELETE' }),
   updateLifecycle: (id, status) =>
     fetchApi(`/events/${id}/lifecycle`, { method: 'PUT', body: { status } }),
+  addTeamMember: (id, data) =>
+    fetchApi(`/events/${id}/team-members`, { method: 'POST', body: data }),
+  removeTeamMember: (id, userId) =>
+    fetchApi(`/events/${id}/team-members/${userId}`, { method: 'DELETE' }),
+  updateEventPermissions: (id, permissions) =>
+    fetchApi(`/events/${id}/permissions`, { method: 'PUT', body: permissions }),
+  updateTeamMemberPermissions: (id, userId, permissions) =>
+    fetchApi(`/events/${id}/team-members/${userId}/permissions`, { method: 'PUT', body: { permissions } }),
 };
 
 // Teams API

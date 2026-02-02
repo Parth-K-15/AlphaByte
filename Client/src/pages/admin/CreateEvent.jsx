@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Calendar,
   Clock,
@@ -16,7 +16,10 @@ import { eventsApi, teamsApi } from '../../services/api';
 
 const CreateEvent = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
   const [loading, setLoading] = useState(false);
+  const [fetchingEvent, setFetchingEvent] = useState(isEditMode);
   const [teamLeads, setTeamLeads] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -35,6 +38,42 @@ const CreateEvent = () => {
   });
 
   const categories = ['Conference', 'Workshop', 'Hackathon', 'Seminar', 'Webinar', 'Competition'];
+
+  // Fetch event data for editing
+  useEffect(() => {
+    if (isEditMode && id) {
+      const fetchEventData = async () => {
+        setFetchingEvent(true);
+        try {
+          const response = await eventsApi.getOne(id);
+          if (response.success) {
+            const event = response.data;
+            setFormData({
+              title: event.title || '',
+              description: event.description || '',
+              startDate: event.startDate ? new Date(event.startDate).toISOString().slice(0, 16) : '',
+              endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : '',
+              registrationStart: event.registrationStartDate ? new Date(event.registrationStartDate).toISOString().slice(0, 16) : '',
+              registrationEnd: event.registrationEndDate ? new Date(event.registrationEndDate).toISOString().slice(0, 16) : '',
+              location: event.location || '',
+              maxParticipants: event.maxParticipants || '',
+              teamLead: event.teamLead?._id || event.teamLead || '',
+              enableCertificates: event.enableCertificates || false,
+              certificateTemplate: event.certificateTemplate || '',
+              category: event.category || '',
+              tags: event.tags ? event.tags.join(', ') : '',
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching event:', error);
+          alert('Failed to load event data');
+        } finally {
+          setFetchingEvent(false);
+        }
+      };
+      fetchEventData();
+    }
+  }, [id, isEditMode]);
 
   // Fetch team leads on mount
   useEffect(() => {
@@ -76,23 +115,42 @@ const CreateEvent = () => {
         enableCertificates: formData.enableCertificates,
         certificateTemplate: formData.certificateTemplate,
       };
-      await eventsApi.create(eventData);
+      
+      if (isEditMode) {
+        await eventsApi.update(id, eventData);
+        alert('Event updated successfully!');
+      } else {
+        await eventsApi.create(eventData);
+        alert('Event created successfully!');
+      }
       navigate('/admin/events');
     } catch (error) {
-      console.error('Error creating event:', error);
-      alert('Failed to create event. Please try again.');
+      console.error('Error saving event:', error);
+      alert('Failed to save event. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetchingEvent) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 size={40} className="animate-spin text-primary-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Create New Event</h1>
-          <p className="text-gray-500 mt-1">Fill in the details to create a new event</p>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {isEditMode ? 'Edit Event' : 'Create New Event'}
+          </h1>
+          <p className="text-gray-500 mt-1">
+            {isEditMode ? 'Update the event details below' : 'Fill in the details to create a new event'}
+          </p>
         </div>
         <button
           onClick={() => navigate('/admin/events')}
@@ -389,7 +447,7 @@ const CreateEvent = () => {
           </button>
           <button type="submit" className="btn-primary flex items-center gap-2" disabled={loading}>
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-            {loading ? 'Creating...' : 'Create Event'}
+            {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Event' : 'Create Event')}
           </button>
         </div>
       </form>
