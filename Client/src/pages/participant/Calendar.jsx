@@ -122,7 +122,7 @@ const Calendar = () => {
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <button
                 onClick={goToPreviousMonth}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 rounded-xl"
               >
                 ←
               </button>
@@ -132,14 +132,14 @@ const Calendar = () => {
                 </h2>
                 <button
                   onClick={goToToday}
-                  className="text-sm text-indigo-600 hover:text-indigo-800"
+                  className="text-sm text-primary-600 hover:text-primary-800"
                 >
                   Today
                 </button>
               </div>
               <button
                 onClick={goToNextMonth}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 rounded-xl"
               >
                 →
               </button>
@@ -157,7 +157,7 @@ const Calendar = () => {
             {/* Calendar Days */}
             {loading ? (
               <div className="h-64 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
               </div>
             ) : (
               <div className="grid grid-cols-7">
@@ -178,7 +178,7 @@ const Calendar = () => {
                       key={day}
                       onClick={() => setSelectedDate(day)}
                       className={`h-24 border-b border-r border-gray-100 p-1 cursor-pointer transition-colors ${
-                        selectedDate === day ? 'bg-indigo-50' :
+                        selectedDate === day ? 'bg-primary-50' :
                         isToday(day) ? 'bg-yellow-50' :
                         'hover:bg-gray-50'
                       }`}
@@ -186,7 +186,7 @@ const Calendar = () => {
                       <div className="flex items-center justify-between">
                         <span className={`w-7 h-7 flex items-center justify-center rounded-full text-sm ${
                           isToday(day) 
-                            ? 'bg-indigo-600 text-white font-bold' 
+                            ? 'bg-primary-600 text-white font-bold' 
                             : 'text-gray-700'
                         }`}>
                           {day}
@@ -252,7 +252,7 @@ const Calendar = () => {
                     <Link
                       key={event._id}
                       to={`/participant/event/${event._id}`}
-                      className="block p-3 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                      className="block p-3 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-primary-50 transition-colors"
                     >
                       <div className="flex items-start justify-between">
                         <h4 className="font-medium text-gray-800 text-sm">
@@ -294,7 +294,7 @@ const Calendar = () => {
       <div className="bg-white rounded-xl shadow-sm p-4">
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-indigo-600"></div>
+            <div className="w-3 h-3 rounded-full bg-primary-600"></div>
             <span className="text-gray-600">Today</span>
           </div>
           <div className="flex items-center gap-2">

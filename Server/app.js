@@ -13,6 +13,7 @@ import organizerRoutes from './routes/organizer.js';
 import participantRoutes from './routes/participants.js';
 import participantProfileRoutes from './routes/participantProfile.js';
 import authRoutes from './routes/auth.js';
+import logsRoutes from './routes/logs.js';
 
 // Import email service
 import { testEmailConnection } from './utils/emailService.js';
@@ -48,6 +49,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/access-control', accessControlRoutes);
+app.use('/api/logs', logsRoutes);
 app.use('/api/organizer', organizerRoutes);
 app.use('/api/participant', participantProfileRoutes); // Must be before participantRoutes
 app.use('/api/participant', participantRoutes);

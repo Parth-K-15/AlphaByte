@@ -58,7 +58,7 @@ const Events = () => {
       Upcoming: 'bg-blue-100 text-blue-700',
       Completed: 'bg-gray-100 text-gray-700',
       Draft: 'bg-yellow-100 text-yellow-700',
-      Archived: 'bg-purple-100 text-purple-700',
+      Archived: 'bg-primary-100 text-primary-700',
     };
     return styles[status] || 'bg-gray-100 text-gray-700';
   };
@@ -182,7 +182,7 @@ const Events = () => {
                     <div className="flex items-center justify-end gap-2 relative">
                       <button
                         onClick={() => setShowActions(showActions === (event._id || event.id) ? null : (event._id || event.id))}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                       >
                         <MoreVertical size={18} className="text-gray-500" />
                       </button>

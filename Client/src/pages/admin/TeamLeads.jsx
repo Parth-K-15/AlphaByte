@@ -147,7 +147,7 @@ const TeamLeads = () => {
               <div className="relative">
                 <button
                   onClick={() => setShowActions(showActions === lead._id ? null : lead._id)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                 >
                   <MoreVertical size={18} className="text-gray-500" />
                 </button>

@@ -299,7 +299,7 @@ const Communication = () => {
       {/* Demo Mode Banner */}
       {usingDemoData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
+          <div className="p-2 bg-yellow-100 rounded-xl">
             <Mail size={20} className="text-yellow-600" />
           </div>
           <div>
@@ -371,9 +371,9 @@ const Communication = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs md:text-sm text-gray-500">Templates Available</p>
-              <p className="text-xl md:text-2xl font-bold text-purple-600 mt-1">{displayTemplates.length}</p>
+              <p className="text-xl md:text-2xl font-bold text-primary-600 mt-1">{displayTemplates.length}</p>
             </div>
-            <div className="p-2 md:p-3 bg-purple-50 rounded-lg md:rounded-xl">
+            <div className="p-2 md:p-3 bg-primary-50 rounded-lg md:rounded-xl">
               <FileText size={18} className="text-purple-600 md:w-5 md:h-5" />
             </div>
           </div>

@@ -128,12 +128,12 @@ const QRScanner = () => {
               value={inputEmail}
               onChange={(e) => setInputEmail(e.target.value)}
               placeholder="Enter your registered email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
               required
             />
             <button
               type="submit"
-              className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700"
+              className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700"
             >
               Continue
             </button>
@@ -225,7 +225,7 @@ const QRScanner = () => {
                   </div>
                   <button
                     onClick={stopScanning}
-                    className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-2 bg-red-600 text-white rounded-lg"
+                    className="absolute bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-2 bg-red-600 text-white rounded-xl"
                   >
                     Stop Scanning
                   </button>
@@ -234,7 +234,7 @@ const QRScanner = () => {
                 <div className="h-full flex items-center justify-center">
                   <button
                     onClick={startScanning}
-                    className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700"
+                    className="px-8 py-4 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700"
                   >
                     📷 Start Camera
                   </button>
@@ -264,12 +264,12 @@ const QRScanner = () => {
                 value={manualEventId || eventId}
                 onChange={(e) => setManualEventId(e.target.value)}
                 placeholder="Enter Event ID"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:bg-green-400"
+                className="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 disabled:bg-green-400"
               >
                 {loading ? 'Marking Attendance...' : 'Mark Attendance'}
               </button>

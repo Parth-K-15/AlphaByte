@@ -44,7 +44,7 @@ const TeamManagement = () => {
       upcoming: 'bg-blue-100 text-blue-700',
       completed: 'bg-gray-100 text-gray-700',
       draft: 'bg-yellow-100 text-yellow-700',
-      archived: 'bg-purple-100 text-purple-700',
+      archived: 'bg-primary-100 text-primary-700',
       ongoing: 'bg-emerald-100 text-emerald-700',
     };
     return styles[status?.toLowerCase()] || 'bg-gray-100 text-gray-700';

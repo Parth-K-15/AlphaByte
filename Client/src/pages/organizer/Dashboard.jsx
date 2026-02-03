@@ -18,7 +18,7 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue, color }) => {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
     green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600',
+    purple: 'bg-primary-50 text-primary-600',
     orange: 'bg-orange-50 text-orange-600',
   };
 
@@ -118,7 +118,7 @@ const Dashboard = () => {
   const quickActions = [
     { title: 'Generate QR', icon: QrCode, path: '/organizer/attendance/qr', color: 'bg-blue-500' },
     { title: 'View Participants', icon: Users, path: '/organizer/participants', color: 'bg-green-500' },
-    { title: 'Send Email', icon: AlertCircle, path: '/organizer/communication/email', color: 'bg-purple-500' },
+    { title: 'Send Email', icon: AlertCircle, path: '/organizer/communication/email', color: 'bg-primary-500' },
     { title: 'Issue Certificates', icon: Award, path: '/organizer/certificates/generate', color: 'bg-orange-500' },
   ];
 
@@ -231,7 +231,7 @@ const Dashboard = () => {
             {[
               { icon: Users, text: '5 new participants registered', time: '10 min ago', color: 'text-green-600' },
               { icon: QrCode, text: 'QR code scanned - 12 check-ins', time: '1 hour ago', color: 'text-blue-600' },
-              { icon: Award, text: '45 certificates generated', time: '2 hours ago', color: 'text-purple-600' },
+              { icon: Award, text: '45 certificates generated', time: '2 hours ago', color: 'text-primary-600' },
               { icon: Clock, text: 'Event "Tech Conference" starts in 2 days', time: '3 hours ago', color: 'text-orange-600' },
             ].map((activity, index) => (
               <div key={index} className="flex items-start gap-3">

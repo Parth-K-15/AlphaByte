@@ -197,7 +197,7 @@ const Certificates = () => {
       {/* Demo Mode Banner */}
       {usingDemoData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
+          <div className="p-2 bg-yellow-100 rounded-xl">
             <Award size={20} className="text-yellow-600" />
           </div>
           <div>
@@ -460,13 +460,13 @@ const Certificates = () => {
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
+                                className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 hover:text-gray-700"
                                 title="Preview"
                               >
                                 <Eye size={16} />
                               </button>
                               <button
-                                className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
+                                className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 hover:text-gray-700"
                                 title="Download"
                               >
                                 <Download size={16} />
@@ -483,7 +483,7 @@ const Certificates = () => {
                               {cert.status === 'SENT' && (
                                 <button
                                   onClick={() => handleResendCertificate(cert._id)}
-                                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
+                                  className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 hover:text-gray-700"
                                   title="Resend"
                                 >
                                   <RefreshCw size={16} />

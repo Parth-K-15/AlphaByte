@@ -5,6 +5,7 @@ import Participant from '../models/Participant.js';
 import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
 import mongoose from 'mongoose';
+import Logger from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -185,6 +186,15 @@ router.post('/', async (req, res) => {
     const populatedEvent = await Event.findById(event._id)
       .populate('teamLead', 'name email')
       .populate('createdBy', 'name email');
+
+    // Log event creation
+    await Logger.event(
+      'Event created',
+      populatedEvent,
+      populatedEvent.createdBy,
+      'success',
+      `Event "${populatedEvent.title}" was created`
+    );
 
     res.status(201).json({
       success: true,

@@ -354,13 +354,13 @@ const Participants = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => setEditingParticipant(participant)}
-                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
+                            className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 hover:text-gray-700"
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => handleRemoveParticipant(participant._id)}
-                            className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600"
+                            className="p-2 hover:bg-red-50 rounded-xl text-gray-500 hover:text-red-600"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -381,7 +381,7 @@ const Participants = () => {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                  className="p-2 hover:bg-gray-100 rounded-xl disabled:opacity-50"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -391,7 +391,7 @@ const Participants = () => {
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                  className="p-2 hover:bg-gray-100 rounded-xl disabled:opacity-50"
                 >
                   <ChevronRight size={18} />
                 </button>

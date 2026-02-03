@@ -57,9 +57,9 @@ const EventsHome = () => {
   return (
     <div className="space-y-6">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-2xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">Discover Events</h1>
-        <p className="text-indigo-100">Find and register for amazing events happening around you</p>
+        <p className="text-primary-100">Find and register for amazing events happening around you</p>
       </div>
 
       {/* Filters */}
@@ -72,7 +72,7 @@ const EventsHome = () => {
               placeholder="Search events..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
@@ -80,7 +80,7 @@ const EventsHome = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All Status</option>
             <option value="upcoming">Upcoming</option>
@@ -92,7 +92,7 @@ const EventsHome = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All Types</option>
             <option value="Online">Online</option>
@@ -105,7 +105,7 @@ const EventsHome = () => {
       {/* Events Grid */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         </div>
       ) : events.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
@@ -122,7 +122,7 @@ const EventsHome = () => {
               className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow"
             >
               {/* Event Banner */}
-              <div className="h-40 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
+              <div className="h-40 bg-gradient-to-br from-primary-500 to-blue-600 relative">
                 {event.bannerImage && (
                   <img
                     src={event.bannerImage}

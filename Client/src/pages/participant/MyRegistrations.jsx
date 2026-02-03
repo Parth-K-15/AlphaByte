@@ -89,12 +89,12 @@ const MyRegistrations = () => {
               value={inputEmail}
               onChange={(e) => setInputEmail(e.target.value)}
               placeholder="Enter your email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               required
             />
             <button
               type="submit"
-              className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
             >
               View Registrations
             </button>
@@ -107,7 +107,7 @@ const MyRegistrations = () => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
   }
@@ -115,7 +115,7 @@ const MyRegistrations = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-2xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">My Registrations</h1>
         <p className="text-purple-100">Track your event registrations and attendance status</p>
         <p className="text-sm text-purple-200 mt-2">📧 {email}</p>
@@ -138,7 +138,7 @@ const MyRegistrations = () => {
           <p className="text-gray-500 mb-6">You haven't registered for any events yet.</p>
           <Link
             to="/participant"
-            className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700"
+            className="inline-block px-6 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700"
           >
             Browse Events
           </Link>
@@ -152,7 +152,7 @@ const MyRegistrations = () => {
             >
               <div className="flex flex-col md:flex-row">
                 {/* Event Image */}
-                <div className="w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-indigo-500 to-purple-600">
+                <div className="w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-primary-500 to-blue-600">
                   {reg.event?.bannerImage && (
                     <img
                       src={reg.event.bannerImage}
@@ -207,7 +207,7 @@ const MyRegistrations = () => {
                     {reg.event && (
                       <Link
                         to={`/participant/event/${reg.event._id}`}
-                        className="px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                        className="px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg"
                       >
                         View Event →
                       </Link>

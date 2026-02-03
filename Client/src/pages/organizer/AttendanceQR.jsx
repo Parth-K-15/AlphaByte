@@ -223,7 +223,7 @@ const AttendanceQR = () => {
       {/* Demo Mode Banner */}
       {usingDemoData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
+          <div className="p-2 bg-yellow-100 rounded-xl">
             <QrCode size={20} className="text-yellow-600" />
           </div>
           <div>
@@ -497,7 +497,7 @@ const AttendanceQR = () => {
                               <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                  <div className="w-8 h-8 bg-primary-100 rounded-xl flex items-center justify-center">
                                     <span className="text-primary-600 font-medium text-sm">
                                       {participant.name?.charAt(0).toUpperCase()}
                                     </span>

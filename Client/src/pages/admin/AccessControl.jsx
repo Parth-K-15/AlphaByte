@@ -230,12 +230,12 @@ const AccessControl = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                      <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                         <Eye size={18} className="text-gray-500" />
                       </button>
                       <button 
                         onClick={() => activeTab === 'restrict' ? handleUnrestrictUser(user._id) : handleUnsuspendUser(user._id)}
-                        className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-green-50 rounded-xl transition-colors"
                       >
                         <Unlock size={18} className="text-green-600" />
                       </button>

@@ -102,7 +102,7 @@ const Permissions = () => {
                 </th>
                 <th className="text-center px-6 py-4 text-sm font-semibold text-gray-600 w-32">
                   <div className="flex items-center justify-center gap-2">
-                    <Shield size={16} className="text-purple-600" />
+                    <Shield size={16} className="text-primary-600" />
                     Team Lead
                   </div>
                 </th>

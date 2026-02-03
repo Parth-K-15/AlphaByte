@@ -226,7 +226,7 @@ const TeamAccess = () => {
       {/* Demo Mode Banner */}
       {usingDemoData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
+          <div className="p-2 bg-yellow-100 rounded-xl">
             <UserCog size={20} className="text-yellow-600" />
           </div>
           <div>
@@ -419,13 +419,13 @@ const TeamAccess = () => {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setEditingMember(member)}
-                        className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600"
+                        className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600"
                       >
                         <Edit size={16} />
                       </button>
                       <button
                         onClick={() => handleRemoveMember(member._id)}
-                        className="p-2 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600"
+                        className="p-2 hover:bg-red-50 rounded-xl text-gray-400 hover:text-red-600"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -549,7 +549,7 @@ const TeamAccess = () => {
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Edit Permissions</h3>
             
             <div className="flex items-center gap-3 mb-6 p-3 bg-gray-50 rounded-xl">
-              <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
                 <span className="text-primary-600 font-medium">
                   {editingMember.user?.name?.charAt(0).toUpperCase()}
                 </span>

@@ -12,3 +12,4 @@ export { default as EventTeamDetails } from './EventTeamDetails';
 export { default as AccessControl } from './AccessControl';
 export { default as Reports } from './Reports';
 export { default as Settings } from './Settings';
+export { default as Logs } from './Logs';

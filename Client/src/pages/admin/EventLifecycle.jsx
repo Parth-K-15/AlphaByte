@@ -139,7 +139,7 @@ const EventLifecycle = () => {
         gray: 'bg-gray-900 text-white shadow-md',
         blue: 'bg-blue-600 text-white shadow-md',
         green: 'bg-green-600 text-white shadow-md',
-        purple: 'bg-purple-600 text-white shadow-md',
+        purple: 'bg-primary-600 text-white shadow-md',
         red: 'bg-red-600 text-white shadow-md',
       };
       return colors[stage.color] || colors.gray;

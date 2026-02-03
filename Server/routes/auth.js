@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import ParticipantAuth from '../models/ParticipantAuth.js';
+import Logger from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -81,6 +82,14 @@ router.post('/signup', async (req, res) => {
       { expiresIn: JWT_EXPIRES_IN }
     );
 
+    // Log participant signup
+    await Logger.auth(
+      'New participant registration',
+      participant,
+      'success',
+      `New participant registered: ${participant.email}`
+    );
+
     res.status(201).json({
       success: true,
       message: 'Account created successfully',
@@ -142,6 +151,13 @@ router.post('/login', async (req, res) => {
 
     if (!user) {
       console.log('No user found with email:', email);
+      // Log failed login attempt
+      await Logger.auth(
+        'Failed login attempt - User not found',
+        email,
+        'warning',
+        `Login attempt with unregistered email: ${email}`
+      );
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
@@ -171,6 +187,13 @@ router.post('/login', async (req, res) => {
     console.log('Password valid:', isPasswordValid);
     
     if (!isPasswordValid) {
+      // Log failed login attempt
+      await Logger.auth(
+        'Failed login attempt - Invalid password',
+        user,
+        'warning',
+        `Invalid password attempt for: ${user.email}`
+      );
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
@@ -182,6 +205,14 @@ router.post('/login', async (req, res) => {
       { id: user._id, role: role, isParticipant },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    // Log successful login
+    await Logger.auth(
+      `${isParticipant ? 'Participant' : role} login successful`,
+      user,
+      'success',
+      `User ${user.email} logged in successfully`
     );
 
     // Determine redirect path based on role

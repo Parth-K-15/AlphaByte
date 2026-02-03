@@ -284,7 +284,7 @@ const Profile = () => {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-400 to-blue-400 flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
                   {profile.avatar ? (
                     <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
                   ) : (
@@ -351,7 +351,7 @@ const Profile = () => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -365,7 +365,7 @@ const Profile = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -379,7 +379,7 @@ const Profile = () => {
                     name="college"
                     value={formData.college}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -394,7 +394,7 @@ const Profile = () => {
                       name="branch"
                       value={formData.branch}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -406,7 +406,7 @@ const Profile = () => {
                       name="year"
                       value={formData.year}
                       onChange={handleChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="">Select year</option>
                       <option value="1st Year">1st Year</option>
@@ -423,7 +423,7 @@ const Profile = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     <Save className="w-4 h-4" />
                     {loading ? 'Saving...' : 'Save Changes'}
@@ -508,7 +508,7 @@ const Profile = () => {
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -523,7 +523,7 @@ const Profile = () => {
                     onChange={handlePasswordChange}
                     required
                     minLength={8}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
                 </div>
@@ -538,7 +538,7 @@ const Profile = () => {
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
@@ -546,7 +546,7 @@ const Profile = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     <Lock className="w-4 h-4" />
                     {loading ? 'Changing...' : 'Change Password'}

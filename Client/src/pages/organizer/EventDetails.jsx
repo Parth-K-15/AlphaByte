@@ -150,7 +150,7 @@ const EventDetails = () => {
         to="/organizer/events"
         className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
       >
-        <div className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <div className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
           <svg
             width="20"
             height="20"
@@ -229,8 +229,8 @@ const EventDetails = () => {
           to={`/organizer/certificates/generate?event=${eventId}`}
           className="bg-white p-4 rounded-xl border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-3"
         >
-          <div className="p-3 bg-purple-50 rounded-xl">
-            <Award size={20} className="text-purple-600" />
+          <div className="p-3 bg-primary-50 rounded-xl">
+            <Award size={20} className="text-primary-600" />
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-800">{displayEvent.certificateCount}</p>
@@ -312,7 +312,7 @@ const EventDetails = () => {
                                     : stage.color === 'green'
                                     ? 'bg-green-600 text-white shadow-lg scale-110'
                                     : stage.color === 'purple'
-                                    ? 'bg-purple-600 text-white shadow-lg scale-110'
+                                    ? 'bg-primary-600 text-white shadow-lg scale-110'
                                     : 'bg-red-600 text-white shadow-lg scale-110'
                                   : isPast
                                   ? 'bg-green-500 text-white'

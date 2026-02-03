@@ -27,7 +27,7 @@ const ParticipantLayout = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <span className="text-2xl font-bold text-indigo-600">AlphaByte</span>
+              <span className="text-2xl font-bold text-primary-600">AlphaByte</span>
               <span className="ml-2 text-sm text-gray-500">Events</span>
             </div>
 
@@ -46,7 +46,7 @@ const ParticipantLayout = () => {
               ) : (
                 <NavLink
                   to="/login"
-                  className="text-sm text-indigo-600 hover:text-indigo-800"
+                  className="text-sm text-primary-600 hover:text-primary-800"
                 >
                   Login / Register
                 </NavLink>
@@ -73,7 +73,7 @@ const ParticipantLayout = () => {
                 className={({ isActive }) =>
                   `flex flex-col items-center py-3 px-2 text-xs transition-colors ${
                     isActive
-                      ? 'text-indigo-600 font-medium'
+                      ? 'text-primary-600 font-medium'
                       : 'text-gray-500 hover:text-gray-700'
                   }`
                 }

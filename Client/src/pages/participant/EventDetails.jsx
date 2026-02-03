@@ -178,7 +178,7 @@ const EventDetails = () => {
       INFO: 'bg-blue-100 text-blue-800',
       WARNING: 'bg-yellow-100 text-yellow-800',
       URGENT: 'bg-red-100 text-red-800',
-      ANNOUNCEMENT: 'bg-purple-100 text-purple-800'
+      ANNOUNCEMENT: 'bg-primary-100 text-primary-800'
     };
     return badges[type] || badges.INFO;
   };
@@ -186,7 +186,7 @@ const EventDetails = () => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
   }
@@ -198,7 +198,7 @@ const EventDetails = () => {
         <h2 className="text-2xl font-semibold text-gray-800 mb-2">Event Not Found</h2>
         <button
           onClick={() => navigate('/participant')}
-          className="text-indigo-600 hover:text-indigo-800"
+          className="text-primary-600 hover:text-primary-800"
         >
           ← Back to Events
         </button>
@@ -236,7 +236,7 @@ const EventDetails = () => {
       {/* Event Header */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {/* Banner */}
-        <div className="h-48 md:h-64 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
+        <div className="h-48 md:h-64 bg-gradient-to-br from-primary-500 to-blue-600 relative">
           {event.bannerImage && (
             <img
               src={event.bannerImage}
@@ -316,7 +316,7 @@ const EventDetails = () => {
             {/* Right Column - Registration */}
             <div className="bg-gray-50 rounded-xl p-6">
               <div className="text-center mb-4">
-                <p className="text-3xl font-bold text-indigo-600">
+                <p className="text-3xl font-bold text-primary-600">
                   {event.registrationFee > 0 ? `₹${event.registrationFee}` : 'FREE'}
                 </p>
                 <p className="text-gray-500 text-sm">Registration Fee</p>
@@ -368,7 +368,7 @@ const EventDetails = () => {
               ) : event.isRegistrationOpen && event.spotsLeft !== 0 ? (
                 <button
                   onClick={() => setShowRegisterModal(true)}
-                  className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                  className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
                 >
                   Register Now
                 </button>
@@ -417,7 +417,7 @@ const EventDetails = () => {
               return (
                 <div key={stage} className="relative flex items-center pl-10">
                   <div className={`absolute left-2 w-5 h-5 rounded-full border-2 ${
-                    isActive ? 'bg-indigo-600 border-indigo-600' :
+                    isActive ? 'bg-primary-600 border-primary-600' :
                     isPast ? 'bg-green-500 border-green-500' :
                     'bg-white border-gray-300'
                   }`}>
@@ -425,7 +425,7 @@ const EventDetails = () => {
                       <span className="text-white text-xs flex items-center justify-center h-full">✓</span>
                     )}
                   </div>
-                  <span className={`capitalize ${isActive ? 'font-medium text-indigo-600' : 'text-gray-500'}`}>
+                  <span className={`capitalize ${isActive ? 'font-medium text-primary-600' : 'text-gray-500'}`}>
                     {stage}
                   </span>
                 </div>
@@ -487,7 +487,7 @@ const EventDetails = () => {
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
@@ -500,7 +500,7 @@ const EventDetails = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
                     required
                   />
                 </div>
@@ -513,7 +513,7 @@ const EventDetails = () => {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
 
@@ -525,7 +525,7 @@ const EventDetails = () => {
                     type="text"
                     value={formData.college}
                     onChange={(e) => setFormData({ ...formData, college: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
 
@@ -537,7 +537,7 @@ const EventDetails = () => {
                     <select
                       value={formData.year}
                       onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="">Select Year</option>
                       <option value="1st Year">1st Year</option>
@@ -557,7 +557,7 @@ const EventDetails = () => {
                       value={formData.branch}
                       onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
                       placeholder="e.g., CSE"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                 </div>
@@ -565,7 +565,7 @@ const EventDetails = () => {
                 <button
                   type="submit"
                   disabled={registering}
-                  className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:bg-indigo-400 transition-colors"
+                  className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 disabled:bg-primary-400 transition-colors"
                 >
                   {registering ? 'Registering...' : 'Complete Registration'}
                 </button>

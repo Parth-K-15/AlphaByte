@@ -21,6 +21,7 @@ import {
   Shield,
   UserX,
   Ban,
+  FileText,
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -86,6 +87,11 @@ const Sidebar = () => {
       path: '/admin/reports',
     },
     {
+      title: 'System Logs',
+      icon: FileText,
+      path: '/admin/logs',
+    },
+    {
       title: 'Settings',
       icon: Settings,
       path: '/admin/settings',
@@ -95,9 +101,9 @@ const Sidebar = () => {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center justify-between p-4 border-b border-sidebar-light">
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
             <span className="text-white font-bold text-xl">A</span>
           </div>
           {!collapsed && (
@@ -127,9 +133,9 @@ const Sidebar = () => {
                 <div>
                   <button
                     onClick={() => toggleMenu(item.key)}
-                    className={`w-full sidebar-item ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-xl transition-all duration-200 cursor-pointer ${
                       isParentActive(item.children.map((c) => c.path))
-                        ? 'bg-sidebar-light text-white'
+                        ? 'bg-gray-700 text-white'
                         : ''
                     }`}
                   >
@@ -152,8 +158,8 @@ const Sidebar = () => {
                           <NavLink
                             to={child.path}
                             className={({ isActive }) =>
-                              `sidebar-item text-sm ${
-                                isActive ? 'sidebar-item-active' : ''
+                              `flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-xl transition-all duration-200 cursor-pointer ${
+                                isActive ? 'bg-primary-600 text-white' : ''
                               }`
                             }
                           >
@@ -169,7 +175,7 @@ const Sidebar = () => {
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `sidebar-item ${isActive ? 'sidebar-item-active' : ''}`
+                    `flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-xl transition-all duration-200 cursor-pointer ${isActive ? 'bg-primary-600 text-white' : ''}`
                   }
                 >
                   <item.icon size={20} />
@@ -182,10 +188,10 @@ const Sidebar = () => {
       </nav>
 
       {/* Logout */}
-      <div className="p-3 border-t border-sidebar-light">
+      <div className="p-3 border-t border-gray-700">
         <button 
           onClick={handleLogout}
-          className="sidebar-item w-full text-red-400 hover:bg-red-500/20 hover:text-red-300"
+          className="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-xl transition-all duration-200 cursor-pointer w-full"
         >
           <LogOut size={20} />
           {!collapsed && <span>Logout</span>}
@@ -199,7 +205,7 @@ const Sidebar = () => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-sidebar rounded-xl text-white"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gray-800 rounded-xl text-white shadow-lg"
       >
         <Menu size={24} />
       </button>
@@ -214,7 +220,7 @@ const Sidebar = () => {
 
       {/* Sidebar - Mobile */}
       <div
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-sidebar transform transition-transform duration-300 ${
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 text-white transform transition-transform duration-300 shadow-2xl ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -223,7 +229,7 @@ const Sidebar = () => {
 
       {/* Sidebar - Desktop */}
       <div
-        className={`hidden lg:block bg-sidebar transition-all duration-300 ${
+        className={`hidden lg:block bg-gray-800 text-white transition-all duration-300 shadow-2xl ${
           collapsed ? 'w-20' : 'w-64'
         }`}
       >

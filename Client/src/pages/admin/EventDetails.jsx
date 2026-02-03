@@ -121,7 +121,7 @@ const EventDetails = () => {
         <div className="flex items-center gap-4">
           <Link
             to="/admin/events"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
           >
             <ArrowLeft size={20} className="text-gray-600" />
           </Link>
@@ -176,7 +176,7 @@ const EventDetails = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Date & Time */}
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-primary-50 rounded-lg">
+                <div className="p-2 bg-primary-50 rounded-xl">
                   <Calendar size={20} className="text-primary-600" />
                 </div>
                 <div>
@@ -194,7 +194,7 @@ const EventDetails = () => {
 
               {event.time && (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-50 rounded-lg">
+                  <div className="p-2 bg-primary-50 rounded-xl">
                     <Clock size={20} className="text-primary-600" />
                   </div>
                   <div>
@@ -207,7 +207,7 @@ const EventDetails = () => {
               {/* Location */}
               {(event.location || event.venue || event.address) && (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-50 rounded-lg">
+                  <div className="p-2 bg-primary-50 rounded-xl">
                     <MapPin size={20} className="text-primary-600" />
                   </div>
                   <div>
@@ -225,7 +225,7 @@ const EventDetails = () => {
               {/* Category */}
               {event.category && (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-50 rounded-lg">
+                  <div className="p-2 bg-primary-50 rounded-xl">
                     <Tag size={20} className="text-primary-600" />
                   </div>
                   <div>
@@ -238,7 +238,7 @@ const EventDetails = () => {
               {/* Registration Fee */}
               {event.registrationFee !== undefined && (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-50 rounded-lg">
+                  <div className="p-2 bg-primary-50 rounded-xl">
                     <DollarSign size={20} className="text-primary-600" />
                   </div>
                   <div>
@@ -255,7 +255,7 @@ const EventDetails = () => {
               {/* Website */}
               {event.website && (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-50 rounded-lg">
+                  <div className="p-2 bg-primary-50 rounded-xl">
                     <Globe size={20} className="text-primary-600" />
                   </div>
                   <div>
@@ -275,7 +275,7 @@ const EventDetails = () => {
               {/* Max Participants */}
               {event.maxParticipants && (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-50 rounded-lg">
+                  <div className="p-2 bg-primary-50 rounded-xl">
                     <Users size={20} className="text-primary-600" />
                   </div>
                   <div>
@@ -290,7 +290,7 @@ const EventDetails = () => {
               {/* Registration Deadline */}
               {event.registrationDeadline && (
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-50 rounded-lg">
+                  <div className="p-2 bg-primary-50 rounded-xl">
                     <Calendar size={20} className="text-primary-600" />
                   </div>
                   <div>
@@ -339,8 +339,8 @@ const EventDetails = () => {
                 </p>
                 <p className="text-sm text-gray-500">Attendance</p>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-xl">
-                <Award size={24} className="mx-auto text-purple-600 mb-2" />
+              <div className="text-center p-4 bg-primary-50 rounded-xl">
+                <Award size={24} className="mx-auto text-primary-600 mb-2" />
                 <p className="text-2xl font-bold text-gray-800">
                   {event.certificateCount || 0}
                 </p>

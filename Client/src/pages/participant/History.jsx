@@ -76,12 +76,12 @@ const History = () => {
               value={inputEmail}
               onChange={(e) => setInputEmail(e.target.value)}
               placeholder="Enter your email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
               required
             />
             <button
               type="submit"
-              className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700"
+              className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700"
             >
               View History
             </button>
@@ -94,7 +94,7 @@ const History = () => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
   }
@@ -102,17 +102,17 @@ const History = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-2xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">Participation History</h1>
-        <p className="text-indigo-100">Your complete event journey</p>
-        <p className="text-sm text-indigo-200 mt-2">📧 {email}</p>
+        <p className="text-primary-100">Your complete event journey</p>
+        <p className="text-sm text-primary-200 mt-2">📧 {email}</p>
       </div>
 
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-            <div className="text-3xl font-bold text-indigo-600">{stats.totalRegistrations}</div>
+            <div className="text-3xl font-bold text-primary-600">{stats.totalRegistrations}</div>
             <div className="text-gray-500 text-sm">Total Events</div>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-4 text-center">
@@ -142,7 +142,7 @@ const History = () => {
             onClick={() => setFilter(tab.value)}
             className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
               filter === tab.value
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-primary-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -226,7 +226,7 @@ const History = () => {
                     {record.event && (
                       <Link
                         to={`/participant/event/${record.event._id}`}
-                        className="text-sm text-indigo-600 hover:text-indigo-800"
+                        className="text-sm text-primary-600 hover:text-primary-800"
                       >
                         View Event →
                       </Link>

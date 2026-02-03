@@ -103,7 +103,7 @@ const Dashboard = () => {
       change: '+4%',
       trend: 'up',
       icon: UserCheck,
-      color: 'bg-purple-500',
+      color: 'bg-primary-500',
     },
     {
       title: 'Total Site Views',

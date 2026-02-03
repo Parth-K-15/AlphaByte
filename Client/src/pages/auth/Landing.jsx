@@ -3,12 +3,12 @@ import { Users, Shield, Calendar, Zap, CheckCircle, BarChart3 } from 'lucide-rea
 
 const Landing = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-primary-50 to-blue-100 flex flex-col">
       {/* Navbar */}
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">α</span>
             </div>
             <span className="text-2xl font-bold text-gray-900">AlphaByte</span>
@@ -26,7 +26,7 @@ const Landing = () => {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
             Event Management
-            <span className="block bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent">
               Simplified
             </span>
           </h1>
@@ -35,7 +35,7 @@ const Landing = () => {
             handle everything in one powerful platform.
           </p>
           <div className="flex justify-center gap-4">
-            <a href="#roles" className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-indigo-200 transition">
+            <a href="#roles" className="px-8 py-3 bg-gradient-to-r from-primary-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg hover:shadow-primary-200 transition">
               Get Started
             </a>
             <button className="px-8 py-3 bg-white text-gray-900 rounded-lg font-semibold border border-gray-200 hover:border-gray-300 transition shadow-sm">
@@ -85,7 +85,7 @@ const Landing = () => {
           <div className="grid md:grid-cols-2 gap-8 mb-12">
             {/* Admin Card */}
             <Link to="/admin-auth" className="group">
-              <div className="bg-white rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-indigo-500 h-full">
+              <div className="bg-white rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-primary-500 h-full">
                 <div className="flex justify-center mb-6">
                   <div className="p-6 bg-indigo-100 rounded-full group-hover:bg-indigo-500 transition-colors">
                     <Shield className="w-16 h-16 text-indigo-600 group-hover:text-white transition-colors" />
@@ -103,7 +103,7 @@ const Landing = () => {
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-indigo-600" /> Generate reports</li>
                 </ul>
                 <div className="text-center">
-                  <span className="inline-block px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold group-hover:bg-indigo-700 transition shadow-md">
+                  <span className="inline-block px-8 py-3 bg-indigo-600 text-white rounded-xl font-semibold group-hover:bg-indigo-700 transition shadow-md">
                     Sign In as Admin
                   </span>
                 </div>
@@ -112,7 +112,7 @@ const Landing = () => {
 
             {/* Participant Card */}
             <Link to="/login" className="group">
-              <div className="bg-white rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-purple-500 h-full">
+              <div className="bg-white rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-primary-500 h-full">
                 <div className="flex justify-center mb-6">
                   <div className="p-6 bg-purple-100 rounded-full group-hover:bg-purple-500 transition-colors">
                     <Users className="w-16 h-16 text-purple-600 group-hover:text-white transition-colors" />
@@ -130,7 +130,7 @@ const Landing = () => {
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-purple-600" /> Track history</li>
                 </ul>
                 <div className="text-center">
-                  <span className="inline-block px-8 py-3 bg-purple-600 text-white rounded-lg font-semibold group-hover:bg-purple-700 transition shadow-md">
+                  <span className="inline-block px-8 py-3 bg-purple-600 text-white rounded-xl font-semibold group-hover:bg-purple-700 transition shadow-md">
                     Sign In as Participant
                   </span>
                 </div>
@@ -150,7 +150,7 @@ const Landing = () => {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold">α</span>
                 </div>
                 <span className="text-gray-900 font-bold">AlphaByte</span>

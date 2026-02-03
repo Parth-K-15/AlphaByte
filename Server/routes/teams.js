@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
+import Logger from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -91,6 +92,15 @@ router.post('/leads', async (req, res) => {
     
     await teamLead.save();
     
+    // Log team lead creation
+    await Logger.member(
+      'Team Lead created',
+      teamLead,
+      { email: 'system' }, // Since we don't have auth context here
+      'success',
+      `New team lead created: ${teamLead.name} (${teamLead.email})`
+    );
+    
     res.status(201).json({ 
       success: true, 
       message: 'Team lead created successfully',
@@ -157,6 +167,15 @@ router.post('/members', async (req, res) => {
     
     // Populate teamLead for response
     await member.populate('teamLead', 'name email');
+    
+    // Log member creation
+    await Logger.member(
+      'Event Staff created',
+      member,
+      { email: 'system' },
+      'success',
+      `New event staff created: ${member.name} (${member.email})`
+    );
     
     res.status(201).json({ 
       success: true, 

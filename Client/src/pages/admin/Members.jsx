@@ -198,15 +198,15 @@ const Members = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                      <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                         <Eye size={18} className="text-gray-500" />
                       </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                      <button className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                         <Edit size={18} className="text-gray-500" />
                       </button>
                       <button 
                         onClick={() => handleDeleteMember(member._id)}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-red-50 rounded-xl transition-colors"
                       >
                         <Trash2 size={18} className="text-red-500" />
                       </button>

@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import Logger from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -84,6 +85,15 @@ router.put('/:id/toggle-status', async (req, res) => {
 
     user.isActive = !user.isActive;
     await user.save();
+
+    // Log user status change
+    await Logger.member(
+      `User ${user.isActive ? 'activated' : 'deactivated'}`,
+      user,
+      { email: 'system' },
+      user.isActive ? 'success' : 'warning',
+      `User ${user.name} (${user.email}) was ${user.isActive ? 'activated' : 'deactivated'}`
+    );
 
     res.json({
       success: true,

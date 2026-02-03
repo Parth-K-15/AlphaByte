@@ -80,7 +80,7 @@ const Reports = () => {
       value: '1,460',
       change: '+18%',
       icon: Award,
-      color: 'bg-purple-500',
+      color: 'bg-primary-500',
     },
     {
       label: 'Active Events',
