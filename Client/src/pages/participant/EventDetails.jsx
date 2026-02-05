@@ -123,6 +123,8 @@ const EventDetails = () => {
       });
 
       const data = await response.json();
+      
+      console.log('Registration response:', data);
 
       if (data.success) {
         setIsRegistered(true);
@@ -130,7 +132,8 @@ const EventDetails = () => {
         setShowRegisterModal(false);
         setMessage({ type: 'success', text: 'Registration successful!' });
       } else {
-        setMessage({ type: 'error', text: data.message });
+        setMessage({ type: 'error', text: data.message || data.error || 'Registration failed' });
+        console.error('Registration failed:', data);
       }
     } catch (error) {
       console.error('Error registering:', error);

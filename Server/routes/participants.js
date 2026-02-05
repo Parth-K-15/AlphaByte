@@ -137,8 +137,11 @@ router.post('/register', async (req, res) => {
   try {
     const { eventId, fullName, email, phone, college, year, branch } = req.body;
     
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const normalizedFullName = String(fullName || '').trim();
+
     // Validate required fields
-    if (!eventId || !fullName || !email) {
+    if (!eventId || !normalizedFullName || !normalizedEmail) {
       return res.status(400).json({ 
         success: false, 
         message: 'Event ID, full name, and email are required' 
@@ -174,7 +177,7 @@ router.post('/register', async (req, res) => {
     // Check if already registered
     const existingRegistration = await Participant.findOne({ 
       event: eventId, 
-      email: email.toLowerCase() 
+      email: normalizedEmail 
     });
     
     if (existingRegistration) {
@@ -202,9 +205,9 @@ router.post('/register', async (req, res) => {
     
     // Create participant registration
     const participant = new Participant({
-      fullName,
-      name: fullName,
-      email: email.toLowerCase(),
+      fullName: normalizedFullName,
+      name: normalizedFullName,
+      email: normalizedEmail,
       phone,
       college,
       year,
@@ -225,7 +228,9 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Error registering for event:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', req.body);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message, stack: error.stack });
   }
 });
 
