@@ -13,6 +13,7 @@ import {
   UserPlus,
   Activity,
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { 
   generateQRCode, 
   getAttendanceLogs, 
@@ -22,6 +23,29 @@ import {
   getAssignedEvents,
   getParticipants
 } from '../../services/organizerApi';
+
+// Custom QR Code Component using qrcode library
+const QRCodeCanvas = ({ value, size = 240 }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (canvasRef.current && value) {
+      QRCode.toCanvas(canvasRef.current, value, {
+        width: size,
+        margin: 2,
+        errorCorrectionLevel: 'H',
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      }, (error) => {
+        if (error) console.error('QR Code generation error:', error);
+      });
+    }
+  }, [value, size]);
+
+  return <canvas ref={canvasRef} />;
+};
 
 // Helper to check if ID is a valid MongoDB ObjectId
 const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
@@ -91,10 +115,11 @@ const AttendanceQR = () => {
     try {
       const response = await getAttendanceLogs(selectedEvent, { limit: 50 });
       if (response.data.success) {
-        setAttendanceLogs(response.data.data);
+        setAttendanceLogs(Array.isArray(response.data.data) ? response.data.data : []);
       }
     } catch (error) {
       console.error('Error fetching attendance logs:', error);
+      setAttendanceLogs([]);
     }
   };
 
@@ -195,63 +220,34 @@ const AttendanceQR = () => {
     }
   };
 
-  // Demo data
-  const demoEvents = [
-    { id: '1', name: 'Tech Conference 2025' },
-    { id: '2', name: 'Web Development Workshop' },
-  ];
-
-  const demoLogs = [
-    { _id: '1', participant: { name: 'John Doe', email: 'john@example.com' }, scannedAt: new Date().toISOString(), status: 'present' },
-    { _id: '2', participant: { name: 'Jane Smith', email: 'jane@example.com' }, scannedAt: new Date(Date.now() - 60000).toISOString(), status: 'present' },
-    { _id: '3', participant: { name: 'Mike Johnson', email: 'mike@example.com' }, scannedAt: new Date(Date.now() - 120000).toISOString(), status: 'present' },
-    { _id: '4', participant: { name: 'Sarah Williams', email: 'sarah@example.com' }, scannedAt: new Date(Date.now() - 180000).toISOString(), status: 'present' },
-    { _id: '5', participant: { name: 'Chris Brown', email: 'chris@example.com' }, scannedAt: new Date(Date.now() - 240000).toISOString(), status: 'present' },
-  ];
-
-  const displayEvents = events.length > 0 ? events : [];
-  const displayLogs = attendanceLogs.length > 0 ? attendanceLogs : [];
-  const usingDemoData = events.length === 0;
-
-  const filteredLogs = displayLogs.filter((log) =>
+  const filteredLogs = Array.isArray(attendanceLogs) ? attendanceLogs.filter((log) =>
     log.participant?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     log.participant?.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   return (
     <div className="space-y-6">
-      {/* Demo Mode Banner */}
-      {usingDemoData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
-            <QrCode size={20} className="text-yellow-600" />
-          </div>
-          <div>
-            <h3 className="font-medium text-yellow-800">Demo Mode</h3>
-            <p className="text-sm text-yellow-700 mt-1">
-              Showing sample data. Create events from the Admin panel and get assigned to track real attendance here.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Attendance</h1>
           <p className="text-gray-500 mt-1">QR-based attendance tracking</p>
         </div>
-        <select
-          value={selectedEvent}
-          onChange={(e) => setSelectedEvent(e.target.value)}
-          className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          {displayEvents.map((event) => (
-            <option key={event._id || event.id} value={event._id || event.id}>
-              {event.title || event.name}
-            </option>
-          ))}
-        </select>
+        {events.length > 0 ? (
+          <select
+            value={selectedEvent}
+            onChange={(e) => setSelectedEvent(e.target.value)}
+            className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {events.map((event) => (
+              <option key={event._id} value={event._id}>
+                {event.title}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div className="text-gray-500 text-sm">No events assigned</div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -260,7 +256,7 @@ const AttendanceQR = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Total Registered</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{liveCount.total || 150}</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{liveCount.total || 0}</p>
             </div>
             <div className="p-3 bg-blue-50 rounded-xl">
               <Users size={20} className="text-blue-600" />
@@ -272,7 +268,7 @@ const AttendanceQR = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Present</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{liveCount.present || 45}</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">{liveCount.present || 0}</p>
             </div>
             <div className="p-3 bg-green-50 rounded-xl">
               <CheckCircle size={20} className="text-green-600" />
@@ -284,7 +280,7 @@ const AttendanceQR = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Absent</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{(liveCount.total || 150) - (liveCount.present || 45)}</p>
+              <p className="text-2xl font-bold text-red-600 mt-1">{(liveCount.total || 0) - (liveCount.present || 0)}</p>
             </div>
             <div className="p-3 bg-red-50 rounded-xl">
               <XCircle size={20} className="text-red-600" />
@@ -297,7 +293,7 @@ const AttendanceQR = () => {
             <div>
               <p className="text-sm text-gray-500">Attendance Rate</p>
               <p className="text-2xl font-bold text-primary-600 mt-1">
-                {Math.round(((liveCount.present || 45) / (liveCount.total || 150)) * 100)}%
+                {liveCount.total > 0 ? Math.round((liveCount.present / liveCount.total) * 100) : 0}%
               </p>
             </div>
             <div className="p-3 bg-primary-50 rounded-xl">
@@ -344,20 +340,10 @@ const AttendanceQR = () => {
                   {/* QR Code Display */}
                   <div className="relative inline-block">
                     <div className="w-72 h-72 bg-white rounded-2xl shadow-lg p-6 flex items-center justify-center border-4 border-primary-100">
-                      {/* Placeholder for actual QR code - you would use a QR library here */}
-                      <div className="w-full h-full bg-gray-100 rounded-xl flex items-center justify-center relative">
-                        <div className="grid grid-cols-8 gap-1 p-4 absolute inset-0">
-                          {Array.from({ length: 64 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={`aspect-square rounded-sm ${
-                                Math.random() > 0.5 ? 'bg-gray-800' : 'bg-white'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <QrCode size={80} className="text-gray-300 absolute" />
-                      </div>
+                      <QRCodeCanvas 
+                        value={qrData.qrData} 
+                        size={240}
+                      />
                     </div>
                     
                     {/* Timer Badge */}
@@ -377,9 +363,49 @@ const AttendanceQR = () => {
                       <RefreshCw size={18} />
                       Refresh QR
                     </button>
-                    <button className="flex items-center gap-2 px-6 py-3 border border-gray-200 rounded-xl hover:bg-gray-50">
-                      <Download size={18} />
-                      Download
+                  </div>
+                </div>
+              ) : selectedEvent && events.length > 0 ? (
+                <div className="text-center">
+                  {/* Static QR Code for Selected Event */}
+                  <div className="mb-8">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Event QR Code</h3>
+                    <div className="inline-block bg-white rounded-2xl shadow-lg p-6 border-4 border-gray-100">
+                      <QRCodeCanvas 
+                        value={JSON.stringify({ 
+                          eventId: selectedEvent, 
+                          type: 'event_static',
+                          eventName: events.find(e => e._id === selectedEvent)?.title || 'Event'
+                        })} 
+                        size={240}
+                      />
+                    </div>
+                    <p className="text-sm text-gray-500 mt-4">
+                      Static QR code for {events.find(e => e._id === selectedEvent)?.title}
+                    </p>
+                  </div>
+
+                  {/* Generate Dynamic QR Section */}
+                  <div className="border-t border-gray-200 pt-8">
+                    <div className="w-32 h-32 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <QrCode size={64} className="text-gray-300" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Generate Dynamic QR Code</h3>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                      Click the button below to generate a time-limited QR code for attendance. 
+                      Participants can scan this code to mark their attendance.
+                    </p>
+                    <button
+                      onClick={handleGenerateQR}
+                      disabled={loading}
+                      className="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors mx-auto disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <RefreshCw size={18} className="animate-spin" />
+                      ) : (
+                        <QrCode size={18} />
+                      )}
+                      Generate Dynamic QR Code
                     </button>
                   </div>
                 </div>
@@ -388,23 +414,10 @@ const AttendanceQR = () => {
                   <div className="w-32 h-32 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <QrCode size={64} className="text-gray-300" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Generate QR Code</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">No Events Available</h3>
                   <p className="text-gray-500 mb-6 max-w-md">
-                    Click the button below to generate a QR code for attendance. 
-                    Participants can scan this code to mark their attendance.
+                    You don't have any events assigned yet. Please contact an admin to get assigned to events.
                   </p>
-                  <button
-                    onClick={handleGenerateQR}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors mx-auto disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <RefreshCw size={18} className="animate-spin" />
-                    ) : (
-                      <QrCode size={18} />
-                    )}
-                    Generate QR Code
-                  </button>
                 </div>
               )}
 
@@ -490,6 +503,7 @@ const AttendanceQR = () => {
                         )
                         .map((participant, index) => {
                           const hasAttended = participant.hasAttended || participant.attendanceStatus === 'ATTENDED';
+                          const isAbsent = !hasAttended && (participant.attendanceStatus === 'ABSENT' || !participant.attendanceStatus);
                           const attendedAt = participant.attendedAt;
                           
                           return (

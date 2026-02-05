@@ -98,7 +98,14 @@ router.get('/participants/:eventId', async (req, res) => {
     const enrichedParticipants = await Promise.all(participants.map(async (p) => {
       const attendance = await Attendance.findOne({ event: eventId, participant: p._id });
       const certificate = await Certificate.findOne({ event: eventId, participant: p._id });
-      return { ...p.toObject(), hasAttended: !!attendance, attendedAt: attendance?.scannedAt, hasCertificate: !!certificate, certificateStatus: certificate?.status };
+      return { 
+        ...p.toObject(), 
+        hasAttended: !!attendance || p.attendanceStatus === 'ATTENDED', 
+        attendedAt: attendance?.scannedAt || p.updatedAt,
+        attendanceStatus: attendance ? 'ATTENDED' : (p.attendanceStatus || 'ABSENT'),
+        hasCertificate: !!certificate, 
+        certificateStatus: certificate?.status 
+      };
     }));
     res.json({ success: true, count: enrichedParticipants.length, data: enrichedParticipants });
   } catch (error) {

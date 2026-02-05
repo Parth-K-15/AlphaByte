@@ -137,7 +137,7 @@ const Participants = () => {
       return;
     }
 
-    if (participant.attendanceStatus === 'present' || participant.hasAttended) {
+    if (participant.attendanceStatus === 'ATTENDED' || participant.hasAttended) {
       alert('Attendance already marked for this participant');
       return;
     }
@@ -147,7 +147,7 @@ const Participants = () => {
       if (response.data.success) {
         // Update participant in the list
         setParticipants(participants.map((p) => 
-          p._id === participant._id ? { ...p, attendanceStatus: 'present', hasAttended: true } : p
+          p._id === participant._id ? { ...p, attendanceStatus: 'ATTENDED', hasAttended: true } : p
         ));
         alert('Attendance marked successfully!');
         fetchParticipants(); // Refresh list
@@ -163,7 +163,9 @@ const Participants = () => {
       p?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p?.organization?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'all' || p.status === filter || p.attendanceStatus === filter;
+    const matchesFilter = filter === 'all' || p.status === filter || 
+      (filter === 'present' && (p.attendanceStatus === 'ATTENDED' || p.hasAttended)) ||
+      (filter === 'absent' && p.attendanceStatus === 'ABSENT');
     return matchesSearch && matchesFilter;
   });
 
@@ -176,8 +178,8 @@ const Participants = () => {
     return <span className={`px-2 py-1 rounded-lg text-xs font-medium ${colors[status] || colors.registered}`}>{status}</span>;
   };
 
-  const attendanceBadge = (status) => {
-    if (status === 'present') {
+  const attendanceBadge = (status, hasAttended) => {
+    if (status === 'ATTENDED' || hasAttended) {
       return (
         <span className="flex items-center gap-1 text-green-600 text-sm">
           <CheckCircle size={14} /> Present
@@ -315,9 +317,9 @@ const Participants = () => {
                       <td className="px-4 py-4 text-center">
                         <input
                           type="checkbox"
-                          checked={participant.attendanceStatus === 'present' || participant.hasAttended}
+                          checked={participant.attendanceStatus === 'ATTENDED' || participant.hasAttended}
                           onChange={() => handleMarkAttendance(participant)}
-                          disabled={participant.attendanceStatus === 'present' || participant.hasAttended}
+                          disabled={participant.attendanceStatus === 'ATTENDED' || participant.hasAttended}
                           className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-2 focus:ring-primary-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                           title={participant.hasAttended ? 'Already marked present' : 'Mark attendance'}
                         />
@@ -346,7 +348,7 @@ const Participants = () => {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{participant.organization || '-'}</td>
                       <td className="px-6 py-4">{statusBadge(participant.status || 'registered')}</td>
-                      <td className="px-6 py-4">{attendanceBadge(participant.attendanceStatus)}</td>
+                      <td className="px-6 py-4">{attendanceBadge(participant.attendanceStatus, participant.hasAttended)}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {new Date(participant.registeredAt).toLocaleDateString()}
                       </td>
