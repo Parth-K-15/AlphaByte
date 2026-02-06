@@ -23,8 +23,15 @@ dotenv.config();
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  'http://localhost:5173', 
+  'http://localhost:5174', 
+  'http://localhost:5175',
+  process.env.CLIENT_URL // Add your Vercel frontend URL here
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());
@@ -70,10 +77,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
+// Connect to database on startup
+connectDB();
+
+// Start server (only in development/local environment)
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(async () => {
+if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, async () => {
     console.log(`🚀 Server running on port ${PORT}`);
     
@@ -81,6 +91,6 @@ connectDB().then(async () => {
     console.log('\n📧 Testing email configuration...');
     await testEmailConnection();
   });
-});
+}
 
 export default app;

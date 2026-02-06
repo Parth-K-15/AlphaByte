@@ -2,7 +2,10 @@
   "name": "server",
   "version": "1.0.0",
   "type": "module",
-  "main": "app.js",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "start": "node app.js",
     "dev": "node --watch app.js",
