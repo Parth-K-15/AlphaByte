@@ -167,7 +167,7 @@ export const sendBulkEmails = async (recipients, subject, message, event) => {
 };
 
 // Send certificate email with attachment
-export const sendCertificateEmail = async (recipient, event, certificateUrl) => {
+export const sendCertificateEmail = async (recipient, event, certificatePath, certificateUrl) => {
   try {
     const transporter = createTransporter();
 
@@ -205,6 +205,13 @@ export const sendCertificateEmail = async (recipient, event, certificateUrl) => 
         </body>
         </html>
       `,
+      attachments: certificatePath ? [
+        {
+          filename: `Certificate_${recipient.name || 'Participant'}.pdf`,
+          path: certificatePath,
+          contentType: 'application/pdf'
+        }
+      ] : []
     };
 
     const info = await transporter.sendMail(mailOptions);

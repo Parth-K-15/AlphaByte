@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minimal Certificate</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Helvetica', 'Arial', sans-serif;
+      background: #ffffff;
+      width: 297mm;
+      height: 210mm;
+      position: relative;
+    }
+    
+    .certificate-container {
+      width: 100%;
+      height: 100%;
+      background: white;
+      padding: 80px 100px;
+      position: relative;
+    }
+    
+    /* Simple border */
+    .border-frame {
+      position: absolute;
+      top: 50px;
+      left: 70px;
+      right: 70px;
+      bottom: 50px;
+      border: 2px solid #000;
+    }
+    
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .organization-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+    
+    .department-name {
+      font-size: 12px;
+      color: #666;
+      font-weight: 400;
+    }
+    
+    .horizontal-line {
+      width: 100px;
+      height: 1px;
+      background: #000;
+      margin: 30px auto;
+    }
+    
+    /* Content */
+    .content {
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .certificate-title {
+      font-size: 48px;
+      font-weight: 300;
+      color: #000;
+      margin-bottom: 50px;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+    }
+    
+    .presented-to {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 400;
+    }
+    
+    .participant-name {
+      font-size: 52px;
+      font-weight: 400;
+      color: #000;
+      margin: 30px 0;
+      letter-spacing: 2px;
+      border-bottom: 2px solid #000;
+      display: inline-block;
+      padding-bottom: 10px;
+    }
+    
+    .achievement {
+      font-size: 14px;
+      color: #000;
+      margin: 25px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    
+    .description {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.9;
+      max-width: 650px;
+      margin: 35px auto;
+      font-weight: 300;
+    }
+    
+    .event-name {
+      font-weight: 600;
+      color: #000;
+    }
+    
+    /* Signatures */
+    .signatures {
+      display: flex;
+      justify-content: space-evenly;
+      margin-top: 70px;
+      padding: 0 120px;
+    }
+    
+    .signature-block {
+      text-align: center;
+      width: 160px;
+    }
+    
+    .signature-line {
+      border-top: 1px solid #000;
+      margin-bottom: 8px;
+      padding-top: 40px;
+    }
+    
+    .signature-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .signature-title {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+      font-weight: 300;
+    }
+    
+    /* Date */
+    .date-section {
+      text-align: center;
+      margin-top: 50px;
+    }
+    
+    .date-label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .date-value {
+      font-size: 13px;
+      font-weight: 400;
+      color: #000;
+      margin-top: 5px;
+    }
+    
+    /* Minimal corner accents */
+    .corner-accent {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+    }
+    
+    .top-left-accent {
+      top: 60px;
+      left: 80px;
+      border-top: 3px solid #000;
+      border-left: 3px solid #000;
+    }
+    
+    .bottom-right-accent {
+      bottom: 60px;
+      right: 80px;
+      border-bottom: 3px solid #000;
+      border-right: 3px solid #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="certificate-container">
+    <!-- Border -->
+    <div class="border-frame"></div>
+    <div class="corner-accent top-left-accent"></div>
+    <div class="corner-accent bottom-right-accent"></div>
+    
+    <!-- Header -->
+    <div class="header">
+      <div class="organization-name">{{organizationName}}</div>
+      <div class="department-name">{{departmentName}}</div>
+      <div class="horizontal-line"></div>
+    </div>
+    
+    <!-- Content -->
+    <div class="content">
+      <div class="certificate-title">Certificate</div>
+      <div class="presented-to">Presented To</div>
+      
+      <div class="participant-name">{{participantName}}</div>
+      
+      <div class="achievement">{{achievement}}</div>
+      
+      <div class="description">
+        For successful participation in <span class="event-name">"{{competitionName}}"</span>,
+        held as part of <span class="event-name">{{eventName}}</span>,
+        organized by {{organizerName}}, {{organizationName}}.
+      </div>
+      
+      <!-- Signatures -->
+      <div class="signatures">
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div class="signature-name">{{signature1Name}}</div>
+          <div class="signature-title">{{signature1Title}}</div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div class="signature-name">{{signature2Name}}</div>
+          <div class="signature-title">{{signature2Title}}</div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div class="signature-name">{{signature3Name}}</div>
+          <div class="signature-title">{{signature3Title}}</div>
+        </div>
+      </div>
+      
+      <!-- Date -->
+      <div class="date-section">
+        <div class="date-label">Date</div>
+        <div class="date-value">{{eventDate}}</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

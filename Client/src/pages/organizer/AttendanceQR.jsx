@@ -126,7 +126,7 @@ const AttendanceQR = () => {
 
   const handleGenerateQR = async () => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
-      alert('Please select a real event first. Demo events cannot generate QR codes.');
+      alert('Please select an event first.');
       return;
     }
     setLoading(true);
@@ -195,23 +195,8 @@ const AttendanceQR = () => {
     }
   };
 
-  // Demo data
-  const demoEvents = [
-    { id: '1', name: 'Tech Conference 2025' },
-    { id: '2', name: 'Web Development Workshop' },
-  ];
-
-  const demoLogs = [
-    { _id: '1', participant: { name: 'John Doe', email: 'john@example.com' }, scannedAt: new Date().toISOString(), status: 'present' },
-    { _id: '2', participant: { name: 'Jane Smith', email: 'jane@example.com' }, scannedAt: new Date(Date.now() - 60000).toISOString(), status: 'present' },
-    { _id: '3', participant: { name: 'Mike Johnson', email: 'mike@example.com' }, scannedAt: new Date(Date.now() - 120000).toISOString(), status: 'present' },
-    { _id: '4', participant: { name: 'Sarah Williams', email: 'sarah@example.com' }, scannedAt: new Date(Date.now() - 180000).toISOString(), status: 'present' },
-    { _id: '5', participant: { name: 'Chris Brown', email: 'chris@example.com' }, scannedAt: new Date(Date.now() - 240000).toISOString(), status: 'present' },
-  ];
-
-  const displayEvents = events.length > 0 ? events : [];
-  const displayLogs = attendanceLogs.length > 0 ? attendanceLogs : [];
-  const usingDemoData = events.length === 0;
+  const displayEvents = events;
+  const displayLogs = attendanceLogs;
 
   const filteredLogs = displayLogs.filter((log) =>
     log.participant?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -220,21 +205,6 @@ const AttendanceQR = () => {
 
   return (
     <div className="space-y-6">
-      {/* Demo Mode Banner */}
-      {usingDemoData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
-            <QrCode size={20} className="text-yellow-600" />
-          </div>
-          <div>
-            <h3 className="font-medium text-yellow-800">Demo Mode</h3>
-            <p className="text-sm text-yellow-700 mt-1">
-              Showing sample data. Create events from the Admin panel and get assigned to track real attendance here.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -245,12 +215,17 @@ const AttendanceQR = () => {
           value={selectedEvent}
           onChange={(e) => setSelectedEvent(e.target.value)}
           className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+          disabled={displayEvents.length === 0}
         >
-          {displayEvents.map((event) => (
-            <option key={event._id || event.id} value={event._id || event.id}>
-              {event.title || event.name}
-            </option>
-          ))}
+          {displayEvents.length === 0 ? (
+            <option value="">No events assigned</option>
+          ) : (
+            displayEvents.map((event) => (
+              <option key={event._id || event.id} value={event._id || event.id}>
+                {event.title || event.name}
+              </option>
+            ))
+          )}
         </select>
       </div>
 

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate of Appreciation</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Times New Roman', serif;
+      background: linear-gradient(135deg, #f5e6d3 0%, #d4c5a9 100%);
+      width: 297mm;
+      height: 210mm;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .certificate-container {
+      width: 100%;
+      height: 100%;
+      background-image: 
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23d4a574" opacity="0.1" width="100" height="100"/></svg>');
+      background-size: 50px 50px;
+      padding: 40px 60px;
+      position: relative;
+    }
+    
+    /* Decorative border */
+    .border-frame {
+      position: absolute;
+      top: 30px;
+      left: 50px;
+      right: 50px;
+      bottom: 30px;
+      border: 3px solid #b8860b;
+      box-shadow: inset 0 0 0 1px #d4a574;
+    }
+    
+    .inner-border {
+      position: absolute;
+      top: 45px;
+      left: 65px;
+      right: 65px;
+      bottom: 45px;
+      border: 1px solid #b8860b;
+    }
+    
+    /* Header section */
+    .header {
+      text-align: center;
+      position: relative;
+      z-index: 10;
+      margin-bottom: 20px;
+    }
+    
+    .college-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 2px;
+    }
+    
+    .department-name {
+      font-size: 14px;
+      color: #34495e;
+      margin-bottom: 1px;
+    }
+    
+    .association {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 15px;
+    }
+    
+    .event-logo {
+      font-size: 48px;
+      font-weight: bold;
+      color: #b8860b;
+      font-family: 'Brush Script MT', cursive;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+      margin: 15px 0;
+      letter-spacing: 2px;
+    }
+    
+    /* Main content */
+    .certificate-title {
+      font-size: 38px;
+      font-weight: bold;
+      text-align: center;
+      color: #2c3e50;
+      letter-spacing: 4px;
+      margin: 25px 0 15px 0;
+      font-family: 'Georgia', serif;
+    }
+    
+    .certify-text {
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+    
+    .participant-name {
+      text-align: center;
+      font-size: 52px;
+      font-family: 'Brush Script MT', cursive;
+      color: #1a1a1a;
+      margin: 20px 0;
+      font-weight: normal;
+      border-bottom: 2px solid #b8860b;
+      display: inline-block;
+      padding: 0 40px 5px 40px;
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .description {
+      text-align: center;
+      font-size: 15px;
+      color: #2c3e50;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 25px auto;
+      padding: 0 20px;
+    }
+    
+    .event-details {
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+      margin-top: 15px;
+    }
+    
+    /* Signatures section */
+    .signatures {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 40px;
+      padding: 0 80px;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .signature-block {
+      text-align: center;
+      width: 200px;
+    }
+    
+    .signature-line {
+      border-top: 2px solid #333;
+      margin-bottom: 5px;
+      padding-top: 30px;
+    }
+    
+    .signature-name {
+      font-size: 13px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    
+    .signature-title {
+      font-size: 11px;
+      color: #555;
+    }
+    
+    /* Decorative elements */
+    .corner-decoration {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      opacity: 0.3;
+    }
+    
+    .top-left {
+      top: 20px;
+      left: 20px;
+      border-top: 4px solid #b8860b;
+      border-left: 4px solid #b8860b;
+    }
+    
+    .top-right {
+      top: 20px;
+      right: 20px;
+      border-top: 4px solid #b8860b;
+      border-right: 4px solid #b8860b;
+    }
+    
+    .bottom-left {
+      bottom: 20px;
+      left: 20px;
+      border-bottom: 4px solid #b8860b;
+      border-left: 4px solid #b8860b;
+    }
+    
+    .bottom-right {
+      bottom: 20px;
+      right: 20px;
+      border-bottom: 4px solid #b8860b;
+      border-right: 4px solid #b8860b;
+    }
+    
+    .seal {
+      position: absolute;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffd700 0%, #b8860b 100%);
+      border: 3px solid #b8860b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="certificate-container">
+    <!-- Decorative borders -->
+    <div class="border-frame"></div>
+    <div class="inner-border"></div>
+    <div class="corner-decoration top-left"></div>
+    <div class="corner-decoration top-right"></div>
+    <div class="corner-decoration bottom-left"></div>
+    <div class="corner-decoration bottom-right"></div>
+    
+    <!-- Header -->
+    <div class="header">
+      <div class="college-name">{{organizationName}}</div>
+      <div class="department-name">{{departmentName}}</div>
+      <div class="association">{{associationText}}</div>
+      <div class="event-logo">{{eventName}}</div>
+    </div>
+    
+    <!-- Certificate content -->
+    <div class="certificate-title">CERTIFICATE OF APPRECIATION</div>
+    <div class="certify-text">This is to certify that</div>
+    <div class="participant-name">{{participantName}}</div>
+    
+    <div class="description">
+      has successfully participated and secured a {{achievement}} in "{{competitionName}}",
+      held as a part of {{eventName}}, organized by {{organizerName}},<br>
+      {{organizationName}}<br>
+      on {{eventDate}}.
+    </div>
+    
+    <!-- Seal -->
+    <div class="seal">VERIFIED</div>
+    
+    <!-- Signatures -->
+    <div class="signatures">
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-name">{{signature1Name}}</div>
+        <div class="signature-title">{{signature1Title}}</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-name">{{signature2Name}}</div>
+        <div class="signature-title">{{signature2Title}}</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-name">{{signature3Name}}</div>
+        <div class="signature-title">{{signature3Title}}</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-name">{{signature4Name}}</div>
+        <div class="signature-title">{{signature4Title}}</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -92,7 +92,7 @@ const Participants = () => {
 
   const handleAddParticipant = async () => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
-      alert('Please select a real event first. Demo events cannot have participants added.');
+      alert('Please select an event first.');
       return;
     }
     try {

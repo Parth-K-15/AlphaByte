@@ -85,7 +85,7 @@ const TeamAccess = () => {
 
   const handleAddMember = async () => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
-      alert('Please select a real event first. Demo events cannot add team members.');
+      alert('Please select an event first.');
       return;
     }
     try {
@@ -135,57 +135,8 @@ const TeamAccess = () => {
     }
   };
 
-  // Demo data
-  const demoEvents = [
-    { id: '1', name: 'Tech Conference 2025' },
-    { id: '2', name: 'Web Development Workshop' },
-  ];
-
-  const demoTeamMembers = [
-    { 
-      _id: '1', 
-      user: { name: 'Jane Smith', email: 'jane@example.com' }, 
-      role: 'TEAM_MEMBER',
-      permissions: { 
-        canViewParticipants: true, 
-        canManageAttendance: true, 
-        canSendEmails: true, 
-        canGenerateCertificates: false, 
-        canEditEvent: false 
-      },
-      addedAt: new Date().toISOString()
-    },
-    { 
-      _id: '2', 
-      user: { name: 'Mike Johnson', email: 'mike@example.com' }, 
-      role: 'TEAM_MEMBER',
-      permissions: { 
-        canViewParticipants: true, 
-        canManageAttendance: true, 
-        canSendEmails: false, 
-        canGenerateCertificates: false, 
-        canEditEvent: false 
-      },
-      addedAt: new Date().toISOString()
-    },
-    { 
-      _id: '3', 
-      user: { name: 'Sarah Williams', email: 'sarah@example.com' }, 
-      role: 'TEAM_MEMBER',
-      permissions: { 
-        canViewParticipants: true, 
-        canManageAttendance: false, 
-        canSendEmails: false, 
-        canGenerateCertificates: false, 
-        canEditEvent: false 
-      },
-      addedAt: new Date().toISOString()
-    },
-  ];
-
-  const displayEvents = events.length > 0 ? events : [];
-  const displayTeamMembers = teamMembers.length > 0 ? teamMembers : [];
-  const usingDemoData = events.length === 0;
+  const displayEvents = events;
+  const displayTeamMembers = teamMembers;
 
   const filteredMembers = displayTeamMembers.filter((member) =>
     member.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -223,21 +174,6 @@ const TeamAccess = () => {
 
   return (
     <div className="space-y-6">
-      {/* Demo Mode Banner */}
-      {usingDemoData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
-            <UserCog size={20} className="text-yellow-600" />
-          </div>
-          <div>
-            <h3 className="font-medium text-yellow-800">Demo Mode</h3>
-            <p className="text-sm text-yellow-700 mt-1">
-              Showing sample data. Create events from the Admin panel and get assigned to manage real team access.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>

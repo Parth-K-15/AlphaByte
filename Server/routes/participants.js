@@ -4,6 +4,7 @@ import Event from '../models/Event.js';
 import Participant from '../models/Participant.js';
 import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
+import CertificateRequest from '../models/CertificateRequest.js';
 import EventUpdate from '../models/EventUpdate.js';
 import User from '../models/User.js';
 
@@ -861,4 +862,213 @@ router.get('/calendar', async (req, res) => {
   }
 });
 
+// =====================
+// CERTIFICATE APIs
+// =====================
+
+// GET /api/participant/certificates/:participantId - Get all certificates for a participant
+router.get('/certificates/:participantId', async (req, res) => {
+  try {
+    const { participantId } = req.params;
+    
+    if (!isValidObjectId(participantId)) {
+      return res.status(400).json({ success: false, message: 'Invalid participant ID' });
+    }
+    
+    // Get current participant to find their email
+    const currentParticipant = await Participant.findById(participantId);
+    if (!currentParticipant) {
+      return res.status(404).json({ success: false, message: 'Participant not found' });
+    }
+    
+    console.log(`📋 Fetching certificates for participant: ${currentParticipant.email}`);
+    
+    // Find ALL participant records for this email (across all events)
+    const allParticipantRecords = await Participant.find({ email: currentParticipant.email })
+      .populate('event', 'title name startDate endDate status');
+    
+    console.log(`📊 Found ${allParticipantRecords.length} participant records`);
+    
+    // Log each participant record details
+    allParticipantRecords.forEach((record, index) => {
+      console.log(`  Record ${index + 1}:`, {
+        id: record._id,
+        email: record.email,
+        event: record.event ? {
+          id: record.event._id,
+          title: record.event.title || record.event.name,
+          status: record.event.status
+        } : 'NO EVENT',
+        attendanceStatus: record.attendanceStatus
+      });
+    });
+    
+    const participantIds = allParticipantRecords.map(p => p._id);
+    
+    // Get all certificates for any of this participant's records
+    const certificates = await Certificate.find({ participant: { $in: participantIds } })
+      .populate('event', 'title name startDate endDate status')
+      .populate('issuedBy', 'name email')
+      .sort({ issuedAt: -1 });
+    
+    console.log(`🏆 Found ${certificates.length} certificates`);
+    
+    // Get QR-scanned attendance records
+    const qrAttendance = await Attendance.find({ participant: { $in: participantIds } });
+    const qrAttendedEventIds = qrAttendance.map(a => a.event.toString());
+    
+    console.log(`✅ QR Attendance records: ${qrAttendance.length}`);
+    if (qrAttendance.length > 0) {
+      console.log(`   QR Event IDs: ${qrAttendedEventIds.join(', ')}`);
+    }
+    
+    // Build attended events list (includes BOTH QR scanned AND manual attendance)
+    const attendedEvents = [];
+    const certificateEventIds = certificates.map(c => c.event._id.toString());
+    
+    console.log(`\n📋 Analyzing ${allParticipantRecords.length} participant records for attended events...`);
+    
+    for (const record of allParticipantRecords) {
+      if (!record.event) {
+        console.log(`⚠️ Skipping record ${record._id} - No event populated`);
+        continue;
+      }
+      
+      const eventId = record.event._id.toString();
+      const hasQrAttendance = qrAttendedEventIds.includes(eventId);
+      const hasManualAttendance = record.attendanceStatus === 'ATTENDED';
+      const hasCertificate = certificateEventIds.includes(eventId);
+      const isCompleted = record.event.status && record.event.status.toLowerCase() === 'completed';
+      
+      console.log(`\n  Event: ${record.event.title || record.event.name}`);
+      console.log(`    - Event ID: ${eventId}`);
+      console.log(`    - Event Status: "${record.event.status}" (isCompleted: ${isCompleted})`);
+      console.log(`    - QR Attendance: ${hasQrAttendance}`);
+      console.log(`    - Manual Attendance Status: "${record.attendanceStatus}" (hasManualAttendance: ${hasManualAttendance})`);
+      console.log(`    - Has Certificate: ${hasCertificate}`);
+      console.log(`    - Eligible: ${(hasQrAttendance || hasManualAttendance) && isCompleted && !hasCertificate}`);
+      
+      // Include if: (QR scanned OR manually marked) AND event is completed AND no certificate yet
+      if ((hasQrAttendance || hasManualAttendance) && isCompleted && !hasCertificate) {
+        console.log(`    ✅ ADDED to attended events list`);
+        attendedEvents.push({
+          ...record.event.toObject(),
+          attendanceType: hasQrAttendance ? 'QR Scanned' : 'Manual',
+          participantRecordId: record._id
+        });
+      } else {
+        console.log(`    ❌ NOT ADDED - Missing criteria`);
+      }
+    }
+    
+    console.log(`\n📝 Attended events without certificates: ${attendedEvents.length}`);
+    console.log(`   - Events: ${attendedEvents.map(e => e.title || e.name).join(', ')}`);
+    
+    // All registered events with status
+    const allEvents = allParticipantRecords
+      .filter(p => p.event)
+      .map(p => {
+        const eventId = p.event._id.toString();
+        const hasQrAttendance = qrAttendedEventIds.includes(eventId);
+        const hasManualAttendance = p.attendanceStatus === 'ATTENDED';
+        
+        return {
+          ...p.event.toObject(),
+          hasAttendance: hasQrAttendance || hasManualAttendance,
+          attendanceType: hasQrAttendance ? 'QR' : hasManualAttendance ? 'Manual' : 'None',
+          hasCertificate: certificateEventIds.includes(eventId),
+          participantRecordId: p._id
+        };
+      });
+    
+    res.json({
+      success: true,
+      data: {
+        certificates,
+        attendedEventsWithoutCertificate: attendedEvents,
+        allEvents,
+        stats: {
+          total: certificates.length,
+          attended: attendedEvents.length,
+          registered: allEvents.length
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching certificates:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// POST /api/participant/certificates/request - Request a certificate
+router.post('/certificates/request', async (req, res) => {
+  try {
+    const { participantId, eventId } = req.body;
+    
+    if (!isValidObjectId(participantId) || !isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid participant or event ID' });
+    }
+    
+    // Check if participant attended the event
+    const attendance = await Attendance.findOne({ 
+      participant: participantId, 
+      event: eventId 
+    });
+    
+    if (!attendance) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'You did not attend this event. Only participants who attended can request certificates.' 
+      });
+    }
+    
+    // Check if certificate already exists
+    const existingCert = await Certificate.findOne({ 
+      participant: participantId, 
+      event: eventId 
+    });
+    
+    if (existingCert) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'You already have a certificate for this event.' 
+      });
+    }
+    
+    // Check if request already exists
+    const existingRequest = await CertificateRequest.findOne({ 
+      participant: participantId, 
+      event: eventId,
+      status: { $in: ['PENDING', 'APPROVED'] }
+    });
+    
+    if (existingRequest) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'You have already requested a certificate for this event.' 
+      });
+    }
+    
+    // Create request
+    const request = await CertificateRequest.create({
+      participant: participantId,
+      event: eventId
+    });
+    
+    const populatedRequest = await CertificateRequest.findById(request._id)
+      .populate('event', 'title name startDate')
+      .populate('participant', 'name email');
+    
+    res.json({
+      success: true,
+      message: 'Certificate request submitted successfully. The organizer will process it soon.',
+      data: populatedRequest
+    });
+  } catch (error) {
+    console.error('Error requesting certificate:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
 export default router;
+

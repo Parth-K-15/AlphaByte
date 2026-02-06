@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import {
   Mail,
   Send,
@@ -32,12 +32,25 @@ const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
 
 const Communication = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(searchParams.get('event') || '');
-  const [activeTab, setActiveTab] = useState('compose');
+  
+  // Determine initial tab from URL path
+  const getInitialTab = () => {
+    if (location.pathname.includes('/announcements')) return 'announcement';
+    return 'compose';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
+  
+  // Update tab when URL changes
+  useEffect(() => {
+    const tab = location.pathname.includes('/announcements') ? 'announcement' : 'compose';
+    setActiveTab(tab);
+  }, [location.pathname]);
   const [history, setHistory] = useState([]);
   const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [emailConfigStatus, setEmailConfigStatus] = useState(null);
   const [checkingConfig, setCheckingConfig] = useState(false);
@@ -58,22 +71,39 @@ const Communication = () => {
     fetchEvents();
     fetchTemplates();
     checkEmailConfiguration();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (selectedEvent && isValidObjectId(selectedEvent)) {
       fetchHistory();
-    } else {
-      setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEvent]);
 
   const fetchEvents = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const organizerId = user._id || user.id;
+      // Get userId directly from localStorage (stored by AuthContext)
+      const organizerId = localStorage.getItem('userId');
+      
+      console.log('🔍 [Communication] Organizer ID from localStorage:', organizerId);
+      
+      if (!organizerId) {
+        console.error('❌ [Communication] No organizer ID found in localStorage!');
+        alert('User ID not found. Please log in again.');
+        return;
+      }
+      
       const response = await getAssignedEvents(organizerId);
+      console.log('🔍 [Communication] API Response:', response.data);
+      console.log('🔍 [Communication] Events received:', response.data.data?.length || 0);
+      
       if (response.data.success) {
+        // Log each event's organizer ID to verify filtering
+        response.data.data.forEach((event, index) => {
+          console.log(`📋 [Communication] Event ${index + 1}: ${event.title || event.name}, Organizer: ${event.organizer}`);
+        });
+        
         setEvents(response.data.data);
         if (!selectedEvent && response.data.data.length > 0) {
           setSelectedEvent(response.data.data[0]._id || response.data.data[0].id);
@@ -85,16 +115,13 @@ const Communication = () => {
   };
 
   const fetchHistory = async () => {
-    setLoading(true);
     try {
-      const response = await getCommunicationHistory(selectedEvent, {});
+      const response = await getCommunicationHistory(selectedEvent);
       if (response.data.success) {
         setHistory(response.data.data);
       }
     } catch (error) {
-      console.error('Error fetching history:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching communication history:', error);
     }
   };
 
@@ -139,7 +166,7 @@ const Communication = () => {
 
   const handleSendEmail = async () => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
-      alert('Please select a real event first. Demo events cannot send emails.');
+      alert('Please select an event first.');
       return;
     }
     if (!emailData.subject || !emailData.message) {
@@ -147,10 +174,8 @@ const Communication = () => {
       return;
     }
     
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const organizerId = user._id || user.id;
-    console.log('📝 User object:', user);
-    console.log('📝 Organizer ID:', organizerId);
+    const organizerId = localStorage.getItem('userId');
+    console.log('📝 Organizer ID for email:', organizerId);
     
     if (!organizerId) {
       alert('User ID not found. Please log in again.');
@@ -179,12 +204,11 @@ const Communication = () => {
 
   const handleCreateAnnouncement = async () => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
-      alert('Please select a real event first. Demo events cannot create announcements.');
+      alert('Please select an event first.');
       return;
     }
     
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const organizerId = user._id || user.id;
+    const organizerId = localStorage.getItem('userId');
     if (!organizerId) {
       alert('User ID not found. Please log in again.');
       return;
@@ -209,23 +233,23 @@ const Communication = () => {
     }
   };
 
-  // Demo data
-  const demoEvents = [
-    { id: '1', name: 'Tech Conference 2025' },
-    { id: '2', name: 'Web Development Workshop' },
-  ];
+  const displayEvents = events;
+  const displayHistory = history;
+  const displayTemplates = templates;
 
-  const demoHistory = [
-    { _id: '1', subject: 'Event Reminder', type: 'EMAIL', recipientFilter: 'ALL', recipientCount: 150, status: 'SENT', sentAt: new Date().toISOString() },
-    { _id: '2', subject: 'Schedule Update', type: 'EMAIL', recipientFilter: 'REGISTERED', recipientCount: 120, status: 'SENT', sentAt: new Date(Date.now() - 86400000).toISOString() },
-    { _id: '3', subject: 'Certificate Available', type: 'EMAIL', recipientFilter: 'ATTENDED', recipientCount: 95, status: 'SENT', sentAt: new Date(Date.now() - 172800000).toISOString() },
-  ];
+  // Helper function to replace placeholders in message/subject
+  const replacePlaceholders = (text, eventData) => {
+    if (!text || !eventData) return text;
+    
+    return text
+      .replace(/\{\{eventName\}\}/g, eventData.title || eventData.name || 'Event')
+      .replace(/\{\{eventDate\}\}/g, eventData.startDate ? new Date(eventData.startDate).toLocaleDateString() : 'TBA')
+      .replace(/\{\{eventVenue\}\}/g, eventData.venue || eventData.location || 'TBA')
+      .replace(/\{\{organizerName\}\}/g, eventData.organizer?.name || 'Organizer');
+  };
 
-
-  const displayEvents = events.length > 0 ? events : [];
-  const displayHistory = history.length > 0 ? history : [];
-  const displayTemplates = templates.length > 0 ? templates : [];
-  const usingDemoData = events.length === 0;
+  // Get the current selected event data for placeholder replacement
+  const currentEvent = displayEvents.find(e => (e._id || e.id) === selectedEvent);
 
   const recipientFilters = [
     { value: 'ALL', label: 'All Participants', icon: Users },
@@ -296,21 +320,6 @@ const Communication = () => {
         </div>
       )}
 
-      {/* Demo Mode Banner */}
-      {usingDemoData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
-            <Mail size={20} className="text-yellow-600" />
-          </div>
-          <div>
-            <h3 className="font-medium text-yellow-800 text-sm md:text-base">Demo Mode</h3>
-            <p className="text-xs md:text-sm text-yellow-700 mt-1">
-              Showing sample data. Create events from the Admin panel and get assigned to send real communications.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4">
         <div>
@@ -329,12 +338,17 @@ const Communication = () => {
             value={selectedEvent}
             onChange={(e) => setSelectedEvent(e.target.value)}
             className="px-3 md:px-4 py-2 text-sm md:text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+            disabled={displayEvents.length === 0}
           >
-            {displayEvents.map((event) => (
-              <option key={event._id || event.id} value={event._id || event.id}>
-                {event.title || event.name}
-              </option>
-            ))}
+            {displayEvents.length === 0 ? (
+              <option value="">No events assigned</option>
+            ) : (
+              displayEvents.map((event) => (
+                <option key={event._id || event.id} value={event._id || event.id}>
+                  {event.title || event.name}
+                </option>
+              ))
+            )}
           </select>
         </div>
       </div>
@@ -587,7 +601,9 @@ You can use placeholders like:
               displayHistory.map((item) => (
                 <div key={item._id} className="p-4 hover:bg-gray-50 cursor-pointer">
                   <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-medium text-gray-800 text-sm line-clamp-1">{item.subject}</h4>
+                    <h4 className="font-medium text-gray-800 text-sm line-clamp-1">
+                      {replacePlaceholders(item.subject, currentEvent)}
+                    </h4>
                     {statusBadge(item.status)}
                   </div>
                   <div className="flex items-center gap-4 text-xs text-gray-500">
