@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', newToken);
         localStorage.setItem('role', userData.role);
         localStorage.setItem('userId', userData.id);
+        localStorage.setItem('user', JSON.stringify(userData)); // Store complete user object
         setToken(newToken);
         setUser(userData);
         return { success: true, redirectPath };
@@ -70,6 +71,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', newToken);
         localStorage.setItem('role', newUser.role);
         localStorage.setItem('userId', newUser.id);
+        localStorage.setItem('user', JSON.stringify(newUser)); // Store complete user object
         setToken(newToken);
         setUser(newUser);
         return { success: true, redirectPath: '/participant' };
@@ -84,6 +86,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('userId');
+    localStorage.removeItem('user'); // Remove user object
     setToken(null);
     setUser(null);
   };

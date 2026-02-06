@@ -2,7 +2,10 @@
   "name": "server",
   "version": "1.0.0",
   "type": "module",
-  "main": "app.js",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "start": "node app.js",
     "dev": "node --watch app.js",
@@ -20,9 +23,11 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "jsqr": "^1.4.0",
     "mongoose": "^9.1.5",
     "multer": "^2.0.2",
     "node-fetch": "^2.7.0",
-    "nodemailer": "^7.0.13"
+    "nodemailer": "^7.0.13",
+    "puppeteer": "^24.37.1"
   }
 }

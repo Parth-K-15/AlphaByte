@@ -24,6 +24,13 @@ const QRScanner = () => {
     };
   }, []);
 
+  useEffect(() => {
+    // Sync video element with stream when scanning starts
+    if (scanning && streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [scanning]);
+
   const startScanning = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -31,9 +38,6 @@ const QRScanner = () => {
       });
       
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setScanning(true);
     } catch (error) {
       console.error('Error accessing camera:', error);

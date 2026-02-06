@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -17,10 +17,26 @@ import {
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [openMenus, setOpenMenus] = useState({ events: true });
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  
+  // Auto-open menus based on current path
+  const getInitialOpenMenus = () => {
+    const menus = {};
+    if (location.pathname.includes('/events')) menus.events = true;
+    if (location.pathname.includes('/communication')) menus.communication = true;
+    if (location.pathname.includes('/certificates')) menus.certificates = true;
+    return menus;
+  };
+  
+  const [openMenus, setOpenMenus] = useState(getInitialOpenMenus());
+  
+  // Update open menus when location changes
+  useEffect(() => {
+    const newOpenMenus = getInitialOpenMenus();
+    setOpenMenus(prev => ({ ...prev, ...newOpenMenus }));
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();

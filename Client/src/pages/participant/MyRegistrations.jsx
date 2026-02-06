@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { QrCode, X, CheckCircle, Camera } from 'lucide-react';
+import jsQR from 'jsqr';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -9,6 +11,15 @@ const MyRegistrations = () => {
   const [email, setEmail] = useState(localStorage.getItem('participantEmail') || '');
   const [inputEmail, setInputEmail] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [markingAttendance, setMarkingAttendance] = useState(false);
+  const [scannedData, setScannedData] = useState(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const canvasRef = useRef(null);
+  const scanIntervalRef = useRef(null);
 
   useEffect(() => {
     if (email) {
@@ -17,6 +28,18 @@ const MyRegistrations = () => {
       setLoading(false);
     }
   }, [email]);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup camera on unmount
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
+    };
+  }, []);
 
   const fetchRegistrations = async () => {
     try {
@@ -72,6 +95,156 @@ const MyRegistrations = () => {
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  const handleOpenScanner = (event) => {
+    setSelectedEvent(event);
+    setShowScanModal(true);
+    setScannedData(null);
+  };
+
+  const startScanning = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+          scanQRCode();
+        };
+      }
+      setScanning(true);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setMessage({ type: 'error', text: 'Unable to access camera. Please allow camera permissions.' });
+    }
+  };
+
+  const scanQRCode = () => {
+    if (!canvasRef.current || !videoRef.current) return;
+
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const context = canvas.getContext('2d');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    scanIntervalRef.current = setInterval(() => {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (code) {
+          handleQRCodeScanned(code.data);
+          clearInterval(scanIntervalRef.current);
+          stopScanning();
+        }
+      }
+    }, 300); // Scan every 300ms
+  };
+
+  const handleQRCodeScanned = async (qrData) => {
+    try {
+      const parsedData = JSON.parse(qrData);
+      
+      // Check if it's a valid attendance QR code
+      if (parsedData.eventId || parsedData.qrData) {
+        await markAttendanceFromQR(parsedData);
+      } else {
+        setScannedData({ success: false, message: 'Invalid QR code format' });
+      }
+    } catch (error) {
+      // If not JSON, try using as session ID directly
+      await markAttendanceFromQR({ sessionId: qrData, eventId: selectedEvent._id });
+    }
+  };
+
+  const markAttendanceFromQR = async (qrCodeData) => {
+    setMarkingAttendance(true);
+    try {
+      const response = await fetch(`${API_BASE}/participant/attendance/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: qrCodeData.eventId || selectedEvent._id,
+          email: email,
+          qrData: qrCodeData.qrData || qrCodeData.sessionId
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setScannedData({ success: true, message: 'Attendance marked successfully!' });
+        setMessage({ type: 'success', text: 'Attendance marked successfully!' });
+        fetchRegistrations();
+        setTimeout(() => handleCloseScanner(), 2000);
+      } else {
+        setScannedData({ success: false, message: data.message || 'Failed to mark attendance' });
+      }
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      setScannedData({ success: false, message: 'Failed to mark attendance' });
+    } finally {
+      setMarkingAttendance(false);
+    }
+  };
+
+  const stopScanning = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+    }
+    setScanning(false);
+  };
+
+  const handleCloseScanner = () => {
+    stopScanning();
+    setShowScanModal(false);
+    setSelectedEvent(null);
+    setScannedData(null);
+  };
+
+  const handleManualEntry = async (sessionId) => {
+    if (!sessionId || !selectedEvent) return;
+    
+    setMarkingAttendance(true);
+    try {
+      const response = await fetch(`${API_BASE}/organizer/attendance/mark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: selectedEvent._id,
+          sessionId: sessionId,
+          participantId: email, // Using email as identifier
+          organizerId: 'self'
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage({ type: 'success', text: 'Attendance marked successfully!' });
+        setScannedData({ success: true, message: 'Attendance marked!' });
+        fetchRegistrations();
+        setTimeout(() => handleCloseScanner(), 2000);
+      } else {
+        setScannedData({ success: false, message: data.message || 'Failed to mark attendance' });
+      }
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      setScannedData({ success: false, message: 'Failed to mark attendance' });
+    } finally {
+      setMarkingAttendance(false);
+    }
   };
 
   // If no email, show email input form
@@ -212,13 +385,20 @@ const MyRegistrations = () => {
                         View Event →
                       </Link>
                     )}
-                    {reg.attendanceStatus === 'PENDING' && reg.event?.status === 'ongoing' && (
-                      <Link
-                        to={`/participant/scan?eventId=${reg.event._id}`}
-                        className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    {reg.attendanceStatus !== 'ATTENDED' && reg.event && (
+                      <button
+                        onClick={() => handleOpenScanner(reg.event)}
+                        className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1"
                       >
-                        📷 Scan QR
-                      </Link>
+                        <Camera size={16} />
+                        Scan QR Code
+                      </button>
+                    )}
+                    {reg.attendanceStatus === 'ATTENDED' && (
+                      <span className="px-4 py-2 text-sm bg-green-100 text-green-700 rounded-lg flex items-center gap-1">
+                        <CheckCircle size={16} />
+                        Attendance Marked
+                      </span>
                     )}
                     {reg.certificate && reg.certificate.certificateUrl && (
                       <Link
@@ -249,6 +429,115 @@ const MyRegistrations = () => {
           Use a different email
         </button>
       </div>
+
+      {/* QR Scanner Modal */}
+      {showScanModal && selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative">
+            {/* Close Button */}
+            <button
+              onClick={handleCloseScanner}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg z-10"
+            >
+              <X size={20} className="text-gray-500" />
+            </button>
+
+            {/* Modal Content */}
+            <div className="text-center">
+              <div className="mb-4">
+                <h3 className="text-xl font-bold text-gray-800">{selectedEvent.title}</h3>
+                <p className="text-sm text-gray-500 mt-1">Scan the organizer's QR code</p>
+              </div>
+
+              {/* Result Display */}
+              {scannedData && (
+                <div className={`mb-4 p-4 rounded-lg ${
+                  scannedData.success 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  <div className="text-3xl mb-2">{scannedData.success ? '✅' : '❌'}</div>
+                  <p className="font-medium">{scannedData.message}</p>
+                </div>
+              )}
+
+              {!scannedData && (
+                <>
+                  {/* Camera Scanner */}
+                  <div className="relative aspect-square bg-gray-900 rounded-xl overflow-hidden mb-4">
+                    {scanning ? (
+                      <>
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                        <canvas ref={canvasRef} style={{ display: 'none' }} />
+                        {/* QR Frame Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-64 h-64 border-2 border-white rounded-lg relative">
+                            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-green-500"></div>
+                            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-green-500"></div>
+                            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-green-500"></div>
+                            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-green-500"></div>
+                          </div>
+                        </div>
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
+                          <p className="text-white text-sm mb-2 bg-black bg-opacity-50 px-4 py-2 rounded-lg">
+                            Scanning for QR code...
+                          </p>
+                          <button
+                            onClick={stopScanning}
+                            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                          >
+                            Stop Camera
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <button
+                          onClick={startScanning}
+                          className="px-8 py-4 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 flex items-center gap-2"
+                        >
+                          <Camera size={20} />
+                          Start Camera
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Manual Entry Option */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <p className="text-sm text-gray-600 mb-3">Or enter session ID manually:</p>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const sessionId = e.target.sessionId.value;
+                      handleManualEntry(sessionId);
+                    }} className="flex gap-2">
+                      <input
+                        type="text"
+                        name="sessionId"
+                        placeholder="Enter session ID"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        required
+                      />
+                      <button
+                        type="submit"
+                        disabled={markingAttendance}
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400"
+                      >
+                        {markingAttendance ? 'Marking...' : 'Submit'}
+                      </button>
+                    </form>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

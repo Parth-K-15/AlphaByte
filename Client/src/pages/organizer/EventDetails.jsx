@@ -37,7 +37,9 @@ const EventDetails = () => {
       fetchEventData();
     } else {
       setLoading(false);
+      setEvent(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   const fetchEventData = async () => {
@@ -94,8 +96,9 @@ const EventDetails = () => {
   };
 
   const getLifecycleStageIndex = (status) => {
+    if (!status) return 0;
     const stages = ['draft', 'upcoming', 'ongoing', 'completed', 'cancelled'];
-    const index = stages.indexOf(status?.toLowerCase());
+    const index = stages.indexOf(status.toLowerCase());
     return index === -1 ? 0 : index;
   };
 
@@ -143,6 +146,45 @@ const EventDetails = () => {
     );
   }
 
+  if (!event || !eventId) {
+    return (
+      <div className="space-y-6">
+        <Link
+          to="/organizer/events"
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <div className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </div>
+          <span className="font-medium">Back to Events</span>
+        </Link>
+        
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <Calendar size={64} className="text-gray-300 mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">No Event Selected</h2>
+          <p className="text-gray-500 mb-6">Please select an event from your events list to view details and updates.</p>
+          <Link
+            to="/organizer/events"
+            className="btn-primary"
+          >
+            Go to My Events
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Back Button */}
@@ -172,10 +214,10 @@ const EventDetails = () => {
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
-            <span className={`px-3 py-1 rounded-lg text-sm font-medium ${statusColors[displayEvent.status]} bg-opacity-90`}>
-              {displayEvent.status?.charAt(0).toUpperCase() + displayEvent.status?.slice(1)}
+            <span className={`px-3 py-1 rounded-lg text-sm font-medium ${statusColors[displayEvent.status || 'draft']} bg-opacity-90`}>
+              {displayEvent.status ? displayEvent.status.charAt(0).toUpperCase() + displayEvent.status.slice(1) : 'Draft'}
             </span>
-            <span className="px-3 py-1 bg-white/20 rounded-lg text-sm">{displayEvent.category}</span>
+            <span className="px-3 py-1 bg-white/20 rounded-lg text-sm">{displayEvent.category || 'General'}</span>
           </div>
           <h1 className="text-3xl font-bold mb-2">{displayEvent.name}</h1>
           <p className="text-primary-100 max-w-2xl">{displayEvent.description}</p>

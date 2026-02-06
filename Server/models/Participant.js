@@ -44,7 +44,7 @@ const participantSchema = new mongoose.Schema(
     attendanceStatus: {
       type: String,
       enum: ['PENDING', 'ATTENDED', 'ABSENT'],
-      default: 'PENDING'
+      default: 'ABSENT'
     },
 
     certificateStatus: {
@@ -60,5 +60,8 @@ const participantSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Compound unique index: same email can register for multiple events, but not the same event twice
+participantSchema.index({ email: 1, event: 1 }, { unique: true });
 
 export default mongoose.model("Participant", participantSchema);

@@ -20,6 +20,30 @@ const certificateSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  cloudinaryUrl: {
+    type: String,
+    default: null
+  },
+  cloudinaryPublicId: {
+    type: String,
+    default: null
+  },
+  pdfPath: {
+    type: String,
+    default: null
+  },
+  pdfFilename: {
+    type: String,
+    default: null
+  },
+  achievement: {
+    type: String,
+    default: 'Participation'
+  },
+  competitionName: {
+    type: String,
+    default: null
+  },
   issuedAt: {
     type: Date,
     default: Date.now

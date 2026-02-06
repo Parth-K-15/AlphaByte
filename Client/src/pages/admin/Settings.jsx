@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, User, Key, Shield, Save, Eye, EyeOff } from 'lucide-react';
+import { authApi } from '../../services/api';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -7,13 +8,37 @@ const Settings = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const [profile, setProfile] = useState({
-    name: 'Admin User',
-    email: 'admin@alphabyte.com',
-    phone: '+1 234 567 890',
-    role: 'Super Admin',
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
   });
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await authApi.getMe();
+      if (response.success && response.data) {
+        setProfile({
+          name: response.data.name || '',
+          email: response.data.email || '',
+          phone: response.data.phone || '',
+          role: response.data.role || 'Admin',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setError('Failed to load profile data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [passwords, setPasswords] = useState({
     current: '',
@@ -114,6 +139,14 @@ const Settings = () => {
     setSuccess('Password changed successfully!');
     setPasswords({ current: '', new: '', confirm: '' });
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
