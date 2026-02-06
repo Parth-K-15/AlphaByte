@@ -114,17 +114,17 @@ const EventDetails = () => {
   const displayUpdates = updates;
 
   const updateTypeColors = {
-    INFO: 'bg-blue-100 text-blue-700 border-blue-200',
-    WARNING: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    URGENT: 'bg-red-100 text-red-700 border-red-200',
-    ANNOUNCEMENT: 'bg-green-100 text-green-700 border-green-200',
+    INFO: 'bg-blue-50 text-blue-700 border border-blue-200',
+    WARNING: 'bg-amber-50 text-amber-700 border border-amber-200',
+    URGENT: 'bg-red-50 text-red-700 border border-red-200',
+    ANNOUNCEMENT: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   };
 
   const statusColors = {
-    upcoming: 'bg-blue-100 text-blue-700',
-    ongoing: 'bg-green-100 text-green-700',
-    completed: 'bg-gray-100 text-gray-700',
-    draft: 'bg-yellow-100 text-yellow-700',
+    upcoming: 'bg-blue-50 text-blue-700 border border-blue-200',
+    ongoing: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    completed: 'bg-gray-50 text-gray-700 border border-gray-200',
+    draft: 'bg-amber-50 text-amber-700 border border-amber-200',
   };
 
   const tabs = [
@@ -148,51 +148,54 @@ const EventDetails = () => {
       {/* Back Button */}
       <Link
         to="/organizer/events"
-        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        className="group inline-flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-all font-bold"
       >
-        <div className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <div className="p-2.5 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all group-hover:scale-110">
           <svg
             width="20"
             height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
         </div>
-        <span className="font-medium">Back to Events</span>
+        <span>Back to Events</span>
       </Link>
 
       {/* Event Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl p-8 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10" />
+      <div className="relative bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl p-8 border border-white/60 shadow-2xl overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+        
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
-            <span className={`px-3 py-1 rounded-lg text-sm font-medium ${statusColors[displayEvent.status]} bg-opacity-90`}>
+            <span className={`px-3 py-1.5 rounded-full text-sm font-black ${statusColors[displayEvent.status]} shadow-lg`}>
               {displayEvent.status?.charAt(0).toUpperCase() + displayEvent.status?.slice(1)}
             </span>
-            <span className="px-3 py-1 bg-white/20 rounded-lg text-sm">{displayEvent.category}</span>
+            <span className="px-3 py-1.5 bg-white/30 backdrop-blur-sm rounded-full text-sm font-bold text-white shadow-lg">{displayEvent.category}</span>
           </div>
-          <h1 className="text-3xl font-bold mb-2">{displayEvent.name}</h1>
-          <p className="text-primary-100 max-w-2xl">{displayEvent.description}</p>
+          <h1 className="text-4xl font-black mb-3 text-white">{displayEvent.name}</h1>
+          <p className="text-white/90 max-w-2xl font-semibold">{displayEvent.description}</p>
           
-          <div className="flex flex-wrap items-center gap-6 mt-6">
-            <div className="flex items-center gap-2">
-              <Calendar size={18} />
+          <div className="flex flex-wrap items-center gap-6 mt-6 text-white">
+            <div className="flex items-center gap-2 font-bold bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+              <Calendar size={18} strokeWidth={2.5} />
               <span>{new Date(displayEvent.date).toLocaleDateString('en-US', { 
                 weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
               })}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock size={18} />
+            <div className="flex items-center gap-2 font-bold bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+              <Clock size={18} strokeWidth={2.5} />
               <span>{displayEvent.time}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin size={18} />
+            <div className="flex items-center gap-2 font-bold bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+              <MapPin size={18} strokeWidth={2.5} />
               <span>{displayEvent.venue}</span>
             </div>
           </div>
@@ -203,69 +206,76 @@ const EventDetails = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link
           to={`/organizer/participants?event=${eventId}`}
-          className="bg-white p-4 rounded-xl border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-3"
+          className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 p-6 rounded-2xl border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 flex items-center gap-4 overflow-hidden hover:-translate-y-1"
         >
-          <div className="p-3 bg-blue-50 rounded-xl">
-            <Users size={20} className="text-blue-600" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+          <div className="relative p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+            <Users size={24} className="text-white" strokeWidth={2.5} />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-800">{displayEvent.participantCount}</p>
-            <p className="text-sm text-gray-500">Participants</p>
+          <div className="relative">
+            <p className="text-3xl font-black text-gray-900">{displayEvent.participantCount}</p>
+            <p className="text-sm text-gray-700 font-bold">Participants</p>
           </div>
         </Link>
         <Link
           to={`/organizer/attendance/qr?event=${eventId}`}
-          className="bg-white p-4 rounded-xl border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-3"
+          className="group relative bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-6 rounded-2xl border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 flex items-center gap-4 overflow-hidden hover:-translate-y-1"
         >
-          <div className="p-3 bg-green-50 rounded-xl">
-            <QrCode size={20} className="text-green-600" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+          <div className="relative p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+            <QrCode size={24} className="text-white" strokeWidth={2.5} />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-800">{displayEvent.attendanceCount}</p>
-            <p className="text-sm text-gray-500">Attendance</p>
+          <div className="relative">
+            <p className="text-3xl font-black text-gray-900">{displayEvent.attendanceCount}</p>
+            <p className="text-sm text-gray-700 font-bold">Attendance</p>
           </div>
         </Link>
         <Link
           to={`/organizer/certificates/generate?event=${eventId}`}
-          className="bg-white p-4 rounded-xl border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-3"
+          className="group relative bg-gradient-to-br from-purple-50 to-purple-100/50 p-6 rounded-2xl border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 flex items-center gap-4 overflow-hidden hover:-translate-y-1"
         >
-          <div className="p-3 bg-purple-50 rounded-xl">
-            <Award size={20} className="text-purple-600" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+          <div className="relative p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+            <Award size={24} className="text-white" strokeWidth={2.5} />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-800">{displayEvent.certificateCount}</p>
-            <p className="text-sm text-gray-500">Certificates</p>
+          <div className="relative">
+            <p className="text-3xl font-black text-gray-900">{displayEvent.certificateCount}</p>
+            <p className="text-sm text-gray-700 font-bold">Certificates</p>
           </div>
         </Link>
         <Link
           to={`/organizer/communication/email?event=${eventId}`}
-          className="bg-white p-4 rounded-xl border border-gray-100 hover:shadow-md transition-shadow flex items-center gap-3"
+          className="group relative bg-gradient-to-br from-amber-50 to-amber-100/50 p-6 rounded-2xl border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 flex items-center gap-4 overflow-hidden hover:-translate-y-1"
         >
-          <div className="p-3 bg-orange-50 rounded-xl">
-            <Mail size={20} className="text-orange-600" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
+          <div className="relative p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg">
+            <Mail size={24} className="text-white" strokeWidth={2.5} />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-800">Send</p>
-            <p className="text-sm text-gray-500">Communication</p>
+          <div className="relative">
+            <p className="text-3xl font-black text-gray-900">Send</p>
+            <p className="text-sm text-gray-700 font-bold">Communication</p>
           </div>
         </Link>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-2xl border border-gray-100">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg">
         <div className="border-b border-gray-100">
           <div className="flex gap-6 px-6">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`py-4 border-b-2 font-medium text-sm transition-colors ${
+                className={`relative py-4 font-black text-sm transition-all duration-300 ${
                   activeTab === tab.key
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {tab.label}
+                {activeTab === tab.key && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+                )}
               </button>
             ))}
           </div>

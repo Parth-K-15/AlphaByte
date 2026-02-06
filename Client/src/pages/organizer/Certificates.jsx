@@ -179,30 +179,38 @@ const Certificates = () => {
 
   const statusBadge = (status) => {
     const config = {
-      SENT: { color: 'bg-green-100 text-green-700', icon: CheckCircle },
-      GENERATED: { color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-      FAILED: { color: 'bg-red-100 text-red-700', icon: AlertCircle },
+      SENT: { color: 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-green-200', icon: CheckCircle },
+      GENERATED: { color: 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 border-amber-200', icon: Clock },
+      FAILED: { color: 'bg-gradient-to-r from-red-100 to-pink-100 text-red-700 border-red-200', icon: AlertCircle },
     };
     const { color, icon: Icon } = config[status] || config.GENERATED;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${color}`}>
-        <Icon size={12} />
+      <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black border ${color}`}>
+        <Icon size={12} strokeWidth={2.5} />
         {status}
       </span>
     );
   };
 
   return (
-    <div className="space-y-6">
+    <div className="relative min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Animated floating orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-16 w-96 h-96 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full opacity-20 animate-pulse animation-delay-2000"></div>
+        <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-br from-pink-200 to-blue-200 rounded-full opacity-20 animate-pulse animation-delay-4000"></div>
+      </div>
+
+      <div className="relative z-10 p-6 space-y-8">
       {/* Demo Mode Banner */}
       {usingDemoData && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="p-2 bg-yellow-100 rounded-lg">
-            <Award size={20} className="text-yellow-600" />
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-4 shadow-lg">
+          <div className="p-3 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-xl shadow-sm">
+            <Award size={24} className="text-amber-600" strokeWidth={2.5} />
           </div>
           <div>
-            <h3 className="font-medium text-yellow-800">Demo Mode</h3>
-            <p className="text-sm text-yellow-700 mt-1">
+            <h3 className="font-black text-amber-900 text-lg">Demo Mode Active</h3>
+            <p className="text-amber-700 font-semibold mt-2">
               Showing sample certificates. Create events from the Admin panel and get assigned to generate real certificates.
             </p>
           </div>
@@ -210,15 +218,21 @@ const Certificates = () => {
       )}
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Certificates</h1>
-          <p className="text-gray-500 mt-1">Generate and distribute certificates</p>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-xl">
+            <Award size={24} className="text-white" strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-gray-900">Certificate Management</h1>
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full mt-1"></div>
+            <p className="text-gray-600 font-semibold mt-2">Generate and distribute certificates</p>
+          </div>
         </div>
         <select
           value={selectedEvent}
           onChange={(e) => setSelectedEvent(e.target.value)}
-          className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="px-6 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm font-bold text-gray-900 shadow-lg"
         >
           {displayEvents.map((event) => (
             <option key={event._id || event.id} value={event._id || event.id}>
@@ -229,110 +243,123 @@ const Certificates = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Generated</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
+              <p className="text-sm text-gray-600 font-bold">Total Generated</p>
+              <p className="text-3xl font-black text-gray-900 mt-2">{stats.total}</p>
             </div>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <Award size={20} className="text-blue-600" />
+            <div className="p-4 bg-gradient-to-r from-blue-100 to-blue-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+              <Award size={24} className="text-blue-600" strokeWidth={2.5} />
             </div>
           </div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full opacity-60"></div>
         </div>
         
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Sent</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{stats.sent}</p>
+              <p className="text-sm text-gray-600 font-bold">Sent Successfully</p>
+              <p className="text-3xl font-black text-green-600 mt-2">{stats.sent}</p>
             </div>
-            <div className="p-3 bg-green-50 rounded-xl">
-              <CheckCircle size={20} className="text-green-600" />
+            <div className="p-4 bg-gradient-to-r from-green-100 to-emerald-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+              <CheckCircle size={24} className="text-green-600" strokeWidth={2.5} />
             </div>
           </div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full opacity-60"></div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
+              <p className="text-sm text-gray-600 font-bold">Pending</p>
+              <p className="text-3xl font-black text-amber-600 mt-2">{stats.pending}</p>
             </div>
-            <div className="p-3 bg-yellow-50 rounded-xl">
-              <Clock size={20} className="text-yellow-600" />
+            <div className="p-4 bg-gradient-to-r from-amber-100 to-yellow-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+              <Clock size={24} className="text-amber-600" strokeWidth={2.5} />
             </div>
           </div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-amber-400 rounded-full opacity-60"></div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+        <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Failed</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{stats.failed}</p>
+              <p className="text-sm text-gray-600 font-bold">Failed</p>
+              <p className="text-3xl font-black text-red-600 mt-2">{stats.failed}</p>
             </div>
-            <div className="p-3 bg-red-50 rounded-xl">
-              <AlertCircle size={20} className="text-red-600" />
+            <div className="p-4 bg-gradient-to-r from-red-100 to-pink-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+              <AlertCircle size={24} className="text-red-600" strokeWidth={2.5} />
             </div>
           </div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/60 overflow-hidden">
         {/* Tabs */}
         <div className="border-b border-gray-100">
           <div className="flex">
             <button
               onClick={() => setActiveTab('generate')}
-              className={`flex-1 py-4 text-center font-medium transition-colors ${
+              className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
                 activeTab === 'generate'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
+                  ? 'text-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Award size={18} className="inline-block mr-2" />
+              <Award size={18} className="inline-block mr-2" strokeWidth={2.5} />
               Generate Certificates
+              {activeTab === 'generate' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('distribution')}
-              className={`flex-1 py-4 text-center font-medium transition-colors ${
+              className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
                 activeTab === 'distribution'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
+                  ? 'text-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Send size={18} className="inline-block mr-2" />
+              <Send size={18} className="inline-block mr-2" strokeWidth={2.5} />
               Distribution Log
+              {activeTab === 'distribution' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+              )}
             </button>
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-8">
           {activeTab === 'generate' && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Template Selection */}
               <div>
-                <h3 className="font-semibold text-gray-800 mb-4">Select Template</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></span>
+                  Select Template
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   {templates.map((template) => (
                     <button
                       key={template.id}
                       onClick={() => setGenerateOptions({ ...generateOptions, template: template.id })}
-                      className={`relative p-4 rounded-xl border-2 transition-all ${
+                      className={`group relative p-5 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
                         generateOptions.template === template.id
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 shadow-lg'
+                          : 'border-gray-200 hover:border-blue-300 bg-white'
                       }`}
                     >
-                      <div className="h-24 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                        <FileText size={32} className="text-gray-400" />
+                      <div className="h-28 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4 flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <FileText size={32} className="text-gray-500" strokeWidth={2} />
                       </div>
-                      <p className="text-sm font-medium text-gray-800">{template.name}</p>
+                      <p className="text-sm font-black text-gray-900">{template.name}</p>
                       {generateOptions.template === template.id && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
-                          <CheckCircle size={12} className="text-white" />
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <CheckCircle size={14} className="text-white" strokeWidth={2.5} />
                         </div>
                       )}
                     </button>
@@ -341,25 +368,30 @@ const Certificates = () => {
               </div>
 
               {/* Options */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-800 mb-3">Generation Options</h3>
-                <label className="flex items-center gap-3">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+                <h3 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></span>
+                  Generation Options
+                </h3>
+                <label className="flex items-center gap-4 cursor-pointer group">
                   <input
                     type="checkbox"
                     checked={generateOptions.includeAll}
                     onChange={(e) => setGenerateOptions({ ...generateOptions, includeAll: e.target.checked })}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 group-hover:scale-105 transition-transform"
                   />
-                  <span className="text-gray-700">Generate for all participants who attended the event</span>
+                  <span className="text-gray-800 font-bold group-hover:text-blue-600 transition-colors">Generate for all participants who attended the event</span>
                 </label>
               </div>
 
               {/* Info */}
-              <div className="bg-blue-50 rounded-xl p-4 flex items-start gap-3">
-                <AlertCircle size={20} className="text-blue-600 mt-0.5" />
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 flex items-start gap-4 border border-blue-200">
+                <div className="p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl">
+                  <AlertCircle size={20} className="text-blue-600" strokeWidth={2.5} />
+                </div>
                 <div>
-                  <p className="text-sm text-blue-800 font-medium">Certificate Generation</p>
-                  <p className="text-sm text-blue-600 mt-1">
+                  <p className="text-blue-900 font-black text-lg">Certificate Generation</p>
+                  <p className="text-blue-700 font-semibold mt-2">
                     Certificates will be generated for all participants who have marked attendance. 
                     You can send them individually or in bulk after generation.
                   </p>
@@ -367,39 +399,41 @@ const Certificates = () => {
               </div>
 
               {/* Generate Button */}
-              <button
-                onClick={handleGenerateCertificates}
-                disabled={generating}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
-              >
-                {generating ? (
-                  <RefreshCw size={20} className="animate-spin" />
-                ) : (
-                  <Award size={20} />
-                )}
-                {generating ? 'Generating Certificates...' : 'Generate Certificates'}
-              </button>
+              <div className="flex justify-center pt-4">
+                <button
+                  onClick={handleGenerateCertificates}
+                  disabled={generating}
+                  className="group flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:shadow-2xl hover:scale-105 transition-all font-bold disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg"
+                >
+                  {generating ? (
+                    <RefreshCw size={20} strokeWidth={2.5} className="animate-spin" />
+                  ) : (
+                    <Award size={20} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
+                  )}
+                  {generating ? 'Generating Certificates...' : 'Generate Certificates'}
+                </button>
+              </div>
             </div>
           )}
 
           {activeTab === 'distribution' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Actions Bar */}
-              <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} strokeWidth={2} />
                   <input
                     type="text"
                     placeholder="Search by name, email, or certificate ID..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm font-semibold"
                   />
                 </div>
                 <select
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  className="px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="px-6 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm font-bold text-gray-700"
                 >
                   <option value="all">All Status</option>
                   <option value="SENT">Sent</option>
@@ -409,12 +443,13 @@ const Certificates = () => {
                 <button
                   onClick={handleSendCertificates}
                   disabled={sending || stats.pending === 0}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50"
+                  className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {sending ? (
-                    <RefreshCw size={18} className="animate-spin" />
+                    <RefreshCw size={18} strokeWidth={2.5} className="animate-spin" />
                   ) : (
-                    <Send size={18} />
+                    <Send size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
+                  )}
                   )}
                   Send All Pending
                 </button>
@@ -500,6 +535,7 @@ const Certificates = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

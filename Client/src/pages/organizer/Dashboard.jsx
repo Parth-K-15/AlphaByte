@@ -16,28 +16,38 @@ import { getDashboardStats } from '../../services/organizerApi';
 
 const StatCard = ({ title, value, icon: Icon, trend, trendValue, color }) => {
   const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600',
-    orange: 'bg-orange-50 text-orange-600',
+    blue: 'from-blue-500 to-blue-600',
+    green: 'from-emerald-500 to-emerald-600',
+    purple: 'from-purple-500 to-purple-600',
+    orange: 'from-orange-500 to-orange-600',
+  };
+
+  const bgColorClasses = {
+    blue: 'bg-gradient-to-br from-blue-50 to-blue-100/50',
+    green: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50',
+    purple: 'bg-gradient-to-br from-purple-50 to-purple-100/50',
+    orange: 'bg-gradient-to-br from-orange-50 to-orange-100/50',
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-gray-500 text-sm font-medium">{title}</p>
-          <h3 className="text-3xl font-bold text-gray-800 mt-2">{value}</h3>
-          {trend && (
-            <p className={`text-sm mt-2 flex items-center gap-1 ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-              <TrendingUp size={14} className={trend === 'down' ? 'rotate-180' : ''} />
-              {trendValue}
-            </p>
-          )}
+    <div className={`relative ${bgColorClasses[color]} rounded-2xl p-6 border border-white/60 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group overflow-hidden`}>
+      {/* Decorative gradient orb */}
+      <div className={`absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br ${colorClasses[color]} rounded-full opacity-10 group-hover:opacity-20 transition-opacity blur-2xl`}></div>
+      
+      <div className="relative z-0">
+        <div className="flex items-start justify-between mb-4">
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[color]} shadow-lg`}>
+            <Icon size={24} strokeWidth={2.5} className="text-white" />
+          </div>
         </div>
-        <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
-          <Icon size={24} />
-        </div>
+        <p className="text-gray-600 text-xs font-semibold uppercase tracking-wider mb-2">{title}</p>
+        <h3 className="text-4xl font-black text-gray-900 mb-2">{value}</h3>
+        {trend && (
+          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+            <TrendingUp size={14} className={trend === 'down' ? 'rotate-180' : ''} strokeWidth={3} />
+            {trendValue}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -45,30 +55,32 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue, color }) => {
 
 const EventCard = ({ event }) => {
   const statusColors = {
-    upcoming: 'bg-blue-100 text-blue-700',
-    ongoing: 'bg-green-100 text-green-700',
-    completed: 'bg-gray-100 text-gray-700',
+    upcoming: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white',
+    ongoing: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white',
+    completed: 'bg-gradient-to-r from-gray-500 to-gray-600 text-white',
   };
 
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
+    <div className="group bg-white/80 backdrop-blur-sm rounded-xl p-5 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <h4 className="font-semibold text-gray-800">{event.title || event.name}</h4>
-          <p className="text-sm text-gray-500 mt-1">{event.date}</p>
+          <h4 className="font-bold text-gray-900 text-base group-hover:text-blue-600 transition-colors">{event.title || event.name}</h4>
+          <p className="text-sm text-gray-600 mt-1 font-semibold">{event.date}</p>
         </div>
-        <span className={`px-2 py-1 rounded-lg text-xs font-medium ${statusColors[event.status]}`}>
+        <span className={`px-3 py-1.5 rounded-full text-xs font-black shadow-lg ${statusColors[event.status]}`}>
           {event.status}
         </span>
       </div>
-      <div className="mt-4 flex items-center gap-4 text-sm text-gray-600">
-        <span className="flex items-center gap-1">
-          <Users size={14} />
-          {event.participants} participants
+      <div className="mt-4 flex items-center gap-6 text-sm text-gray-700">
+        <span className="flex items-center gap-1.5">
+          <Users size={16} strokeWidth={2.5} className="text-blue-500" />
+          <span className="font-black text-gray-900">{event.participants}</span>
+          <span className="font-semibold">participants</span>
         </span>
-        <span className="flex items-center gap-1">
-          <CheckCircle size={14} />
-          {event.attendance}% attendance
+        <span className="flex items-center gap-1.5">
+          <CheckCircle size={16} strokeWidth={2.5} className="text-emerald-500" />
+          <span className="font-black text-gray-900">{event.attendance}%</span>
+          <span className="font-semibold">attendance</span>
         </span>
       </div>
     </div>
@@ -116,21 +128,23 @@ const Dashboard = () => {
   };
 
   const quickActions = [
-    { title: 'Generate QR', icon: QrCode, path: '/organizer/attendance/qr', color: 'bg-blue-500' },
-    { title: 'View Participants', icon: Users, path: '/organizer/participants', color: 'bg-green-500' },
-    { title: 'Send Email', icon: AlertCircle, path: '/organizer/communication/email', color: 'bg-purple-500' },
-    { title: 'Issue Certificates', icon: Award, path: '/organizer/certificates/generate', color: 'bg-orange-500' },
+    { title: 'Generate QR', icon: QrCode, path: '/organizer/attendance/qr', bgColor: 'bg-blue-50', textColor: 'text-blue-600', borderColor: 'border-blue-200' },
+    { title: 'View Participants', icon: Users, path: '/organizer/participants', bgColor: 'bg-emerald-50', textColor: 'text-emerald-600', borderColor: 'border-emerald-200' },
+    { title: 'Send Email', icon: AlertCircle, path: '/organizer/communication/email', bgColor: 'bg-purple-50', textColor: 'text-purple-600', borderColor: 'border-purple-200' },
+    { title: 'Issue Certificates', icon: Award, path: '/organizer/certificates/generate', bgColor: 'bg-amber-50', textColor: 'text-amber-600', borderColor: 'border-amber-200' },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-          <AlertCircle size={20} className="text-red-600" />
+        <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 shadow-lg">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertCircle size={20} className="text-red-600" strokeWidth={2.5} />
+          </div>
           <div>
-            <p className="text-sm font-medium text-red-800">Error</p>
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm font-bold text-red-800">Error</p>
+            <p className="text-sm text-red-600 font-semibold">{error}</p>
           </div>
         </div>
       )}
@@ -138,20 +152,23 @@ const Dashboard = () => {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-gray-500 mt-1">Welcome back! Here's your event overview.</p>
+          <div className="inline-block">
+            <h1 className="text-4xl font-black text-gray-900 mb-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text">Dashboard Overview</h1>
+            <div className="h-1 w-24 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+          </div>
+          <p className="text-gray-600 mt-3 text-lg">Track your events and manage participants efficiently</p>
         </div>
         <Link
           to="/organizer/events"
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
+          className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-xl hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105"
         >
           View All Events
-          <ArrowUpRight size={16} />
+          <ArrowUpRight size={18} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
         </Link>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Assigned Events"
           value={stats.totalEvents || 3}
@@ -185,19 +202,23 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h2>
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 shadow-lg">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <span className="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></span>
+          Quick Actions
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {quickActions.map((action) => (
             <Link
               key={action.title}
               to={action.path}
-              className="flex flex-col items-center gap-3 p-4 rounded-xl border border-gray-100 hover:border-primary-200 hover:bg-primary-50/50 transition-all"
+              className={`group relative flex flex-col items-center gap-3 p-6 rounded-xl border ${action.borderColor} ${action.bgColor} hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden`}
             >
-              <div className={`p-3 rounded-xl text-white ${action.color}`}>
-                <action.icon size={20} />
+              <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className={`relative z-10 ${action.textColor} group-hover:scale-110 transition-transform duration-300`}>
+                <action.icon size={28} strokeWidth={2.5} />
               </div>
-              <span className="text-sm font-medium text-gray-700">{action.title}</span>
+              <span className="relative z-10 text-sm font-bold text-gray-800 text-center">{action.title}</span>
             </Link>
           ))}
         </div>
@@ -206,41 +227,51 @@ const Dashboard = () => {
       {/* Recent Events & Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Events */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">My Events</h2>
-            <Link to="/organizer/events" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-              View All
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-gradient-to-b from-emerald-500 to-blue-500 rounded-full"></span>
+              My Events
+            </h2>
+            <Link to="/organizer/events" className="group text-sm text-gray-900 hover:text-blue-600 font-bold flex items-center gap-1 transition-colors">
+              View All 
+              <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </Link>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {recentEvents.length > 0 ? recentEvents.map((event) => (
               <EventCard key={event.id || event._id} event={event} />
             )) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No events yet. Create your first event from the Admin panel.</p>
+              <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-dashed border-gray-300">
+                <div className="p-4 bg-white/80 rounded-2xl shadow-md inline-block mb-4">
+                  <Calendar size={48} className="text-blue-500 opacity-50" strokeWidth={2} />
+                </div>
+                <p className="text-gray-600 font-semibold">No events yet. Create your first event from the Admin panel.</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Activity Timeline */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 shadow-lg">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></span>
+            Recent Activity
+          </h2>
           <div className="space-y-4">
             {[
-              { icon: Users, text: '5 new participants registered', time: '10 min ago', color: 'text-green-600' },
-              { icon: QrCode, text: 'QR code scanned - 12 check-ins', time: '1 hour ago', color: 'text-blue-600' },
-              { icon: Award, text: '45 certificates generated', time: '2 hours ago', color: 'text-purple-600' },
-              { icon: Clock, text: 'Event "Tech Conference" starts in 2 days', time: '3 hours ago', color: 'text-orange-600' },
+              { icon: Users, text: '5 new participants registered', time: '10 min ago', bgColor: 'bg-emerald-50', iconColor: 'text-emerald-600' },
+              { icon: QrCode, text: 'QR code scanned - 12 check-ins', time: '1 hour ago', bgColor: 'bg-blue-50', iconColor: 'text-blue-600' },
+              { icon: Award, text: '45 certificates generated', time: '2 hours ago', bgColor: 'bg-purple-50', iconColor: 'text-purple-600' },
+              { icon: Clock, text: 'Event "Tech Conference" starts in 2 days', time: '3 hours ago', bgColor: 'bg-amber-50', iconColor: 'text-amber-600' },
             ].map((activity, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg bg-gray-50 ${activity.color}`}>
-                  <activity.icon size={16} />
+              <div key={index} className="group flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50/50 transition-all cursor-pointer">
+                <div className={`p-2.5 rounded-xl ${activity.bgColor} ${activity.iconColor} shadow-sm group-hover:shadow-md group-hover:scale-110 transition-all`}>
+                  <activity.icon size={18} strokeWidth={2.5} />
                 </div>
-                <div>
-                  <p className="text-sm text-gray-700">{activity.text}</p>
-                  <span className="text-xs text-gray-400">{activity.time}</span>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-800 font-semibold">{activity.text}</p>
+                  <span className="text-xs text-gray-500 mt-1 block">{activity.time}</span>
                 </div>
               </div>
             ))}
@@ -249,19 +280,24 @@ const Dashboard = () => {
       </div>
 
       {/* Attendance Overview Chart Placeholder */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 shadow-lg">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">Attendance Overview</h2>
-          <select className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></span>
+            Attendance Overview
+          </h2>
+          <select className="text-sm border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white font-semibold text-gray-700 shadow-sm hover:shadow transition-all">
             <option>Last 7 days</option>
             <option>Last 30 days</option>
             <option>Last 3 months</option>
           </select>
         </div>
-        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
+        <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-gray-200/50">
           <div className="text-center text-gray-500">
-            <BarChart3 size={48} className="mx-auto mb-2 opacity-50" />
-            <p>Attendance chart will be displayed here</p>
+            <div className="p-4 bg-white/80 rounded-2xl shadow-sm inline-block mb-3">
+              <BarChart3 size={48} className="text-blue-500 opacity-50" strokeWidth={2} />
+            </div>
+            <p className="text-sm font-medium">Attendance chart will be displayed here</p>
           </div>
         </div>
       </div>

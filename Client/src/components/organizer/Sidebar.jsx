@@ -90,24 +90,35 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`bg-gray-800 text-white transition-all duration-300 flex flex-col shadow-2xl ${
+      className={`bg-gradient-to-b from-white/90 via-white/85 to-white/90 backdrop-blur-2xl border-r border-white/60 shadow-xl transition-all duration-300 flex flex-col ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-gray-800">
+      <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200/40 bg-white/50">
         {!collapsed && (
-          <span className="text-xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
-            Organizer
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
+              <span className="text-white font-black text-sm">AB</span>
+            </div>
+            <span className="text-xl font-black bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+              AlphaByte
+            </span>
+          </div>
+        )}
+        {collapsed && (
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg mx-auto">
+            <span className="text-white font-black text-sm">AB</span>
+          </div>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+          className="p-2 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 rounded-lg transition-all"
         >
           <ChevronLeft
-            className={`transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}
+            className={`transition-transform duration-300 text-gray-600 ${collapsed ? "rotate-180" : ""}`}
             size={20}
+            strokeWidth={2.5}
           />
         </button>
       </div>
@@ -121,15 +132,15 @@ const Sidebar = () => {
                 <>
                   <button
                     onClick={() => toggleMenu(item.key)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                    className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-300 ${
                       isParentActive(item.submenu)
-                        ? "bg-primary-600 text-white shadow-lg"
-                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                        : "text-gray-700 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 hover:text-gray-900 hover:scale-105"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <item.icon size={20} />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon size={20} strokeWidth={2.5} />
+                      {!collapsed && <span className="font-bold">{item.title}</span>}
                     </div>
                     {!collapsed && (
                       <ChevronDown
@@ -139,15 +150,15 @@ const Sidebar = () => {
                     )}
                   </button>
                   {!collapsed && openMenus[item.key] && (
-                    <ul className="mt-1 ml-4 pl-4 border-l-2 border-gray-700 space-y-1">
+                    <ul className="mt-1 ml-4 pl-4 border-l-2 border-gray-200 space-y-1">
                       {item.submenu.map((subItem) => (
                         <li key={subItem.path}>
                           <NavLink
                             to={subItem.path}
-                            className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                            className={`block px-3 py-2.5 rounded-lg text-sm transition-all duration-300 font-semibold ${
                               isActive(subItem.path)
-                                ? "bg-gray-800 text-primary-400 font-medium"
-                                : "text-gray-500 hover:text-white hover:bg-gray-800"
+                                ? "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 scale-105"
+                                : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:scale-105"
                             }`}
                           >
                             {subItem.title}
@@ -160,14 +171,14 @@ const Sidebar = () => {
               ) : (
                 <NavLink
                   to={item.path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 ${
                     isActive(item.path)
-                      ? "bg-primary-600 text-white shadow-lg"
-                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                      : "text-gray-700 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 hover:text-gray-900 hover:scale-105"
                   }`}
                 >
-                  <item.icon size={20} />
-                  {!collapsed && <span>{item.title}</span>}
+                  <item.icon size={20} strokeWidth={2.5} />
+                  {!collapsed && <span className="font-bold">{item.title}</span>}
                 </NavLink>
               )}
             </li>
@@ -176,14 +187,14 @@ const Sidebar = () => {
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-t border-gray-200/40 bg-white/50">
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:bg-red-600 hover:text-white transition-colors w-full ${
+          className={`flex items-center gap-3 px-3 py-3 rounded-xl text-red-600 hover:bg-gradient-to-br hover:from-red-50 hover:to-red-100 transition-all duration-300 w-full font-bold hover:scale-105 ${
             collapsed ? "justify-center" : ""
           }`}
         >
-          <LogOut size={20} />
+          <LogOut size={20} strokeWidth={2.5} />
           {!collapsed && <span>Logout</span>}
         </button>
       </div>
