@@ -72,6 +72,7 @@ export const unmarkAttendance = (eventId, participantId) => {
 };
 
 // Certificates
+export const getCertificateStats = (eventId) => fetchApi(`/organizer/certificates/${eventId}/stats`);
 export const generateCertificates = (eventId, data) => fetchApi(`/organizer/certificates/${eventId}/generate`, { method: 'POST', body: data });
 export const sendCertificates = (eventId, data) => fetchApi(`/organizer/certificates/${eventId}/send`, { method: 'POST', body: data });
 export const getCertificateLogs = (eventId, params = {}) => {
@@ -79,6 +80,14 @@ export const getCertificateLogs = (eventId, params = {}) => {
   return fetchApi(`/organizer/certificates/${eventId}${query ? `?${query}` : ''}`);
 };
 export const resendCertificate = (certificateId) => fetchApi(`/organizer/certificates/${certificateId}/resend`, { method: 'POST' });
+export const getCertificateRequests = (eventId, status) => {
+  const query = status ? `?status=${status}` : '';
+  return fetchApi(`/organizer/certificates/${eventId}/requests${query}`);
+};
+export const approveCertificateRequest = (requestId, data) => 
+  fetchApi(`/organizer/certificates/request/${requestId}/approve`, { method: 'POST', body: data });
+export const rejectCertificateRequest = (requestId, data) => 
+  fetchApi(`/organizer/certificates/request/${requestId}/reject`, { method: 'POST', body: data });
 
 // Communication
 export const sendEmail = (data) => fetchApi('/organizer/communication/email', { method: 'POST', body: data });

@@ -4,12 +4,14 @@ import User from '../models/User.js';
 import Participant from '../models/Participant.js';
 import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
+import CertificateRequest from '../models/CertificateRequest.js';
 import Communication from '../models/Communication.js';
 import EventUpdate from '../models/EventUpdate.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import { sendBulkEmails, testEmailConnection } from '../utils/emailService.js';
+import { sendBulkEmails, testEmailConnection, sendCertificateEmail } from '../utils/emailService.js';
+import certificateGenerator from '../utils/certificateGenerator.js';
 
 const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
@@ -39,8 +41,24 @@ router.get('/dashboard', async (req, res) => {
 router.get('/events', async (req, res) => {
   try {
     const organizerId = req.query.organizerId;
-    let query = organizerId ? { $or: [{ teamLead: organizerId }, { 'teamMembers.user': organizerId }] } : {};
+    
+    // Security: Require organizerId to prevent returning all events
+    if (!organizerId) {
+      console.warn('⚠️ [Events] No organizerId provided in query');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Organizer ID is required' 
+      });
+    }
+    
+    console.log('🔍 [Events] Fetching events for organizer:', organizerId);
+    
+    // Find events where user is teamLead OR a teamMember
+    let query = { $or: [{ teamLead: organizerId }, { 'teamMembers.user': organizerId }] };
     const events = await Event.find(query).populate('teamLead', 'name email').populate('teamMembers', 'name email').sort({ createdAt: -1 });
+    
+    console.log(`✅ [Events] Found ${events.length} events for organizer ${organizerId}`);
+    
     const eventsWithCounts = await Promise.all(events.map(async (event) => {
       const participantCount = await Participant.countDocuments({ event: event._id });
       const attendanceCount = await Attendance.countDocuments({ event: event._id });
@@ -289,23 +307,234 @@ router.get('/attendance/:eventId/live', async (req, res) => {
 });
 
 // Certificate routes
+// Get certificate generation statistics
+router.get('/certificates/:eventId/stats', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID format' });
+    }
+    
+    // Get total registered participants
+    const totalRegistered = await Participant.countDocuments({ event: eventId });
+    
+    // Get participants who marked attendance
+    const attendanceRecords = await Attendance.find({ event: eventId }).populate('participant');
+    const totalAttended = attendanceRecords.length;
+    
+    // Count valid attendance (with participant data)
+    const validAttendance = attendanceRecords.filter(a => a.participant && a.participant._id);
+    
+    // Get existing certificates
+    const existingCerts = await Certificate.find({ event: eventId });
+    const totalCertificatesIssued = existingCerts.length;
+    
+    // Calculate eligible participants (attended but no certificate)
+    const certifiedParticipantIds = existingCerts.map(c => c.participant.toString());
+    const eligibleForCertificates = validAttendance.filter(a => 
+      !certifiedParticipantIds.includes(a.participant._id.toString())
+    ).length;
+    
+    // Get detailed participant info
+    const attendedParticipants = validAttendance.map(a => ({
+      id: a.participant._id,
+      name: a.participant.name || a.participant.fullName,
+      email: a.participant.email,
+      attendedAt: a.scannedAt,
+      hasCertificate: certifiedParticipantIds.includes(a.participant._id.toString())
+    }));
+    
+    res.json({
+      success: true,
+      data: {
+        totalRegistered,
+        totalAttended,
+        totalCertificatesIssued,
+        eligibleForCertificates,
+        attendanceRate: totalRegistered > 0 ? Math.round((totalAttended / totalRegistered) * 100) : 0,
+        certificateRate: totalAttended > 0 ? Math.round((totalCertificatesIssued / totalAttended) * 100) : 0,
+        participants: attendedParticipants
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching certificate stats:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 router.post('/certificates/:eventId/generate', async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
-    const { organizerId, template = 'default' } = req.body;
+    
+    const { organizerId, template = 'default', achievement = 'Participation', competitionName } = req.body;
+    
+    console.log('\ud83c\udfaf Generating certificates for event:', eventId);
+    console.log('Request params:', { organizerId, template, achievement, competitionName });
+    
     const event = await Event.findById(eventId);
-    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    if (!event) {
+      console.log('Event not found');
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+    console.log('Event found:', event.title || event.name);
+    
+    // Get participants who attended but don't have certificates yet
+    console.log('Querying attendance for event:', eventId);
     const attendedParticipants = await Attendance.find({ event: eventId }).populate('participant');
+    console.log(`Found ${attendedParticipants.length} attendance records`);
+    
+    if (attendedParticipants.length === 0) {
+      console.log('NO ATTENDANCE RECORDS FOUND! Please mark attendance first.');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No attendance records found. Please mark participants as present using the Attendance QR page before generating certificates.', 
+        data: { generated: 0, failed: 0 } 
+      });
+    }
+    
+    // Filter out records with missing participant data
+    const validAttendance = attendedParticipants.filter(a => a.participant && a.participant._id);
+    console.log(`Valid attendance with participant data: ${validAttendance.length}`);
+    
+    if (validAttendance.length === 0) {
+      console.log('Attendance exists but participant data is null/missing');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Attendance records exist but participant information is missing.',
+        data: { generated: 0, failed: 0 } 
+      });
+    }
+    
     const existingCerts = await Certificate.find({ event: eventId });
     const certifiedParticipantIds = existingCerts.map(c => c.participant.toString());
-    const eligibleParticipants = attendedParticipants.filter(a => !certifiedParticipantIds.includes(a.participant._id.toString()));
-    if (eligibleParticipants.length === 0) return res.json({ success: true, message: 'No new certificates to generate', data: { generated: 0 } });
-    const certificates = await Promise.all(eligibleParticipants.map(async (att) => { return await Certificate.create({ event: eventId, participant: att.participant._id, issuedBy: organizerId, template, status: 'GENERATED' }); }));
-    res.json({ success: true, message: `Generated ${certificates.length} certificates`, data: { generated: certificates.length, certificates } });
+    const eligibleParticipants = validAttendance.filter(a => 
+      !certifiedParticipantIds.includes(a.participant._id.toString())
+    );
+    
+    console.log(`📋 Certificate Status - Total Attended: ${validAttendance.length}, Already Issued: ${existingCerts.length}, Eligible: ${eligibleParticipants.length}`);
+    
+    if (eligibleParticipants.length === 0) {
+      console.log('✅ All participants already have certificates');
+      return res.json({ 
+        success: true, 
+        message: `All ${validAttendance.length} participant${validAttendance.length === 1 ? '' : 's'} already have certificates. No new certificates to generate.`, 
+        data: { generated: 0, alreadyIssued: existingCerts.length, totalAttended: validAttendance.length } 
+      });
+    }
+    
+    console.log(`\ud83d\udcdd Generating ${eligibleParticipants.length} certificates...`);
+    
+    const results = [];
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const att of eligibleParticipants) {
+      try {
+        const participant = att.participant;
+        
+        if (!participant || !participant.name) {
+          console.log('⚠️ Skipping participant with missing data');
+          failCount++;
+          results.push({ 
+            participant: 'Unknown', 
+            status: 'FAILED', 
+            error: 'Participant data missing' 
+          });
+          continue;
+        }
+        
+        // Prepare certificate data with all required fields
+        const certificateData = {
+          template,
+          participantName: participant.name || participant.fullName || 'Participant',
+          eventName: event.title || event.name || 'Event',
+          eventDate: event.startDate || event.createdAt || new Date(),
+          certificateId: `CERT-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
+          organizationName: event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
+          departmentName: event.departmentName || 'Department of Computer Science & Engineering',
+          competitionName: competitionName || event.title || event.name || 'Competition',
+          achievement: achievement || 'Participation'
+        };
+        
+        // Generate PDF
+        console.log(`📄 Generating PDF for ${participant.name}...`);
+        console.log(`📋 Certificate data:`, {
+          participantName: certificateData.participantName,
+          eventName: certificateData.eventName,
+          certificateId: certificateData.certificateId,
+          achievement: certificateData.achievement
+        });
+        
+        const pdfResult = await certificateGenerator.generateCertificate(certificateData);
+        console.log(`✅ PDF Generation Result:`, {
+          success: pdfResult.success,
+          filename: pdfResult.filename,
+          hasCloudinaryUrl: !!pdfResult.cloudinaryUrl,
+          hasPublicId: !!pdfResult.cloudinaryPublicId
+        });
+        
+        if (pdfResult.success) {
+          // Save certificate record to database
+          console.log(`💾 Saving certificate to database for ${participant.name}...`);
+          const certificate = await Certificate.create({
+            event: eventId,
+            participant: participant._id,
+            certificateId: certificateData.certificateId,
+            issuedBy: organizerId,
+            template,
+            achievement,
+            competitionName: competitionName || event.title || event.name,
+            pdfPath: pdfResult.filepath,
+            pdfFilename: pdfResult.filename,
+            certificateUrl: pdfResult.url,
+            cloudinaryUrl: pdfResult.cloudinaryUrl,
+            cloudinaryPublicId: pdfResult.cloudinaryPublicId,
+            status: 'GENERATED'
+          });
+          console.log(`\u2705 Certificate saved to database with ID: ${certificate._id}`);
+          console.log(`☁️ Cloudinary URL: ${certificate.cloudinaryUrl}`);
+          
+          results.push({ participant: participant.name, status: 'SUCCESS', certificate });
+          successCount++;
+          console.log(`\u2705 Generated certificate for ${participant.name} (${successCount}/${eligibleParticipants.length})`);
+        } else {
+          results.push({ participant: participant.name, status: 'FAILED', error: 'PDF generation failed' });
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`\u274c Error generating certificate for ${att.participant.name}:`, error);        console.error('Full error stack:', error.stack);        results.push({ 
+          participant: att.participant.name, 
+          status: 'FAILED', 
+          error: error.message 
+        });
+        failCount++;
+      }
+    }
+    
+    console.log(`\n========================================`);
+    console.log(`✅ CERTIFICATE GENERATION COMPLETE`);
+    console.log(`========================================`);
+    console.log(`📊 Summary:`);
+    console.log(`   - Total Eligible: ${eligibleParticipants.length}`);
+    console.log(`   - Successfully Generated: ${successCount}`);
+    console.log(`   - Failed: ${failCount}`);
+    console.log(`   - All uploaded to Cloudinary: ${successCount > 0 ? 'YES ☁️' : 'N/A'}`);
+    console.log(`========================================\n`);
+    
+    res.json({ 
+      success: true, 
+      message: `Generated ${successCount} certificates${failCount > 0 ? `, ${failCount} failed` : ''}`, 
+      data: { 
+        generated: successCount,
+        failed: failCount,
+        total: eligibleParticipants.length,
+        results 
+      } 
+    });
   } catch (error) {
     console.error('Error generating certificates:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -313,24 +542,135 @@ router.post('/certificates/:eventId/send', async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
-    const certificates = await Certificate.find({ event: eventId, status: 'GENERATED' }).populate('participant');
-    if (certificates.length === 0) return res.json({ success: true, message: 'No certificates to send', data: { sent: 0 } });
-    const sentCerts = await Promise.all(certificates.map(async (cert) => { cert.status = 'SENT'; cert.sentAt = Date.now(); await cert.save(); await Participant.findByIdAndUpdate(cert.participant._id, { certificateStatus: 'SENT' }); return cert; }));
-    res.json({ success: true, message: `Sent ${sentCerts.length} certificates`, data: { sent: sentCerts.length } });
+    
+    console.log('\ud83d\udce7 Sending certificates for event:', eventId);
+    
+    const event = await Event.findById(eventId);
+    if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    
+    // Get all generated but not sent certificates
+    const certificates = await Certificate.find({ 
+      event: eventId, 
+      status: 'GENERATED' 
+    }).populate('participant');
+    
+    if (certificates.length === 0) {
+      return res.json({ 
+        success: true, 
+        message: 'No certificates to send', 
+        data: { sent: 0 } 
+      });
+    }
+    
+    console.log(`\ud83d\udce8 Sending ${certificates.length} certificates via email...`);
+    
+    let sentCount = 0;
+    let failedCount = 0;
+    const results = [];
+    
+    for (const cert of certificates) {
+      try {
+        const recipient = cert.participant;
+        
+        // Send email with PDF attachment
+        const emailResult = await sendCertificateEmail(
+          recipient, 
+          event, 
+          cert.pdfPath,
+          `${process.env.SERVER_URL || 'http://localhost:5000'}${cert.certificateUrl}`
+        );
+        
+        if (emailResult.success) {
+          cert.status = 'SENT';
+          cert.sentAt = Date.now();
+          await cert.save();
+          
+          // Update participant status
+          await Participant.findByIdAndUpdate(recipient._id, { 
+            certificateStatus: 'SENT' 
+          });
+          
+          sentCount++;
+          results.push({ 
+            participant: recipient.name, 
+            email: recipient.email, 
+            status: 'SENT' 
+          });
+          console.log(`\u2705 Certificate sent to ${recipient.email}`);
+        } else {
+          failedCount++;
+          results.push({ 
+            participant: recipient.name, 
+            email: recipient.email, 
+            status: 'FAILED', 
+            error: emailResult.error 
+          });
+          console.error(`\u274c Failed to send certificate to ${recipient.email}`);
+        }
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        console.error(`Error sending certificate to ${cert.participant.email}:`, error);
+        failedCount++;
+        results.push({ 
+          participant: cert.participant.name, 
+          email: cert.participant.email, 
+          status: 'FAILED', 
+          error: error.message 
+        });
+      }
+    }
+    
+    console.log(`\u2705 Certificate sending complete: ${sentCount} sent, ${failedCount} failed`);
+    
+    res.json({ 
+      success: true, 
+      message: `Sent ${sentCount} certificates${failedCount > 0 ? `, ${failedCount} failed` : ''}`, 
+      data: { 
+        sent: sentCount,
+        failed: failedCount,
+        total: certificates.length,
+        results
+      } 
+    });
   } catch (error) {
     console.error('Error sending certificates:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
 router.get('/certificates/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
-    const certificates = await Certificate.find({ event: eventId }).populate('participant', 'name email').populate('issuedBy', 'name').sort({ issuedAt: -1 });
+    const certificates = await Certificate.find({ event: eventId })
+      .populate('participant', 'name email')
+      .populate('issuedBy', 'name')
+      .sort({ issuedAt: -1 });
+    
+    // Get certificate requests
+    const requests = await CertificateRequest.find({ event: eventId })
+      .populate('participant', 'name email fullName')
+      .populate('processedBy', 'name')
+      .sort({ requestedAt: -1 });
+    
     const totalAttended = await Attendance.countDocuments({ event: eventId });
     const generated = certificates.length;
     const sent = certificates.filter(c => c.status === 'SENT').length;
-    res.json({ success: true, data: { certificates, stats: { totalAttended, generated, sent, pending: generated - sent } } });
+    const pendingRequests = requests.filter(r => r.status === 'PENDING').length;
+    
+    res.json({ 
+      success: true, 
+      data: certificates,
+      requests: requests,
+      stats: { 
+        totalAttended, 
+        generated, 
+        sent, 
+        pending: generated - sent,
+        pendingRequests 
+      } 
+    });
   } catch (error) {
     console.error('Error fetching certificate logs:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -401,6 +741,195 @@ router.patch('/updates/:updateId/pin', async (req, res) => {
   } catch (error) {
     console.error('Error toggling pin:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Certificate Request Management Routes
+// GET /api/organizer/certificates/:eventId/requests - Get all certificate requests for an event
+router.get('/certificates/:eventId/requests', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID format' });
+    }
+    
+    const { status } = req.query;
+    const filter = { event: eventId };
+    
+    if (status) {
+      filter.status = status;
+    }
+    
+    const requests = await CertificateRequest.find(filter)
+      .populate('participant', 'name email fullName phone')
+      .populate('event', 'title name startDate')
+      .populate('processedBy', 'name email')
+      .populate('certificate')
+      .sort({ requestedAt: -1 });
+    
+    const stats = {
+      total: requests.length,
+      pending: requests.filter(r => r.status === 'PENDING').length,
+      approved: requests.filter(r => r.status === 'APPROVED').length,
+      generated: requests.filter(r => r.status === 'GENERATED').length,
+      rejected: requests.filter(r => r.status === 'REJECTED').length
+    };
+    
+    res.json({
+      success: true,
+      data: requests,
+      stats
+    });
+  } catch (error) {
+    console.error('Error fetching certificate requests:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// POST /api/organizer/certificates/request/:requestId/approve - Approve and generate certificate
+router.post('/certificates/request/:requestId/approve', async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { achievement, competitionName, template = 'default', organizerId } = req.body;
+    
+    if (!isValidObjectId(requestId)) {
+      return res.status(400).json({ success: false, message: 'Invalid request ID' });
+    }
+    
+    const request = await CertificateRequest.findById(requestId)
+      .populate('participant')
+      .populate('event');
+    
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+    
+    if (request.status !== 'PENDING') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Request already ${request.status.toLowerCase()}` 
+      });
+    }
+    
+    // Check if certificate already exists
+    const existingCert = await Certificate.findOne({
+      event: request.event._id,
+      participant: request.participant._id
+    });
+    
+    if (existingCert) {
+      return res.status(400).json({
+        success: false,
+        message: 'Certificate already exists for this participant'
+      });
+    }
+    
+    // Generate certificate
+    const certificateData = {
+      template,
+      participantName: request.participant.name || request.participant.fullName,
+      eventName: request.event.title || request.event.name,
+      eventDate: request.event.startDate || request.event.createdAt,
+      certificateId: `CERT-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
+      organizationName: request.event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
+      departmentName: request.event.departmentName || 'Department of Computer Science & Engineering',
+      competitionName: competitionName || request.event.title || request.event.name,
+      achievement: achievement || 'Participation'
+    };
+    
+    console.log(`📄 Generating certificate for ${request.participant.name} (Request: ${requestId})...`);
+    
+    const pdfResult = await certificateGenerator.generateCertificate(certificateData);
+    
+    if (pdfResult.success) {
+      // Create certificate
+      const certificate = await Certificate.create({
+        event: request.event._id,
+        participant: request.participant._id,
+        certificateId: certificateData.certificateId,
+        issuedBy: organizerId,
+        template,
+        achievement: achievement || 'Participation',
+        competitionName: competitionName || request.event.title || request.event.name,
+        pdfPath: pdfResult.filepath,
+        pdfFilename: pdfResult.filename,
+        certificateUrl: pdfResult.url,
+        cloudinaryUrl: pdfResult.cloudinaryUrl,
+        cloudinaryPublicId: pdfResult.cloudinaryPublicId,
+        status: 'GENERATED'
+      });
+      
+      // Update request
+      request.status = 'GENERATED';
+      request.achievement = achievement || 'Participation';
+      request.processedAt = new Date();
+      request.processedBy = organizerId;
+      request.certificate = certificate._id;
+      await request.save();
+      
+      console.log(`✅ Certificate generated and request approved: ${requestId}`);
+      
+      res.json({
+        success: true,
+        message: 'Certificate generated successfully',
+        data: {
+          request,
+          certificate
+        }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate certificate'
+      });
+    }
+  } catch (error) {
+    console.error('Error approving certificate request:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error', 
+      error: error.message 
+    });
+  }
+});
+
+// POST /api/organizer/certificates/request/:requestId/reject - Reject certificate request
+router.post('/certificates/request/:requestId/reject', async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { reason, organizerId } = req.body;
+    
+    if (!isValidObjectId(requestId)) {
+      return res.status(400).json({ success: false, message: 'Invalid request ID' });
+    }
+    
+    const request = await CertificateRequest.findById(requestId);
+    
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+    
+    if (request.status !== 'PENDING') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Request already ${request.status.toLowerCase()}` 
+      });
+    }
+    
+    request.status = 'REJECTED';
+    request.rejectionReason = reason || 'Request rejected by organizer';
+    request.processedAt = new Date();
+    request.processedBy = organizerId;
+    await request.save();
+    
+    res.json({
+      success: true,
+      message: 'Certificate request rejected',
+      data: request
+    });
+  } catch (error) {
+    console.error('Error rejecting certificate request:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 

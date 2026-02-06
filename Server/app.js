@@ -30,6 +30,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files (for certificates)
+app.use('/certificates', express.static('public/certificates'));
+
 // Connect to MongoDB
 const connectDB = async () => {
   try {

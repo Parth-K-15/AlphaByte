@@ -151,7 +151,7 @@ const AttendanceQR = () => {
 
   const handleGenerateQR = async () => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
-      alert('Please select a real event first. Demo events cannot generate QR codes.');
+      alert('Please select an event first.');
       return;
     }
     setLoading(true);

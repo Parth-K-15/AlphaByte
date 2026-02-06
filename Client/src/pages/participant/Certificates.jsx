@@ -1,74 +1,66 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE = 'http://localhost:5000/api';
+import { Award, Download, CheckCircle, AlertCircle, Calendar, Clock } from 'lucide-react';
+import { getMyCertificates } from '../../services/participantApi';
 
 const Certificates = () => {
   const [certificates, setCertificates] = useState([]);
+  const [attendedEvents, setAttendedEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState(localStorage.getItem('participantEmail') || '');
-  const [inputEmail, setInputEmail] = useState('');
-  const [selectedCertificate, setSelectedCertificate] = useState(null);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [stats, setStats] = useState({ total: 0, attended: 0, registered: 0 });
 
   useEffect(() => {
-    if (email) {
-      fetchCertificates();
-    } else {
-      setLoading(false);
-    }
-  }, [email]);
+    fetchCertificates();
+  }, []);
 
   const fetchCertificates = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await fetch(
-        `${API_BASE}/participant/certificates?email=${encodeURIComponent(email)}`
-      );
-      const data = await response.json();
+      const participantId = localStorage.getItem('participantId');
       
-      if (data.success) {
-        setCertificates(data.data);
-      } else {
-        setMessage({ type: 'error', text: data.message });
+      if (!participantId) {
+        console.error('No participant ID found');
+        setLoading(false);
+        return;
+      }
+
+      const response = await getMyCertificates(participantId);
+      
+      console.log('📋 Certificate API Response:', response.data);
+      
+      if (response.data.success) {
+        const data = response.data.data;
+        console.log('📊 Stats:', data.stats);
+        console.log('🏆 Certificates:', data.certificates?.length || 0);
+        console.log('✅ Attended Events (without cert):', data.attendedEventsWithoutCertificate?.length || 0);
+        console.log('📝 All Events:', data.allEvents?.length || 0);
+        
+        setCertificates(data.certificates || []);
+        setAttendedEvents(data.attendedEventsWithoutCertificate || []);
+        setAllEvents(data.allEvents || []);
+        setStats(data.stats || { total: 0, attended: 0, registered: 0 });
       }
     } catch (error) {
       console.error('Error fetching certificates:', error);
-      setMessage({ type: 'error', text: 'Failed to load certificates' });
+      alert(error.message || 'Failed to load certificates');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
-    if (inputEmail) {
-      localStorage.setItem('participantEmail', inputEmail);
-      setEmail(inputEmail);
+  const handleDownload = (certificate) => {
+    if (certificate.cloudinaryUrl) {
+      window.open(certificate.cloudinaryUrl, '_blank');
+    } else if (certificate.certificateUrl) {
+      window.open(`http://localhost:5000${certificate.certificateUrl}`, '_blank');
+    } else {
+      alert('Certificate PDF not available');
     }
   };
 
-  const handleDownload = async (certificate) => {
-    try {
-      // Record download
-      await fetch(
-        `${API_BASE}/participant/certificates/${certificate.certificateId}/download`,
-        { method: 'PUT' }
-      );
-      
-      // If there's a certificate URL, open it
-      if (certificate.certificateUrl) {
-        window.open(certificate.certificateUrl, '_blank');
-      } else {
-        setMessage({ type: 'info', text: 'Certificate will be available for download soon.' });
-      }
-    } catch (error) {
-      console.error('Error downloading certificate:', error);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -76,215 +68,211 @@ const Certificates = () => {
   };
 
   const getStatusBadge = (status) => {
-    const badges = {
-      GENERATED: 'bg-blue-100 text-blue-800',
-      SENT: 'bg-green-100 text-green-800',
-      DOWNLOADED: 'bg-purple-100 text-purple-800',
-      FAILED: 'bg-red-100 text-red-800',
+    const config = {
+      GENERATED: { color: 'bg-green-100 text-green-700', icon: CheckCircle, text: 'Available' },
+      SENT: { color: 'bg-blue-100 text-blue-700', icon: CheckCircle, text: 'Available' }
     };
-    return badges[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  // If no email, show email input
-  if (!email) {
+    const { color, icon: Icon, text } = config[status] || { color: 'bg-green-100 text-green-700', icon: CheckCircle, text: 'Available' };
     return (
-      <div className="max-w-md mx-auto mt-12">
-        <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-          <div className="text-6xl mb-4">🏆</div>
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">My Certificates</h2>
-          <p className="text-gray-500 mb-6">Enter your email to view your certificates</p>
-          
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <input
-              type="email"
-              value={inputEmail}
-              onChange={(e) => setInputEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              required
-            />
-            <button
-              type="submit"
-              className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700"
-            >
-              View Certificates
-            </button>
-          </form>
-        </div>
-      </div>
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${color}`}>
+        <Icon size={12} />
+        {text}
+      </span>
     );
-  }
+  };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="text-gray-500 mt-4">Loading certificates...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">My Certificates 🏆</h1>
-        <p className="text-yellow-100">Download and share your achievement certificates</p>
-        <p className="text-sm text-yellow-200 mt-2">📧 {email}</p>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800">My Certificates</h1>
+        <p className="text-gray-500 mt-1">View and download your event certificates</p>
       </div>
 
-      {/* Message */}
-      {message.text && (
-        <div className={`p-4 rounded-lg ${
-          message.type === 'success' ? 'bg-green-100 text-green-800' :
-          message.type === 'info' ? 'bg-blue-100 text-blue-800' :
-          'bg-red-100 text-red-800'
-        }`}>
-          {message.text}
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total Certificates</p>
+              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-xl">
+              <Award size={20} className="text-blue-600" />
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Certificates Grid */}
-      {certificates.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <div className="text-6xl mb-4">📜</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Certificates Yet</h3>
-          <p className="text-gray-500 mb-2">Certificates are issued after:</p>
-          <ul className="text-gray-500 text-sm space-y-1">
-            <li>✓ You attend an event</li>
-            <li>✓ The event is completed</li>
-            <li>✓ The organizer generates certificates</li>
-          </ul>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Attended Events</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">{stats.attended}</p>
+            </div>
+            <div className="p-3 bg-green-50 rounded-xl">
+              <CheckCircle size={20} className="text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Registered Events</p>
+              <p className="text-2xl font-bold text-blue-600 mt-1">{stats.registered}</p>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-xl">
+              <Calendar size={20} className="text-blue-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Attended Events - Awaiting Certificate Generation */}
+      {attendedEvents.length > 0 ? (
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-md border-2 border-yellow-300 p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="p-3 bg-yellow-500 rounded-xl">
+              <AlertCircle size={24} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-1">
+                ⏳ Certificates Being Processed
+              </h2>
+              <p className="text-sm text-gray-600">
+                You attended these completed events. Certificates will appear below once the organizer generates them.
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {attendedEvents.map((event) => (
+              <div key={event._id} className="bg-white rounded-xl p-4 border-2 border-yellow-200 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CheckCircle size={18} className="text-green-600" />
+                      <p className="font-semibold text-gray-800">{event.title || event.name}</p>
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        Attended ({event.attendanceType})
+                      </span>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        Event Completed
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 ml-6">
+                      Event Date: {formatDate(event.startDate)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-yellow-600">
+                    <Clock size={18} />
+                    <span className="text-sm font-medium">Pending Generation</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {certificates.map((cert) => (
-            <div
-              key={cert._id}
-              className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow"
-            >
-              {/* Certificate Preview */}
-              <div className="h-40 bg-gradient-to-br from-amber-400 to-orange-500 relative flex items-center justify-center">
-                <div className="text-center text-white">
-                  <div className="text-5xl mb-2">🏆</div>
-                  <p className="font-semibold">Certificate of Participation</p>
-                </div>
-                <div className="absolute top-3 right-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(cert.status)}`}>
-                    {cert.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Certificate Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-lg text-gray-800 mb-2">
-                  {cert.event?.title || 'Event'}
-                </h3>
-                
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center justify-between">
-                    <span>Certificate ID</span>
-                    <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                      {cert.certificateId}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Issued</span>
-                    <span>{formatDate(cert.issuedAt)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Recipient</span>
-                    <span>{cert.participant?.fullName}</span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="mt-4 flex gap-2">
-                  <button
-                    onClick={() => setSelectedCertificate(cert)}
-                    className="flex-1 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg text-sm font-medium"
-                  >
-                    👁️ View
-                  </button>
-                  <button
-                    onClick={() => handleDownload(cert)}
-                    className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
-                  >
-                    ⬇️ Download
-                  </button>
-                </div>
-              </div>
+        <div className="bg-blue-50 rounded-2xl shadow-sm border border-blue-200 p-6">
+          <div className="flex items-start gap-3">
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <AlertCircle size={24} className="text-blue-600" />
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Change Email */}
-      <div className="text-center">
-        <button
-          onClick={() => {
-            localStorage.removeItem('participantEmail');
-            setEmail('');
-            setInputEmail('');
-          }}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          Use a different email
-        </button>
-      </div>
-
-      {/* Certificate Detail Modal */}
-      {selectedCertificate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            {/* Certificate Display */}
-            <div className="bg-gradient-to-br from-amber-100 to-orange-100 p-8 text-center border-b-4 border-amber-500">
-              <div className="border-4 border-amber-600 p-8 bg-white/80">
-                <div className="text-6xl mb-4">🏆</div>
-                <h2 className="text-3xl font-serif font-bold text-amber-800 mb-2">
-                  Certificate of Participation
-                </h2>
-                <p className="text-gray-600 mb-4">This is to certify that</p>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                  {selectedCertificate.participant?.fullName}
-                </h3>
-                <p className="text-gray-600 mb-4">has successfully participated in</p>
-                <h4 className="text-xl font-semibold text-indigo-700 mb-4">
-                  {selectedCertificate.event?.title}
-                </h4>
-                <p className="text-gray-500 text-sm">
-                  Held on {formatDate(selectedCertificate.event?.startDate)}
-                  {selectedCertificate.event?.location && ` at ${selectedCertificate.event.location}`}
-                </p>
-                <div className="mt-6 pt-4 border-t border-amber-300">
-                  <p className="text-xs text-gray-500">
-                    Certificate ID: {selectedCertificate.certificateId}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Issued on: {formatDate(selectedCertificate.issuedAt)}
-                  </p>
-                </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                No Completed Events Awaiting Certificates
+              </h3>
+              <p className="text-sm text-gray-600">
+                Certificates will appear here after you attend an event, the event is marked as "completed", and the organizer generates certificates.
+              </p>
+              <div className="mt-3 text-xs text-gray-500 space-y-1">
+                <p>✓ You are currently registered for <strong>{stats.registered}</strong> event{stats.registered !== 1 ? 's' : ''}</p>
+                <p>• Attend events and have your attendance marked (QR scan or manual)</p>
+                <p>• Wait for the event to be marked as "completed" by organizers</p>
+                <p>• Organizer will generate and distribute certificates</p>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="p-4 flex justify-between">
-              <button
-                onClick={() => setSelectedCertificate(null)}
-                className="px-6 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => handleDownload(selectedCertificate)}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-              >
-                ⬇️ Download Certificate
-              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* My Certificates */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          My Certificates
+        </h2>
+        
+        {certificates.length === 0 ? (
+          <div className="text-center py-12">
+            <Award size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-medium text-gray-800 mb-2">No Certificates Yet</h3>
+            <p className="text-gray-500">
+              Certificates will appear here once the organizer processes your request
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {certificates.map((cert) => (
+              <div
+                key={cert._id}
+                className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
+              >
+                {/* Certificate Header */}
+                <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 relative flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <Award size={40} className="mx-auto mb-2" />
+                    <p className="font-semibold text-sm">{cert.achievement || 'Participation'}</p>
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    {getStatusBadge(cert.status)}
+                  </div>
+                </div>
+
+                {/* Certificate Details */}
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">
+                    {cert.event?.title || cert.event?.name}
+                  </h3>
+                  
+                  <div className="space-y-1 text-xs text-gray-600 mb-4">
+                    <div className="flex justify-between">
+                      <span>Certificate ID:</span>
+                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
+                        {cert.certificateId}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Issued:</span>
+                      <span>{formatDate(cert.issuedAt)}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <button
+                    onClick={() => handleDownload(cert)}
+                    className="w-full flex items-center justify-center gap-2 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    <Download size={16} />
+                    Download Certificate
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
