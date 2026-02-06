@@ -17,6 +17,97 @@ const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
 const activeSessions = new Map();
 
+// Test email configuration endpoint
+router.get('/email/test', async (req, res) => {
+  try {
+    console.log('🔍 [Email Test] Checking email configuration...');
+    
+    const config = {
+      emailUser: process.env.EMAIL_USER,
+      emailPassword: process.env.EMAIL_PASSWORD ? '********' : undefined,
+      emailFromName: process.env.EMAIL_FROM_NAME || 'Event Management System',
+      configured: !!(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD)
+    };
+    
+    console.log('📧 [Email Test] Configuration:', config);
+    
+    if (!config.configured) {
+      return res.json({
+        success: false,
+        message: 'Email not configured',
+        config,
+        instructions: 'Add EMAIL_USER and EMAIL_PASSWORD to your .env file'
+      });
+    }
+    
+    const testResult = await testEmailConnection();
+    
+    res.json({
+      success: testResult.success,
+      message: testResult.success ? 'Email configuration is valid' : `Email configuration error: ${testResult.error}`,
+      config,
+      testResult
+    });
+  } catch (error) {
+    console.error('❌ [Email Test] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error testing email configuration',
+      error: error.message
+    });
+  }
+});
+
+// Get email sending logs for an event
+router.get('/email/logs/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+    }
+    
+    // Get all certificates with email sending details
+    const certificates = await Certificate.find({ event: eventId })
+      .populate('participant', 'name email')
+      .sort({ sentAt: -1, issuedAt: -1 })
+      .select('participant status sentAt issuedAt certificateId cloudinaryUrl');
+    
+    const logs = certificates.map(cert => ({
+      certificateId: cert.certificateId,
+      participant: cert.participant?.name || 'Unknown',
+      email: cert.participant?.email || 'N/A',
+      status: cert.status,
+      generatedAt: cert.issuedAt,
+      sentAt: cert.sentAt || null,
+      cloudinaryUrl: cert.cloudinaryUrl,
+      timeSinceGeneration: cert.issuedAt ? Math.floor((Date.now() - new Date(cert.issuedAt)) / 1000 / 60) : null, // minutes
+      timeSinceSent: cert.sentAt ? Math.floor((Date.now() - new Date(cert.sentAt)) / 1000 / 60) : null // minutes
+    }));
+    
+    const summary = {
+      total: certificates.length,
+      sent: logs.filter(l => l.status === 'SENT').length,
+      pending: logs.filter(l => l.status === 'GENERATED').length,
+      failed: logs.filter(l => l.status === 'FAILED').length
+    };
+    
+    res.json({
+      success: true,
+      data: logs,
+      summary
+    });
+  } catch (error) {
+    console.error('Error fetching email logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching email logs',
+      error: error.message
+    });
+  }
+});
+
+
 router.get('/dashboard', async (req, res) => {
   try {
     const organizerId = req.query.organizerId;
@@ -95,6 +186,63 @@ router.put('/events/:id', async (req, res) => {
   } catch (error) {
     console.error('Error updating event:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @desc    Update event lifecycle status (organizer)
+// @route   PUT /api/organizer/events/:id/lifecycle
+router.put('/events/:id/lifecycle', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid event ID format'
+      });
+    }
+
+    const validStatuses = ['draft', 'upcoming', 'ongoing', 'completed', 'cancelled'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+
+    // Find the event and verify it's assigned to this organizer
+    const event = await Event.findById(id).populate('teamLead', 'name email');
+    
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+
+    // Update the event status
+    event.status = status;
+    await event.save();
+
+    // Get participant count
+    const participantCount = await Participant.countDocuments({ event: event._id });
+
+    res.json({
+      success: true,
+      message: 'Event status updated successfully',
+      data: {
+        ...event.toObject(),
+        participantCount
+      }
+    });
+  } catch (error) {
+    console.error('Error updating event lifecycle:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating event lifecycle',
+      error: error.message
+    });
   }
 });
 
@@ -369,15 +517,33 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
     
     const { organizerId, template = 'default', achievement = 'Participation', competitionName } = req.body;
     
-    console.log('\ud83c\udfaf Generating certificates for event:', eventId);
+    console.log('🎯 Generating certificates for event:', eventId);
+    console.log('Request body:', req.body);
     console.log('Request params:', { organizerId, template, achievement, competitionName });
+    
+    // Validate organizerId
+    if (!organizerId) {
+      console.log('❌ ERROR: organizerId is missing from request body');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'organizerId is required. Please provide the organizer/user ID who is generating the certificates.' 
+      });
+    }
+    
+    if (!isValidObjectId(organizerId)) {
+      console.log('❌ ERROR: organizerId is not a valid ObjectId:', organizerId);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid organizerId format' 
+      });
+    }
     
     const event = await Event.findById(eventId);
     if (!event) {
-      console.log('Event not found');
+      console.log('❌ Event not found');
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
-    console.log('Event found:', event.title || event.name);
+    console.log('✅ Event found:', event.title || event.name);
     
     // Get participants who attended but don't have certificates yet
     console.log('Querying attendance for event:', eventId);
@@ -457,8 +623,8 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
           achievement: achievement || 'Participation'
         };
         
-        // Generate PDF
-        console.log(`📄 Generating PDF for ${participant.name}...`);
+        // Generate Certificate JPG
+        console.log(`📄 Generating certificate for ${participant.name}...`);
         console.log(`📋 Certificate data:`, {
           participantName: certificateData.participantName,
           eventName: certificateData.eventName,
@@ -467,7 +633,7 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
         });
         
         const pdfResult = await certificateGenerator.generateCertificate(certificateData);
-        console.log(`✅ PDF Generation Result:`, {
+        console.log(`✅ Certificate Generation Result:`, {
           success: pdfResult.success,
           filename: pdfResult.filename,
           hasCloudinaryUrl: !!pdfResult.cloudinaryUrl,
@@ -477,7 +643,7 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
         if (pdfResult.success) {
           // Save certificate record to database
           console.log(`💾 Saving certificate to database for ${participant.name}...`);
-          const certificate = await Certificate.create({
+          console.log(`📋 Certificate data to save:`, {
             event: eventId,
             participant: participant._id,
             certificateId: certificateData.certificateId,
@@ -485,20 +651,45 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
             template,
             achievement,
             competitionName: competitionName || event.title || event.name,
-            pdfPath: pdfResult.filepath,
-            pdfFilename: pdfResult.filename,
-            certificateUrl: pdfResult.url,
-            cloudinaryUrl: pdfResult.cloudinaryUrl,
-            cloudinaryPublicId: pdfResult.cloudinaryPublicId,
             status: 'GENERATED'
           });
-          console.log(`\u2705 Certificate saved to database with ID: ${certificate._id}`);
-          console.log(`☁️ Cloudinary URL: ${certificate.cloudinaryUrl}`);
           
-          results.push({ participant: participant.name, status: 'SUCCESS', certificate });
-          successCount++;
-          console.log(`\u2705 Generated certificate for ${participant.name} (${successCount}/${eligibleParticipants.length})`);
+          try {
+            const certificate = await Certificate.create({
+              event: eventId,
+              participant: participant._id,
+              certificateId: certificateData.certificateId,
+              issuedBy: organizerId,
+              template,
+              achievement,
+              competitionName: competitionName || event.title || event.name,
+              pdfPath: pdfResult.filepath,
+              pdfFilename: pdfResult.filename,
+              certificateUrl: pdfResult.url,
+              cloudinaryUrl: pdfResult.cloudinaryUrl,
+              cloudinaryPublicId: pdfResult.cloudinaryPublicId,
+              status: 'GENERATED'
+            });
+            console.log(`✅ Certificate saved successfully with ID: ${certificate._id}`);
+            console.log(`☁️ Cloudinary URL: ${certificate.cloudinaryUrl}`);
+            
+            results.push({ participant: participant.name, status: 'SUCCESS', certificate });
+            successCount++;
+            console.log(`✅ Generated certificate for ${participant.name} (${successCount}/${eligibleParticipants.length})`);
+          } catch (dbError) {
+            console.error(`❌ DATABASE ERROR saving certificate:`, dbError);
+            console.error('Error name:', dbError.name);
+            console.error('Error message:', dbError.message);
+            console.error('Error stack:', dbError.stack);
+            results.push({ 
+              participant: participant.name, 
+              status: 'FAILED', 
+              error: `Database error: ${dbError.message}` 
+            });
+            failCount++;
+          }
         } else {
+          console.log(`❌ PDF generation failed for ${participant.name}`);
           results.push({ participant: participant.name, status: 'FAILED', error: 'PDF generation failed' });
           failCount++;
         }
@@ -543,7 +734,7 @@ router.post('/certificates/:eventId/send', async (req, res) => {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     
-    console.log('\ud83d\udce7 Sending certificates for event:', eventId);
+    console.log('📧 [Bulk Send] Sending certificates for event:', eventId);
     
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
@@ -555,14 +746,19 @@ router.post('/certificates/:eventId/send', async (req, res) => {
     }).populate('participant');
     
     if (certificates.length === 0) {
+      console.log('ℹ️  [Bulk Send] No certificates to send');
       return res.json({ 
         success: true, 
         message: 'No certificates to send', 
-        data: { sent: 0 } 
+        data: { sent: 0, failed: 0, results: [] } 
       });
     }
     
-    console.log(`\ud83d\udce8 Sending ${certificates.length} certificates via email...`);
+    console.log(`📨 [Bulk Send] Sending ${certificates.length} certificates via email...`);
+    console.log(`📧 [Bulk Send] Email Configuration Check:`, {
+      emailUser: process.env.EMAIL_USER ? '✓ Configured' : '✗ Missing',
+      emailPassword: process.env.EMAIL_PASSWORD ? '✓ Configured' : '✗ Missing'
+    });
     
     let sentCount = 0;
     let failedCount = 0;
@@ -572,12 +768,42 @@ router.post('/certificates/:eventId/send', async (req, res) => {
       try {
         const recipient = cert.participant;
         
-        // Send email with PDF attachment
+        if (!recipient || !recipient.email) {
+          console.error(`⚠️  [Bulk Send] Skipping certificate ${cert._id}: No recipient email`);
+          failedCount++;
+          results.push({ 
+            certificateId: cert._id,
+            participant: recipient?.name || 'Unknown', 
+            email: recipient?.email || 'N/A', 
+            status: 'FAILED', 
+            error: 'No email address found' 
+          });
+          continue;
+        }
+        
+        console.log(`📤 [Bulk Send] Sending to: ${recipient.email}`);
+        
+        // Verify certificate URL exists (Cloudinary URL)
+        const certificateUrl = cert.cloudinaryUrl;
+        if (!certificateUrl) {
+          console.error(`⚠️  [Bulk Send] No Cloudinary URL for certificate ${cert._id}`);
+          failedCount++;
+          results.push({
+            certificateId: cert._id,
+            participant: recipient.name,
+            email: recipient.email,
+            status: 'FAILED',
+            error: 'Certificate URL not found. Please regenerate the certificate.'
+          });
+          continue;
+        }
+        
+        // Send email with certificate URL (no local file attachment)
         const emailResult = await sendCertificateEmail(
           recipient, 
           event, 
-          cert.pdfPath,
-          `${process.env.SERVER_URL || 'http://localhost:5000'}${cert.certificateUrl}`
+          null, // No local file path - using Cloudinary URL only
+          certificateUrl
         );
         
         if (emailResult.success) {
@@ -592,28 +818,36 @@ router.post('/certificates/:eventId/send', async (req, res) => {
           
           sentCount++;
           results.push({ 
+            certificateId: cert._id,
             participant: recipient.name, 
             email: recipient.email, 
-            status: 'SENT' 
+            status: 'SENT',
+            messageId: emailResult.messageId,
+            sentAt: new Date().toISOString()
           });
-          console.log(`\u2705 Certificate sent to ${recipient.email}`);
+          console.log(`✅ [Bulk Send] Certificate sent to ${recipient.email} (MessageID: ${emailResult.messageId})`);
         } else {
           failedCount++;
           results.push({ 
+            certificateId: cert._id,
             participant: recipient.name, 
             email: recipient.email, 
             status: 'FAILED', 
-            error: emailResult.error 
+            error: emailResult.error || 'Unknown error',
+            troubleshooting: emailResult.error?.includes('auth') || emailResult.error?.includes('credentials') 
+              ? 'Check EMAIL_USER and EMAIL_PASSWORD in .env' 
+              : 'Check email service configuration'
           });
-          console.error(`\u274c Failed to send certificate to ${recipient.email}`);
+          console.error(`❌ [Bulk Send] Failed to send certificate to ${recipient.email}: ${emailResult.error}`);
         }
         
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 200));
       } catch (error) {
-        console.error(`Error sending certificate to ${cert.participant.email}:`, error);
+        console.error(`❌ [Bulk Send] Error sending certificate to ${cert.participant.email}:`, error);
         failedCount++;
         results.push({ 
+          certificateId: cert._id,
           participant: cert.participant.name, 
           email: cert.participant.email, 
           status: 'FAILED', 
@@ -622,7 +856,18 @@ router.post('/certificates/:eventId/send', async (req, res) => {
       }
     }
     
-    console.log(`\u2705 Certificate sending complete: ${sentCount} sent, ${failedCount} failed`);
+    console.log(`\n📊 [Bulk Send] Summary:`);
+    console.log(`   ✅ Sent: ${sentCount}`);
+    console.log(`   ❌ Failed: ${failedCount}`);
+    console.log(`   📧 Total: ${certificates.length}`);
+    
+    // Log failed ones for debugging
+    if (failedCount > 0) {
+      console.log(`\n⚠️  Failed Emails Details:`);
+      results.filter(r => r.status === 'FAILED').forEach(r => {
+        console.log(`   - ${r.email}: ${r.error}`);
+      });
+    }
     
     res.json({ 
       success: true, 
@@ -631,11 +876,15 @@ router.post('/certificates/:eventId/send', async (req, res) => {
         sent: sentCount,
         failed: failedCount,
         total: certificates.length,
-        results
+        results,
+        emailConfig: {
+          configured: !!(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD),
+          emailUser: process.env.EMAIL_USER || 'Not configured'
+        }
       } 
     });
   } catch (error) {
-    console.error('Error sending certificates:', error);
+    console.error('❌ [Bulk Send] Error sending certificates:', error);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
@@ -680,15 +929,97 @@ router.get('/certificates/:eventId', async (req, res) => {
 router.post('/certificates/:certificateId/resend', async (req, res) => {
   try {
     const { certificateId } = req.params;
-    const certificate = await Certificate.findById(certificateId).populate('participant');
-    if (!certificate) return res.status(404).json({ success: false, message: 'Certificate not found' });
-    certificate.sentAt = Date.now();
-    certificate.status = 'SENT';
-    await certificate.save();
-    res.json({ success: true, message: 'Certificate resent successfully', data: certificate });
+    
+    console.log('📧 [Resend] Attempting to resend certificate:', certificateId);
+    
+    const certificate = await Certificate.findById(certificateId)
+      .populate('participant')
+      .populate('event');
+    
+    if (!certificate) {
+      console.error('❌ [Resend] Certificate not found:', certificateId);
+      return res.status(404).json({ success: false, message: 'Certificate not found' });
+    }
+    
+    if (!certificate.participant) {
+      console.error('❌ [Resend] No participant associated with certificate');
+      return res.status(400).json({ success: false, message: 'No participant associated with certificate' });
+    }
+    
+    if (!certificate.event) {
+      console.error('❌ [Resend] No event associated with certificate');
+      return res.status(400).json({ success: false, message: 'No event associated with certificate' });
+    }
+    
+    // Verify certificate URL exists (Cloudinary URL)
+    const certificateUrl = certificate.cloudinaryUrl;
+    if (!certificateUrl) {
+      console.error(`❌ [Resend] No Cloudinary URL found for certificate ${certificateId}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Certificate URL not found. The certificate may need to be regenerated.',
+        emailDetails: {
+          error: 'Missing certificate URL',
+          troubleshooting: 'Try regenerating the certificate from the Generate tab'
+        }
+      });
+    }
+    
+    console.log(`📤 [Resend] Sending certificate to: ${certificate.participant.email}`);
+    console.log(`📄 [Resend] Certificate URL: ${certificateUrl}`);
+    
+    // Send email with certificate URL (no local file attachment)
+    const emailResult = await sendCertificateEmail(
+      certificate.participant,
+      certificate.event,
+      null, // No local file path - using Cloudinary URL only
+      certificateUrl
+    );
+    
+    if (emailResult.success) {
+      certificate.sentAt = Date.now();
+      certificate.status = 'SENT';
+      await certificate.save();
+      
+      // Update participant status
+      await Participant.findByIdAndUpdate(certificate.participant._id, {
+        certificateStatus: 'SENT'
+      });
+      
+      console.log(`✅ [Resend] Certificate successfully sent to ${certificate.participant.email}`);
+      console.log(`📬 [Resend] Email Message ID: ${emailResult.messageId}`);
+      
+      res.json({ 
+        success: true, 
+        message: 'Certificate sent successfully via email', 
+        data: certificate,
+        emailDetails: {
+          recipient: certificate.participant.email,
+          messageId: emailResult.messageId,
+          sentAt: new Date().toISOString()
+        }
+      });
+    } else {
+      console.error(`❌ [Resend] Failed to send email to ${certificate.participant.email}`);
+      console.error(`❌ [Resend] Error: ${emailResult.error}`);
+      
+      res.status(500).json({ 
+        success: false, 
+        message: `Failed to send email: ${emailResult.error}`,
+        emailDetails: {
+          recipient: certificate.participant.email,
+          error: emailResult.error,
+          troubleshooting: 'Check email configuration in .env file (EMAIL_USER and EMAIL_PASSWORD)'
+        }
+      });
+    }
   } catch (error) {
-    console.error('Error resending certificate:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('❌ [Resend] Error resending certificate:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while sending certificate', 
+      error: error.message 
+    });
   }
 });
 

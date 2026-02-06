@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 /**
  * Certificate Generator Service
- * Generates PDF certificates from HTML templates
+ * Generates JPG certificate images from HTML templates using Puppeteer
  */
 class CertificateGenerator {
   constructor() {
@@ -123,41 +123,43 @@ class CertificateGenerator {
       console.log('\u2705 Browser launched');
 
       const page = await browser.newPage();
+      
+      // Set viewport for high-quality image (A4 landscape dimensions)
+      await page.setViewport({
+        width: 1754,  // A4 landscape width at 150 DPI
+        height: 1240, // A4 landscape height at 150 DPI
+        deviceScaleFactor: 2 // Retina display for better quality
+      });
+      
       console.log('\ud83d\udcc4 Setting content...');
       await page.setContent(html, { waitUntil: 'networkidle0' });
       console.log('\u2705 Content set');
 
-      // Generate filename
-      const filename = `${certificateId}_${Date.now()}.pdf`;
+      // Generate filename with .jpg extension
+      const filename = `${certificateId}_${Date.now()}.jpg`;
       const filepath = path.join(this.outputDir, filename);
-      console.log('\ud83d\udcbe Saving PDF to:', filepath);
+      console.log('\ud83d\udcbe Saving JPG to:', filepath);
 
-      // Generate PDF
-      await page.pdf({
+      // Generate JPG Screenshot
+      await page.screenshot({
         path: filepath,
-        format: 'A4',
-        landscape: true,
-        printBackground: true,
-        margin: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0
-        }
+        type: 'jpeg',
+        quality: 95,
+        fullPage: true
       });
-      console.log('✅ PDF generated successfully');
+      console.log('✅ JPG generated successfully');
 
       await browser.close();
       console.log('✅ Browser closed');
 
-      // Upload to Cloudinary
+      // Upload to Cloudinary as image
       console.log('☁️ Uploading to Cloudinary...');
       const cloudinaryResult = await cloudinary.uploader.upload(filepath, {
-        resource_type: 'auto',
+        resource_type: 'image',
         folder: 'alphabyte/certificates',
         public_id: `cert_${certificateId}_${Date.now()}`,
-        format: 'pdf',
-        access_mode: 'public'
+        format: 'jpg',
+        quality: 95
       });
       console.log('✅ Uploaded to Cloudinary:', cloudinaryResult.secure_url);
 

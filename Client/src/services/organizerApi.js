@@ -34,6 +34,7 @@ export const getAssignedEvents = (organizerId) => {
 };
 export const getEventDetails = (eventId) => fetchApi(`/organizer/events/${eventId}`);
 export const updateEventInfo = (eventId, data) => fetchApi(`/organizer/events/${eventId}`, { method: 'PUT', body: data });
+export const updateEventLifecycle = (eventId, status) => fetchApi(`/organizer/events/${eventId}/lifecycle`, { method: 'PUT', body: { status } });
 
 // Event Updates / Timeline
 export const getEventUpdates = (eventId) => fetchApi(`/organizer/updates/${eventId}`);
@@ -88,6 +89,10 @@ export const approveCertificateRequest = (requestId, data) =>
   fetchApi(`/organizer/certificates/request/${requestId}/approve`, { method: 'POST', body: data });
 export const rejectCertificateRequest = (requestId, data) => 
   fetchApi(`/organizer/certificates/request/${requestId}/reject`, { method: 'POST', body: data });
+
+// Email debugging endpoints
+export const testEmailConfiguration = () => fetchApi('/organizer/email/test');
+export const getEmailLogs = (eventId) => fetchApi(`/organizer/email/logs/${eventId}`);
 
 // Communication
 export const sendEmail = (data) => fetchApi('/organizer/communication/email', { method: 'POST', body: data });

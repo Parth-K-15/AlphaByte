@@ -11,8 +11,16 @@ import {
   Filter,
   Search,
   ChevronRight,
+  Circle,
+  Play,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Settings,
+  X,
+  Loader2,
 } from 'lucide-react';
-import { getAssignedEvents } from '../../services/organizerApi';
+import { getAssignedEvents, updateEventLifecycle } from '../../services/organizerApi';
 
 const EventCard = ({ event }) => {
   const statusColors = {
@@ -81,21 +89,33 @@ const EventCard = ({ event }) => {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 mt-4">
-          <Link
-            to={`/organizer/events/${event._id || event.id}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-primary-600 text-primary-600 rounded-xl hover:bg-primary-50 transition-colors font-medium text-sm"
+        <div className="flex flex-col gap-2 mt-4">
+          <div className="flex items-center gap-2">
+            <Link
+              to={`/organizer/events/${event._id || event.id}`}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-primary-600 text-primary-600 rounded-xl hover:bg-primary-50 transition-colors font-medium text-sm"
+            >
+              <Eye size={16} />
+              View Details
+            </Link>
+            <Link
+              to={`/organizer/attendance/qr?event=${event._id || event.id}`}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium text-sm"
+            >
+              <QrCode size={16} />
+              Attendance
+            </Link>
+          </div>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              event.onManageLifecycle?.(event);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm"
           >
-            <Eye size={16} />
-            View Details
-          </Link>
-          <Link
-            to={`/organizer/attendance/qr?event=${event._id || event.id}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium text-sm"
-          >
-            <QrCode size={16} />
-            Attendance
-          </Link>
+            <Settings size={16} />
+            Manage Status
+          </button>
         </div>
       </div>
     </div>
@@ -107,6 +127,9 @@ const MyEvents = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showLifecycleModal, setShowLifecycleModal] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -123,6 +146,35 @@ const MyEvents = () => {
       console.error('Error fetching events:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleManageLifecycle = (event) => {
+    setSelectedEvent(event);
+    setShowLifecycleModal(true);
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    if (!selectedEvent || newStatus === selectedEvent.status) return;
+
+    const confirmChange = window.confirm(
+      `Are you sure you want to change the event status to "${newStatus}"? This will affect event visibility and registrations.`
+    );
+
+    if (!confirmChange) return;
+
+    try {
+      setUpdating(true);
+      const response = await updateEventLifecycle(selectedEvent._id || selectedEvent.id, newStatus);
+      if (response.data.success) {
+        alert('Event status updated successfully!');
+        setShowLifecycleModal(false);
+        fetchEvents(); // Refresh events list
+      }
+    } catch (error) {
+      alert(error.message || 'Failed to update event status');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -212,7 +264,13 @@ const MyEvents = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((event) => (
-            <EventCard key={event._id || event.id} event={event} />
+            <EventCard 
+              key={event._id || event.id} 
+              event={{
+                ...event,
+                onManageLifecycle: handleManageLifecycle
+              }} 
+            />
           ))}
         </div>
       )}
@@ -244,6 +302,163 @@ const MyEvents = () => {
           </div>
         </div>
       </div>
+
+      {/* Lifecycle Management Modal */}
+      {showLifecycleModal && selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Event Status Management</h2>
+                <p className="text-gray-500 mt-1">{selectedEvent.title}</p>
+              </div>
+              <button
+                onClick={() => setShowLifecycleModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Current Status */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-white rounded-lg shadow-sm">
+                    <Circle size={20} className="text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      Current Status: {selectedEvent.status?.charAt(0).toUpperCase() + selectedEvent.status?.slice(1)}
+                    </h3>
+                    <p className="text-gray-600 text-sm mt-1">
+                      Event is currently in {selectedEvent.status} status
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lifecycle Timeline */}
+              <div className="relative py-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">Lifecycle Stages</h3>
+                
+                {/* Progress Line */}
+                <div className="absolute top-[calc(3rem+28px)] left-0 right-0 h-1 bg-gray-200 hidden md:block" 
+                     style={{ marginLeft: '10%', marginRight: '10%' }}>
+                  <div 
+                    className="h-full bg-green-500 transition-all duration-500"
+                    style={{ 
+                      width: `${(
+                        ['draft', 'upcoming', 'ongoing', 'completed', 'cancelled'].indexOf(selectedEvent.status) / 4
+                      ) * 100}%` 
+                    }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 relative z-10">
+                  {[
+                    { key: 'draft', label: 'Draft', icon: Circle, color: 'gray' },
+                    { key: 'upcoming', label: 'Upcoming', icon: Clock, color: 'blue' },
+                    { key: 'ongoing', label: 'Ongoing', icon: Play, color: 'green' },
+                    { key: 'completed', label: 'Completed', icon: CheckCircle, color: 'purple' },
+                    { key: 'cancelled', label: 'Cancelled', icon: XCircle, color: 'red' },
+                  ].map((stage) => {
+                    const isCurrent = stage.key === selectedEvent.status;
+                    const StageIcon = stage.icon;
+                    return (
+                      <div key={stage.key} className="flex flex-col items-center">
+                        <div
+                          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                            isCurrent
+                              ? `bg-${stage.color}-600 text-white shadow-md`
+                              : 'bg-gray-200 text-gray-400'
+                          }`}
+                        >
+                          <StageIcon className="w-6 h-6" />
+                        </div>
+                        <span
+                          className={`mt-3 text-sm font-medium text-center ${
+                            isCurrent ? 'text-gray-900' : 'text-gray-400'
+                          }`}
+                        >
+                          {stage.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Status Change Options */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Change Event Status</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[
+                    { key: 'draft', label: 'Draft', icon: Circle, description: 'Not visible to participants' },
+                    { key: 'upcoming', label: 'Upcoming', icon: Clock, description: 'Accepting registrations' },
+                    { key: 'ongoing', label: 'Ongoing', icon: Play, description: 'Event is currently active' },
+                    { key: 'completed', label: 'Completed', icon: CheckCircle, description: 'Event has ended' },
+                    { key: 'cancelled', label: 'Cancelled', icon: XCircle, description: 'Event cancelled' },
+                  ].map((stage) => {
+                    const isCurrent = stage.key === selectedEvent.status;
+                    const StageIcon = stage.icon;
+                    return (
+                      <button
+                        key={stage.key}
+                        onClick={() => handleStatusChange(stage.key)}
+                        disabled={isCurrent || updating}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${
+                          isCurrent
+                            ? 'border-primary-600 bg-primary-50 shadow-sm'
+                            : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                        } ${
+                          isCurrent || updating ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <StageIcon
+                            size={20}
+                            className={isCurrent ? 'text-primary-600' : 'text-gray-500'}
+                          />
+                          <span
+                            className={`font-medium ${
+                              isCurrent ? 'text-primary-700' : 'text-gray-700'
+                            }`}
+                          >
+                            {stage.label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">{stage.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Warning */}
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                <AlertCircle size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">Important Note</p>
+                  <p className="text-sm text-amber-800 mt-1">
+                    Changing the event status will affect visibility and participant registrations.
+                    Cancelled events cannot be reverted.
+                  </p>
+                </div>
+              </div>
+
+              {updating && (
+                <div className="flex items-center justify-center gap-2 text-gray-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Updating status...</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

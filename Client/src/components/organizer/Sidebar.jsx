@@ -56,11 +56,7 @@ const Sidebar = () => {
     {
       title: "My Events",
       icon: Calendar,
-      submenu: [
-        { title: "All Events", path: "/organizer/events" },
-        { title: "Timeline Updates", path: "/organizer/events/updates" },
-      ],
-      key: "events",
+      path: "/organizer/events"
     },
     {
       title: "Participants",

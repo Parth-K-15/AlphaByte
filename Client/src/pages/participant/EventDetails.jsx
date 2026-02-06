@@ -354,7 +354,15 @@ const EventDetails = () => {
                 <div className="space-y-3">
                   <div className="bg-green-100 text-green-800 p-3 rounded-lg text-center">
                     ✓ You are registered
-                    <p className="text-xs mt-1">Status: {registration?.registrationStatus}</p>
+                    {registration?.registrationStatus === 'PENDING' && (
+                      <p className="text-xs mt-1 text-green-700">Awaiting confirmation</p>
+                    )}
+                    {registration?.registrationStatus === 'CONFIRMED' && (
+                      <p className="text-xs mt-1 text-green-700">Confirmed</p>
+                    )}
+                    {registration?.attendanceStatus === 'ATTENDED' && (
+                      <p className="text-xs mt-1 text-green-700">✓ Attendance marked</p>
+                    )}
                   </div>
                   {registration?.registrationStatus !== 'CANCELLED' && registration?.attendanceStatus !== 'ATTENDED' && (
                     <button
