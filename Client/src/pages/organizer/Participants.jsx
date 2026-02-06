@@ -303,11 +303,11 @@ const Participants = () => {
                   <tr>
                     <th className="text-center px-4 py-4 text-sm font-medium text-gray-500 w-16">Mark</th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Participant</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Contact</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Organization</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Status</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Attendance</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500">Registered</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 hidden md:table-cell">Contact</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 hidden lg:table-cell">Organization</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 hidden lg:table-cell">Status</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 hidden lg:table-cell">Attendance</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 hidden lg:table-cell">Registered</th>
                     <th className="text-right px-6 py-4 text-sm font-medium text-gray-500">Actions</th>
                   </tr>
                 </thead>
@@ -334,7 +334,7 @@ const Participants = () => {
                           <span className="font-medium text-gray-800">{participant.name}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 hidden md:table-cell">
                         <div className="space-y-1">
                           <p className="text-sm text-gray-600 flex items-center gap-1">
                             <Mail size={12} className="text-gray-400" />
@@ -346,10 +346,10 @@ const Participants = () => {
                           </p>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{participant.organization || '-'}</td>
-                      <td className="px-6 py-4">{statusBadge(participant.status || 'registered')}</td>
-                      <td className="px-6 py-4">{attendanceBadge(participant.attendanceStatus, participant.hasAttended)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="px-6 py-4 text-sm text-gray-600 hidden lg:table-cell">{participant.organization || '-'}</td>
+                      <td className="px-6 py-4 hidden lg:table-cell">{statusBadge(participant.status || 'registered')}</td>
+                      <td className="px-6 py-4 hidden lg:table-cell">{attendanceBadge(participant.attendanceStatus, participant.hasAttended)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">
                         {new Date(participant.registeredAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">

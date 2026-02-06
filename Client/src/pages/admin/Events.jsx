@@ -135,12 +135,12 @@ const Events = () => {
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
                   Event Name
                 </th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Status</th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Dates</th>
+                <th className="hidden md:table-cell text-left px-6 py-4 text-sm font-semibold text-gray-600">Status</th>
+                <th className="hidden md:table-cell text-left px-6 py-4 text-sm font-semibold text-gray-600">Dates</th>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
                   Team Lead
                 </th>
-                <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                <th className="hidden lg:table-cell text-left px-6 py-4 text-sm font-semibold text-gray-600">
                   Participants
                 </th>
                 <th className="text-right px-6 py-4 text-sm font-semibold text-gray-600">
@@ -159,7 +159,7 @@ const Events = () => {
                       <span className="font-medium text-gray-800">{event.title || event.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="hidden md:table-cell px-6 py-4">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(
                         event.status
@@ -168,14 +168,14 @@ const Events = () => {
                       {event.status || 'Draft'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-600">
                     {event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD'} -{' '}
                     {event.endDate ? new Date(event.endDate).toLocaleDateString() : 'TBD'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {event.teamLead?.name || 'Unassigned'}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="hidden lg:table-cell px-6 py-4 text-sm text-gray-600">
                     {event.participantCount || event.participants?.length || 0}
                   </td>
                   <td className="px-6 py-4">

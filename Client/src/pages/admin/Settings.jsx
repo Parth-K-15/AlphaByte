@@ -11,10 +11,10 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
 
   const [profile, setProfile] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: '',
+    name: 'Admin User',
+    email: 'admin@planix.com',
+    phone: '+1 234 567 890',
+    role: 'Super Admin',
   });
 
   useEffect(() => {

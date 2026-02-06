@@ -37,11 +37,11 @@ const EventsHome = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      upcoming: 'bg-blue-100 text-blue-800',
-      ongoing: 'bg-green-100 text-green-800',
-      completed: 'bg-gray-100 text-gray-800',
+      upcoming: 'bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-800 border border-cyan-200',
+      ongoing: 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200',
+      completed: 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-200',
     };
-    return badges[status] || 'bg-gray-100 text-gray-800';
+    return badges[status] || 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-200';
   };
 
   const formatDate = (dateString) => {
@@ -55,24 +55,33 @@ const EventsHome = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8 px-2 sm:px-0">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Discover Events</h1>
-        <p className="text-indigo-100">Find and register for amazing events happening around you</p>
+      <div className="relative bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 rounded-2xl lg:rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-2xl overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-48 h-48 lg:w-64 lg:h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 lg:w-48 lg:h-48 bg-white/10 rounded-full blur-3xl"></div>
+        
+        <div className="relative z-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-2 sm:mb-3">Discover Events</h1>
+          <p className="text-cyan-100 text-sm sm:text-base lg:text-lg font-semibold">Find and register for amazing events happening around you</p>
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 border border-white/60">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           {/* Search */}
-          <div className="flex-1">
+          <div className="flex-1 relative group">
+            <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400">
+              🔍
+            </div>
             <input
               type="text"
               placeholder="Search events..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 bg-white/70 backdrop-blur-sm font-semibold transition-all"
             />
           </div>
 
@@ -80,7 +89,7 @@ const EventsHome = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 font-semibold bg-white/70 backdrop-blur-sm transition-all"
           >
             <option value="">All Status</option>
             <option value="upcoming">Upcoming</option>
@@ -92,7 +101,7 @@ const EventsHome = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 font-semibold bg-white/70 backdrop-blur-sm transition-all"
           >
             <option value="">All Types</option>
             <option value="Online">Online</option>
@@ -104,14 +113,16 @@ const EventsHome = () => {
 
       {/* Events Grid */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="flex justify-center py-12 sm:py-16">
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-cyan-500 border-t-transparent"></div>
         </div>
       ) : events.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <div className="text-6xl mb-4">📭</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Events Found</h3>
-          <p className="text-gray-500">Check back later for upcoming events!</p>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 sm:p-12 lg:p-16 text-center border border-white/60">
+          <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <span className="text-5xl">📭</span>
+          </div>
+          <h3 className="text-2xl font-black text-gray-900 mb-2">No Events Found</h3>
+          <p className="text-gray-600 font-semibold">Check back later for upcoming events!</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -119,25 +130,25 @@ const EventsHome = () => {
             <Link
               key={event._id}
               to={`/participant/event/${event._id}`}
-              className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-shadow"
+              className="group bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-white/60"
             >
               {/* Event Banner */}
-              <div className="h-40 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
+              <div className="relative h-48 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 overflow-hidden">
                 {event.bannerImage && (
                   <img
                     src={event.bannerImage}
                     alt={event.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 )}
                 <div className="absolute top-3 right-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadge(event.status)}`}>
+                  <span className={`px-3 py-1.5 rounded-xl text-xs font-black capitalize shadow-lg ${getStatusBadge(event.status)}`}>
                     {event.status}
                   </span>
                 </div>
                 {event.type && (
                   <div className="absolute bottom-3 left-3">
-                    <span className="px-2 py-1 bg-black/50 text-white text-xs rounded">
+                    <span className="px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-xs rounded-xl font-bold shadow-lg">
                       {event.type}
                     </span>
                   </div>
@@ -145,31 +156,31 @@ const EventsHome = () => {
               </div>
 
               {/* Event Info */}
-              <div className="p-4">
-                <h3 className="font-semibold text-lg text-gray-800 mb-2 line-clamp-1">
+              <div className="p-5">
+                <h3 className="font-black text-lg text-gray-900 mb-3 line-clamp-1 group-hover:text-cyan-600 transition-colors">
                   {event.title}
                 </h3>
                 
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <span className="mr-2">📅</span>
-                    {formatDate(event.startDate)}
+                <div className="space-y-2.5 text-sm text-gray-700 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <span>📅</span>
+                    <span>{formatDate(event.startDate)}</span>
                   </div>
                   
                   {(event.location || event.venue) && (
-                    <div className="flex items-center">
-                      <span className="mr-2">📍</span>
+                    <div className="flex items-center gap-2">
+                      <span>📍</span>
                       <span className="line-clamp-1">{event.venue || event.location}</span>
                     </div>
                   )}
                   
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <span className={event.registrationFee > 0 ? 'text-green-600 font-medium' : 'text-gray-500'}>
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <span className={`font-black ${event.registrationFee > 0 ? 'text-emerald-600' : 'text-gray-600'}`}>
                       {event.registrationFee > 0 ? `₹${event.registrationFee}` : 'Free'}
                     </span>
                     
                     {event.spotsLeft !== null && (
-                      <span className={`text-xs ${event.spotsLeft <= 10 ? 'text-red-600' : 'text-gray-500'}`}>
+                      <span className={`text-xs font-bold ${event.spotsLeft <= 10 ? 'text-red-600' : 'text-gray-600'}`}>
                         {event.spotsLeft > 0 ? `${event.spotsLeft} spots left` : 'Full'}
                       </span>
                     )}
@@ -178,9 +189,9 @@ const EventsHome = () => {
 
                 {/* Tags */}
                 {event.tags && event.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     {event.tags.slice(0, 3).map((tag, idx) => (
-                      <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                      <span key={idx} className="px-3 py-1 bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 text-xs rounded-xl font-bold border border-cyan-100">
                         {tag}
                       </span>
                     ))}
