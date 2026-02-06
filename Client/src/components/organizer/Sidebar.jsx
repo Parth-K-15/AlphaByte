@@ -56,7 +56,7 @@ const Sidebar = () => {
     {
       title: "My Events",
       icon: Calendar,
-      path: "/organizer/events"
+      path: "/organizer/events" 
     },
     {
       title: "Participants",
