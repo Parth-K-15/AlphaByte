@@ -10,7 +10,7 @@ const Settings = () => {
 
   const [profile, setProfile] = useState({
     name: 'Admin User',
-    email: 'admin@alphabyte.com',
+    email: 'admin@planix.com',
     phone: '+1 234 567 890',
     role: 'Super Admin',
   });

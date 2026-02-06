@@ -55,25 +55,25 @@ const EventsHome = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 px-2 sm:px-0">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 rounded-3xl p-10 text-white shadow-2xl overflow-hidden">
+      <div className="relative bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 rounded-2xl lg:rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-2xl overflow-hidden">
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 right-0 w-48 h-48 lg:w-64 lg:h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 lg:w-48 lg:h-48 bg-white/10 rounded-full blur-3xl"></div>
         
         <div className="relative z-10">
-          <h1 className="text-4xl md:text-5xl font-black mb-3">Discover Events</h1>
-          <p className="text-cyan-100 text-lg font-semibold">Find and register for amazing events happening around you</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-2 sm:mb-3">Discover Events</h1>
+          <p className="text-cyan-100 text-sm sm:text-base lg:text-lg font-semibold">Find and register for amazing events happening around you</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/60">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 sm:p-6 border border-white/60">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           {/* Search */}
           <div className="flex-1 relative group">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400">
               🔍
             </div>
             <input
@@ -113,11 +113,11 @@ const EventsHome = () => {
 
       {/* Events Grid */}
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-cyan-500 border-t-transparent"></div>
+        <div className="flex justify-center py-12 sm:py-16">
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-cyan-500 border-t-transparent"></div>
         </div>
       ) : events.length === 0 ? (
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-16 text-center border border-white/60">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 sm:p-12 lg:p-16 text-center border border-white/60">
           <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
             <span className="text-5xl">📭</span>
           </div>

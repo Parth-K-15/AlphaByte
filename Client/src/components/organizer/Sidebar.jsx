@@ -13,9 +13,10 @@ import {
   ChevronLeft,
   LogOut,
   UserCog,
+  X,
 } from "lucide-react";
 
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState({ events: true });
   const location = useLocation();
@@ -29,6 +30,10 @@ const Sidebar = () => {
 
   const toggleMenu = (menu) => {
     setOpenMenus((prev) => ({ ...prev, [menu]: !prev[menu] }));
+  };
+
+  const handleNavClick = () => {
+    setMobileOpen(false);
   };
 
   const menuItems = [
@@ -88,38 +93,40 @@ const Sidebar = () => {
   const isParentActive = (submenu) =>
     submenu?.some((item) => location.pathname === item.path);
 
-  return (
-    <aside
-      className={`bg-gradient-to-b from-white/90 via-white/85 to-white/90 backdrop-blur-2xl border-r border-white/60 shadow-xl transition-all duration-300 flex flex-col ${
-        collapsed ? "w-20" : "w-64"
-      }`}
-    >
+  const SidebarContent = () => (
+    <aside className="h-full bg-gradient-to-b from-white/90 via-white/85 to-white/90 backdrop-blur-2xl border-r border-white/60 shadow-xl flex flex-col">
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200/40 bg-white/50">
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
-              <span className="text-white font-black text-sm">AB</span>
+              <span className="text-white font-black text-sm">P</span>
             </div>
             <span className="text-xl font-black bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-              AlphaByte
+              PLANIX
             </span>
           </div>
         )}
         {collapsed && (
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg mx-auto">
-            <span className="text-white font-black text-sm">AB</span>
+            <span className="text-white font-black text-sm">P</span>
           </div>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-2 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 rounded-lg transition-all"
+          className="p-2 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 rounded-lg transition-all hidden lg:block"
         >
           <ChevronLeft
             className={`transition-transform duration-300 text-gray-600 ${collapsed ? "rotate-180" : ""}`}
             size={20}
             strokeWidth={2.5}
           />
+        </button>
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="p-2 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 rounded-lg transition-all lg:hidden"
+        >
+          <X size={20} className="text-gray-600" strokeWidth={2.5} />
         </button>
       </div>
 
@@ -155,6 +162,7 @@ const Sidebar = () => {
                         <li key={subItem.path}>
                           <NavLink
                             to={subItem.path}
+                            onClick={handleNavClick}
                             className={`block px-3 py-2.5 rounded-lg text-sm transition-all duration-300 font-semibold ${
                               isActive(subItem.path)
                                 ? "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 scale-105"
@@ -171,6 +179,7 @@ const Sidebar = () => {
               ) : (
                 <NavLink
                   to={item.path}
+                  onClick={handleNavClick}
                   className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 ${
                     isActive(item.path)
                       ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
@@ -199,6 +208,36 @@ const Sidebar = () => {
         </button>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Mobile Overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[105]"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Mobile */}
+      <div
+        className={`lg:hidden fixed inset-y-0 left-0 z-[110] w-72 transform transition-transform duration-300 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <SidebarContent />
+      </div>
+
+      {/* Sidebar - Desktop */}
+      <div
+        className={`hidden lg:block transition-all duration-300 ${
+          collapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        <SidebarContent />
+      </div>
+    </>
   );
 };
 

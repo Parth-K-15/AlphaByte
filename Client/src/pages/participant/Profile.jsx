@@ -266,13 +266,13 @@ const Profile = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 pb-24">
+    <div className="max-w-full md:max-w-5xl mx-auto p-4 sm:p-6 pb-24 overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-black bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+        <h1 className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
           My Profile
         </h1>
-        <p className="text-gray-600 text-lg">Manage your personal information and settings</p>
+        <p className="text-gray-600 text-base sm:text-lg">Manage your personal information and settings</p>
       </div>
 
       {/* Success/Error Messages */}
@@ -287,10 +287,10 @@ const Profile = () => {
         </div>
       )}
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Avatar Section */}
         <div className="md:col-span-1">
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/20">
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-8 border border-white/20">
             <div className="flex flex-col items-center">
               <div className="relative group">
                 <div className="w-36 h-36 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 flex items-center justify-center text-white text-5xl font-black overflow-hidden shadow-2xl ring-4 ring-white/50">
@@ -316,8 +316,8 @@ const Profile = () => {
                 <p className="mt-4 text-sm font-semibold text-cyan-600 animate-pulse">Uploading...</p>
               )}
               
-              <h3 className="mt-6 text-2xl font-black text-gray-900">{profile.name}</h3>
-              <p className="text-gray-600 font-medium flex items-center gap-2 mt-2\">
+              <h3 className="mt-6 text-xl sm:text-2xl font-black text-gray-900 break-words">{profile.name}</h3>
+              <p className="text-gray-600 text-sm sm:text-base font-medium flex items-center gap-2 mt-2 break-all">
                 <Mail size={16} className="text-cyan-600" />
                 {profile.email}
               </p>
@@ -337,13 +337,13 @@ const Profile = () => {
         {/* Profile Information */}
         <div className="md:col-span-2 space-y-6">
           {/* Basic Info Card */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/20">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black text-gray-900">Personal Information</h2>
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-8 border border-white/20">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-6">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900">Personal Information</h2>
               {!editMode && !passwordMode && (
                 <button
                   onClick={() => setEditMode(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 hover:from-cyan-100 hover:to-blue-100 rounded-xl font-bold transition-all duration-300 hover:scale-105 border border-cyan-200"
+                  className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 hover:from-cyan-100 hover:to-blue-100 rounded-xl font-bold transition-all duration-300 hover:scale-105 border border-cyan-200"
                 >
                   Edit Profile
                 </button>
@@ -395,7 +395,7 @@ const Profile = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
                       <BookOpen className="inline w-5 h-5 mr-2 text-cyan-600" />
@@ -460,48 +460,48 @@ const Profile = () => {
               </form>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl">
-                  <User className="w-6 h-6 mr-4 text-cyan-600" />
-                  <span className="font-bold mr-3 text-gray-600">Name:</span>
-                  <span className="font-medium">{profile.name}</span>
+                <div className="flex items-start sm:items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl break-words">
+                  <User className="w-6 h-6 mr-4 text-cyan-600 flex-shrink-0" />
+                  <span className="font-bold mr-3 text-gray-600 flex-shrink-0">Name:</span>
+                  <span className="font-medium break-words">{profile.name}</span>
                 </div>
-                <div className="flex items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl">
-                  <Mail className="w-6 h-6 mr-4 text-cyan-600" />
-                  <span className="font-bold mr-3 text-gray-600">Email:</span>
-                  <span className="font-medium">{profile.email}</span>
+                <div className="flex items-start sm:items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl break-all">
+                  <Mail className="w-6 h-6 mr-4 text-cyan-600 flex-shrink-0" />
+                  <span className="font-bold mr-3 text-gray-600 flex-shrink-0">Email:</span>
+                  <span className="font-medium break-all">{profile.email}</span>
                 </div>
-                <div className="flex items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl">
-                  <Phone className="w-6 h-6 mr-4 text-cyan-600" />
-                  <span className="font-bold mr-3 text-gray-600">Phone:</span>
-                  <span className="font-medium">{profile.phone || 'Not provided'}</span>
+                <div className="flex items-start sm:items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl break-words">
+                  <Phone className="w-6 h-6 mr-4 text-cyan-600 flex-shrink-0" />
+                  <span className="font-bold mr-3 text-gray-600 flex-shrink-0">Phone:</span>
+                  <span className="font-medium break-words">{profile.phone || 'Not provided'}</span>
                 </div>
-                <div className="flex items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl">
-                  <Building className="w-6 h-6 mr-4 text-cyan-600" />
-                  <span className="font-bold mr-3 text-gray-600">College:</span>
-                  <span className="font-medium">{profile.college || 'Not provided'}</span>
+                <div className="flex items-start sm:items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl break-words">
+                  <Building className="w-6 h-6 mr-4 text-cyan-600 flex-shrink-0" />
+                  <span className="font-bold mr-3 text-gray-600 flex-shrink-0">College:</span>
+                  <span className="font-medium break-words">{profile.college || 'Not provided'}</span>
                 </div>
-                <div className="flex items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl">
-                  <BookOpen className="w-6 h-6 mr-4 text-cyan-600" />
-                  <span className="font-bold mr-3 text-gray-600">Branch:</span>
-                  <span className="font-medium">{profile.branch || 'Not provided'}</span>
+                <div className="flex items-start sm:items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl break-words">
+                  <BookOpen className="w-6 h-6 mr-4 text-cyan-600 flex-shrink-0" />
+                  <span className="font-bold mr-3 text-gray-600 flex-shrink-0">Branch:</span>
+                  <span className="font-medium break-words">{profile.branch || 'Not provided'}</span>
                 </div>
-                <div className="flex items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl">
-                  <GraduationCap className="w-6 h-6 mr-4 text-cyan-600" />
-                  <span className="font-bold mr-3 text-gray-600">Year:</span>
-                  <span className="font-medium">{profile.year || 'Not provided'}</span>
+                <div className="flex items-start sm:items-center text-gray-800 py-3 px-4 bg-gray-50 rounded-xl break-words">
+                  <GraduationCap className="w-6 h-6 mr-4 text-cyan-600 flex-shrink-0" />
+                  <span className="font-bold mr-3 text-gray-600 flex-shrink-0">Year:</span>
+                  <span className="font-medium break-words">{profile.year || 'Not provided'}</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Password Change Card */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/20">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black text-gray-900">Security</h2>
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-8 border border-white/20">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-6">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900">Security</h2>
               {!editMode && !passwordMode && (
                 <button
                   onClick={() => setPasswordMode(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 hover:from-indigo-100 hover:to-purple-100 rounded-xl font-bold transition-all duration-300 hover:scale-105 border border-indigo-200"
+                  className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 hover:from-indigo-100 hover:to-purple-100 rounded-xl font-bold transition-all duration-300 hover:scale-105 border border-indigo-200"
                 >
                   Change Password
                 </button>

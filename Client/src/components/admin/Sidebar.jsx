@@ -23,9 +23,8 @@ import {
   Ban,
 } from 'lucide-react';
 
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({
     events: false,
     team: false,
@@ -98,10 +97,10 @@ const Sidebar = () => {
       <div className="flex items-center justify-between p-4 border-b border-sidebar-light">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-xl">A</span>
+            <span className="text-white font-bold text-xl">P</span>
           </div>
           {!collapsed && (
-            <span className="text-white font-semibold text-lg">AlphaByte</span>
+            <span className="text-white font-semibold text-lg">PLANIX</span>
           )}
         </div>
         <button
@@ -196,25 +195,18 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-sidebar rounded-xl text-white"
-      >
-        <Menu size={24} />
-      </button>
 
       {/* Mobile Overlay */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[105]"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar - Mobile */}
       <div
-        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-sidebar transform transition-transform duration-300 ${
+        className={`lg:hidden fixed inset-y-0 left-0 z-[110] w-64 bg-sidebar transform transition-transform duration-300 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

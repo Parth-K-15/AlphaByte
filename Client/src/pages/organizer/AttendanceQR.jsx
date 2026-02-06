@@ -226,9 +226,9 @@ const AttendanceQR = () => {
   ) : [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-full overflow-x-hidden">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div>
         <div>
           <div className="inline-block">
             <h1 className="text-4xl font-black text-gray-900 mb-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text">Attendance Tracking</h1>
@@ -240,7 +240,7 @@ const AttendanceQR = () => {
           <select
             value={selectedEvent}
             onChange={(e) => setSelectedEvent(e.target.value)}
-            className="px-6 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hover:border-blue-300 transition-all font-bold text-gray-900 bg-white"
+            className="mt-4 px-4 py-2 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hover:border-blue-300 transition-all font-bold text-gray-900 bg-white w-full md:w-auto"
           >
             {events.map((event) => (
               <option key={event._id} value={event._id}>
@@ -249,62 +249,62 @@ const AttendanceQR = () => {
             ))}
           </select>
         ) : (
-          <div className="text-gray-500 text-sm font-semibold">No events assigned</div>
+          <div className="mt-4 text-gray-500 text-sm font-semibold">No events assigned</div>
         )}
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
-          <div className="relative flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-700 font-bold">Total Registered</p>
-              <p className="text-4xl font-black text-gray-900 mt-2">{liveCount.total || 0}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 md:p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 md:w-24 md:h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="mb-3 md:mb-0">
+              <p className="text-[10px] md:text-sm text-gray-700 font-bold">Total Registered</p>
+              <p className="text-2xl md:text-4xl font-black text-gray-900 mt-1 md:mt-2">{liveCount.total || 0}</p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-              <Users size={24} className="text-white" strokeWidth={2.5} />
+            <div className="p-2 md:p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <Users size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
             </div>
           </div>
         </div>
         
-        <div className="group relative bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
-          <div className="relative flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-700 font-bold">Present</p>
-              <p className="text-4xl font-black text-emerald-700 mt-2">{liveCount.present || 0}</p>
+        <div className="group relative bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-4 md:p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 md:w-24 md:h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="mb-3 md:mb-0">
+              <p className="text-[10px] md:text-sm text-gray-700 font-bold">Present</p>
+              <p className="text-2xl md:text-4xl font-black text-emerald-700 mt-1 md:mt-2">{liveCount.present || 0}</p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
-              <CheckCircle size={24} className="text-white" strokeWidth={2.5} />
-            </div>
-          </div>
-        </div>
-
-        <div className="group relative bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all"></div>
-          <div className="relative flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-700 font-bold">Absent</p>
-              <p className="text-4xl font-black text-red-700 mt-2">{(liveCount.total || 0) - (liveCount.present || 0)}</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
-              <XCircle size={24} className="text-white" strokeWidth={2.5} />
+            <div className="p-2 md:p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+              <CheckCircle size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
             </div>
           </div>
         </div>
 
-        <div className="group relative bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
-          <div className="relative flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-700 font-bold">Attendance Rate</p>
-              <p className="text-4xl font-black text-purple-700 mt-2">
+        <div className="group relative bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl p-4 md:p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 md:w-24 md:h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="mb-3 md:mb-0">
+              <p className="text-[10px] md:text-sm text-gray-700 font-bold">Absent</p>
+              <p className="text-2xl md:text-4xl font-black text-red-700 mt-1 md:mt-2">{(liveCount.total || 0) - (liveCount.present || 0)}</p>
+            </div>
+            <div className="p-2 md:p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
+              <XCircle size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
+            </div>
+          </div>
+        </div>
+
+        <div className="group relative bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl p-4 md:p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 md:w-24 md:h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="mb-3 md:mb-0">
+              <p className="text-[10px] md:text-sm text-gray-700 font-bold">Attendance Rate</p>
+              <p className="text-2xl md:text-4xl font-black text-purple-700 mt-1 md:mt-2">
                 {liveCount.total > 0 ? Math.round((liveCount.present / liveCount.total) * 100) : 0}%
               </p>
             </div>
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
-              <Activity size={24} className="text-white" strokeWidth={2.5} />
+            <div className="p-2 md:p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+              <Activity size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
             </div>
           </div>
         </div>
@@ -500,12 +500,12 @@ const AttendanceQR = () => {
                   <table className="w-full">
                     <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                       <tr>
-                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700">#</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden md:table-cell">#</th>
                         <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Name</th>
-                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Email</th>
-                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700">College</th>
-                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Branch</th>
-                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Date/Time</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden md:table-cell">Email</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden lg:table-cell">College</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden lg:table-cell">Branch</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden lg:table-cell">Date/Time</th>
                         <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Status</th>
                         <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Action</th>
                       </tr>
@@ -524,7 +524,7 @@ const AttendanceQR = () => {
                           
                           return (
                             <tr key={participant._id} className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all">
-                              <td className="px-6 py-4 text-sm text-gray-600 font-bold">{index + 1}</td>
+                              <td className="px-6 py-4 text-sm text-gray-600 font-bold hidden md:table-cell">{index + 1}</td>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
                                   <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl flex items-center justify-center shadow-sm">
@@ -535,10 +535,10 @@ const AttendanceQR = () => {
                                   <span className="font-bold text-gray-900">{participant.name}</span>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold">{participant.email}</td>
-                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold">{participant.college || '-'}</td>
-                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold">{participant.branch || '-'}</td>
-                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold">
+                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold hidden md:table-cell">{participant.email}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold hidden lg:table-cell">{participant.college || '-'}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold hidden lg:table-cell">{participant.branch || '-'}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold hidden lg:table-cell">
                                 {attendedAt ? new Date(attendedAt).toLocaleString() : '-'}
                               </td>
                               <td className="px-6 py-4">
