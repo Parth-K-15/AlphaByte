@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
-import { Bell, ChevronDown, User } from "lucide-react";
+import { Bell, ChevronDown, User, Menu } from "lucide-react";
 import { authApi } from "../../services/api";
 
 const Header = ({ mobileOpen, setMobileOpen }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [profileData, setProfileData] = useState({
     name: "Organizer",
     role: "Team Lead",
     avatar: null,
   });
+
+  const notifications = [
+    { id: 1, message: "New participant registered", time: "2 mins ago", unread: true },
+    { id: 2, message: "Event update published", time: "1 hour ago", unread: false },
+  ];
 
   useEffect(() => {
     fetchProfile();
@@ -40,21 +46,8 @@ const Header = ({ mobileOpen, setMobileOpen }) => {
         <Menu size={20} className="text-gray-600" strokeWidth={2.5} />
       </button>
 
-      {/* Search */}
-      <div className="flex-1 flex justify-center max-w-xs sm:max-w-md md:max-w-xl mx-auto">
-        <div className="relative group w-full">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-500 transition-colors"
-            size={16}
-            strokeWidth={2.5}
-          />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm transition-all hover:border-blue-300 shadow-sm focus:shadow-md font-medium"
-          />
-        </div>
-      </div>
+      {/* Spacer */}
+      <div className="flex-1"></div>
 
       {/* Right Section */}
       <div className="flex items-center gap-2 sm:gap-3 ml-3 sm:ml-4">

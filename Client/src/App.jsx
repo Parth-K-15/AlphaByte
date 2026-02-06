@@ -46,9 +46,6 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Redirect root to landing page */}
-          <Route path="/" element={<Navigate to="/" replace />} />
-
           {/* Landing Page */}
           <Route
             path="/"

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { QrCode, X, CheckCircle, Camera } from 'lucide-react';
+import { QrCode, X, CheckCircle, Camera, Mail } from 'lucide-react';
 import jsQR from 'jsqr';
 
 const API_BASE = 'http://localhost:5000/api';

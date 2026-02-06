@@ -312,147 +312,57 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Top Events and Recent Registrations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Top Events by Registration */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-800">Top Events</h2>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">Events with most registrations</p>
-            </div>
-          </div>
-          <div className="h-80">
-            {topEvents.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topEvents} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    width={100}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    }}
-                  />
-                  <Bar dataKey="registrations" fill="#10b981" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                <p>No event data available</p>
-              </div>
-            )}
-          </div>
+      {/* Recent Registrations */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800">Recent Registrations</h2>
+          <button className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-semibold hover:underline">
+            View All
+          </button>
         </div>
-
-        {/* Recent Registrations */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-base sm:text-lg font-bold text-gray-800">Recent Registrations</h2>
-            <button className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-semibold hover:underline">
-              View All
-            </button>
-          </div>
-          <div className="space-y-3 sm:space-y-4">
-            {recentRegistrations.length > 0 ? (
-              recentRegistrations.map((registration, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl border border-gray-100 hover:shadow-md transition-all duration-200">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-sm">
-                    <Users size={16} className="text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800">{registration.name}</p>
-                    <p className="text-sm text-gray-500 truncate">{registration.event?.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          registration.registrationStatus === 'CONFIRMED'
-                            ? 'bg-green-100 text-green-700'
-                            : registration.registrationStatus === 'PENDING'
-                            ? 'bg-orange-100 text-orange-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {registration.registrationStatus}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {formatTime(registration.createdAt)}
-                      </span>
-                    </div>
+        <div className="space-y-3 sm:space-y-4">
+          {recentRegistrations.length > 0 ? (
+            recentRegistrations.map((registration, index) => (
+              <div key={index} className="flex items-start gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl border border-gray-100 hover:shadow-md transition-all duration-200">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-sm">
+                  <Users size={16} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800">{registration.name}</p>
+                  <p className="text-sm text-gray-500 truncate">{registration.event?.title}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        registration.registrationStatus === 'CONFIRMED'
+                          ? 'bg-green-100 text-green-700'
+                          : registration.registrationStatus === 'PENDING'
+                          ? 'bg-orange-100 text-orange-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {registration.registrationStatus}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {formatTime(registration.createdAt)}
+                    </span>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-400 text-center py-4">No recent registrations</p>
-            )}
-          </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-400 text-center py-4">No recent registrations</p>
+          )}
         </div>
       </div>
 
-      {/* Charts and Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Event Registrations Chart */}
-        <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-800">Event Registrations</h2>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">Registration count by event</p>
-            </div>
-            <button className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 hover:gap-2 transition-all">
-              View All <ArrowUpRight size={14} strokeWidth={2.5} />
-            </button>
-          </div>
-          <div className="h-80">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    }}
-                  />
-                  <Bar dataKey="registrations" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                <p>No event data available yet</p>
-              </div>
-            )}
-          </div>
+      {/* Recent Activity */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800">Recent Activity</h2>
+          <button className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-semibold hover:underline">
+            View All
+          </button>
         </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-base sm:text-lg font-bold text-gray-800">Recent Activity</h2>
-            <button className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-semibold hover:underline">
-              View All
-            </button>
-          </div>
           <div className="space-y-3 sm:space-y-4">
             {recentActivity.length > 0 ? (
               recentActivity.map((activity, index) => {
@@ -478,7 +388,6 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 };

@@ -350,20 +350,6 @@ const Certificates = () => {
       </div>
 
       <div className="relative z-10 p-6 space-y-8">
-      {/* Demo Mode Banner */}
-      {usingDemoData && (
-        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-4 shadow-lg">
-          <div className="p-3 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-xl shadow-sm">
-            <Award size={24} className="text-amber-600" strokeWidth={2.5} />
-          </div>
-          <div>
-            <h3 className="font-black text-amber-900 text-lg">Demo Mode Active</h3>
-            <p className="text-amber-700 font-semibold mt-2">
-              Showing sample certificates. Create events from the Admin panel and get assigned to generate real certificates.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">

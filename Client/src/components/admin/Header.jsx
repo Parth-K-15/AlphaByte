@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, User, Menu, Settings, LogOut } from 'lucide-react';
+import { Bell, User, Menu, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
 
@@ -77,20 +77,8 @@ const Header = ({ mobileOpen, setMobileOpen }) => {
           <Menu size={20} className="text-gray-600" />
         </button>
 
-        {/* Search Bar */}
-        <div className="flex-1 flex justify-center max-w-xs sm:max-w-md md:max-w-xl mx-auto">
-          <div className="relative w-full">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-          </div>
-        </div>
+        {/* Spacer */}
+        <div className="flex-1"></div>
 
         {/* Right Section */}
         <div className="flex items-center gap-2 sm:gap-4">
