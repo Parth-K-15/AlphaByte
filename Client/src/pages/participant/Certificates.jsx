@@ -1,60 +1,91 @@
 import { useState, useEffect } from 'react';
 import { Award, Download, CheckCircle, AlertCircle, Calendar, Clock } from 'lucide-react';
 import { getMyCertificates } from '../../services/participantApi';
+import { useAuth } from '../../context/AuthContext';
 
 const Certificates = () => {
+  const { user } = useAuth();
   const [certificates, setCertificates] = useState([]);
   const [attendedEvents, setAttendedEvents] = useState([]);
-  const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, attended: 0, registered: 0 });
+  const [email, setEmail] = useState('');
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
 
   useEffect(() => {
     fetchCertificates();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const fetchCertificates = async () => {
     setLoading(true);
     try {
-      const participantId = localStorage.getItem('participantId');
+      // Use authenticated user's email first, fall back to manually entered email
+      const participantEmail = user?.email || localStorage.getItem('participantEmail');
       
-      if (!participantId) {
-        console.error('No participant ID found');
+      console.log('🔍 Using email from:', user?.email ? 'authenticated user' : 'localStorage');
+      console.log('📧 Email:', participantEmail);
+      
+      if (!participantEmail) {
+        console.error('❌ No participant email found');
+        setShowEmailPrompt(true);
         setLoading(false);
         return;
       }
 
-      const response = await getMyCertificates(participantId);
+      console.log('📡 Calling API with email:', participantEmail);
+      const response = await getMyCertificates(participantEmail);
       
-      console.log('📋 Certificate API Response:', response.data);
+      console.log('📋 Full API Response:', JSON.stringify(response, null, 2));
+      console.log('📋 Response.data:', response.data);
       
-      if (response.data.success) {
-        const data = response.data.data;
-        console.log('📊 Stats:', data.stats);
-        console.log('🏆 Certificates:', data.certificates?.length || 0);
-        console.log('✅ Attended Events (without cert):', data.attendedEventsWithoutCertificate?.length || 0);
-        console.log('📝 All Events:', data.allEvents?.length || 0);
+      if (response.data && response.data.success) {
+        const responseData = response.data.data;
+        console.log('✅ Success! Data received:', responseData);
+        console.log('📊 Stats:', responseData.stats);
+        console.log('🏆 Certificates count:', responseData.certificates?.length || 0);
+        console.log('✅ Attended Events (no cert):', responseData.attendedEventsWithoutCertificate?.length || 0);
+        console.log('📝 All Events count:', responseData.allEvents?.length || 0);
         
-        setCertificates(data.certificates || []);
-        setAttendedEvents(data.attendedEventsWithoutCertificate || []);
-        setAllEvents(data.allEvents || []);
-        setStats(data.stats || { total: 0, attended: 0, registered: 0 });
+        setCertificates(responseData.certificates || []);
+        setAttendedEvents(responseData.attendedEventsWithoutCertificate || []);
+        setStats(responseData.stats || { total: 0, attended: 0, registered: 0 });
+      } else {
+        console.error('❌ API returned unsuccessful response:', response.data);
+        alert('Failed to load certificates: Invalid response from server');
       }
     } catch (error) {
-      console.error('Error fetching certificates:', error);
-      alert(error.message || 'Failed to load certificates');
+      console.error('❌ Error fetching certificates:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+      alert(`Failed to load certificates: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEmailSubmit = (e) => {
+    e.preventDefault();
+    if (email && email.trim()) {
+      // Only store manually entered email if user is not authenticated
+      if (!user?.email) {
+        localStorage.setItem('participantEmail', email.trim());
+      }
+      setShowEmailPrompt(false);
+      fetchCertificates();
+    }
+  };
+
   const handleDownload = (certificate) => {
     if (certificate.cloudinaryUrl) {
+      // Open in new tab for viewing, right-click to download
       window.open(certificate.cloudinaryUrl, '_blank');
     } else if (certificate.certificateUrl) {
       window.open(`http://localhost:5000${certificate.certificateUrl}`, '_blank');
     } else {
-      alert('Certificate PDF not available');
+      alert('Certificate not available');
     }
   };
 
@@ -115,6 +146,40 @@ const Certificates = () => {
         <div className="relative">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-200"></div>
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-amber-600 absolute top-0 left-0"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showEmailPrompt) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
+          <div className="text-center mb-6">
+            <Award size={48} className="mx-auto text-indigo-600 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800">Enter Your Email</h2>
+            <p className="text-gray-500 mt-2">
+              Please enter the email you used to register for events
+            </p>
+          </div>
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your.email@example.com"
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+            >
+              Continue
+            </button>
+          </form>
         </div>
       </div>
     );

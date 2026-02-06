@@ -17,14 +17,11 @@ import {
 } from 'lucide-react';
 import { 
   generateCertificates, 
-  sendCertificates, 
+  sendCertificates,
   getCertificateLogs, 
   resendCertificate,
   getAssignedEvents,
-  getCertificateStats,
-  getCertificateRequests,
-  approveCertificateRequest,
-  rejectCertificateRequest
+  getCertificateStats
 } from '../../services/organizerApi';
 
 // Helper to check if ID is a valid MongoDB ObjectId
@@ -36,13 +33,13 @@ const Certificates = () => {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(searchParams.get('event') || '');
   const [certificates, setCertificates] = useState([]);
-  const [certificateRequests, setCertificateRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
   const [certStats, setCertStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
-  const [processingRequest, setProcessingRequest] = useState(null);
+  const [sendingCertId, setSendingCertId] = useState(null);
+  const [selectedCertificates, setSelectedCertificates] = useState([]);
   
   // Determine initial tab from URL path
   const getInitialTab = () => {
@@ -122,12 +119,10 @@ const Certificates = () => {
       const response = await getCertificateLogs(selectedEvent, {});
       if (response.data.success) {
         setCertificates(Array.isArray(response.data.data) ? response.data.data : []);
-        setCertificateRequests(Array.isArray(response.data.requests) ? response.data.requests : []);
       }
     } catch (error) {
       console.error('Error fetching certificates:', error);
       setCertificates([]);
-      setCertificateRequests([]);
     } finally {
       setLoading(false);
     }
@@ -201,100 +196,168 @@ const Certificates = () => {
     }
   };
 
-  const handleSendCertificates = async () => {
-    if (!selectedEvent || !isValidObjectId(selectedEvent)) {
-      alert('Please select an event first.');
-      return;
-    }
-    setSending(true);
+  const handleResendCertificate = async (certificateId, participantName, participantEmail) => {
+    // Confirmation dialog
+    const confirmed = window.confirm(
+      `📧 Send Certificate via Email\n\n` +
+      `Recipient: ${participantName}\n` +
+      `Email: ${participantEmail}\n\n` +
+      `The certificate will be sent to this participant's email address.\n\n` +
+      `Do you want to continue?`
+    );
+    
+    if (!confirmed) return;
+    
+    setSendingCertId(certificateId);
     try {
-      const response = await sendCertificates(selectedEvent, { sendAll: true });
+      const response = await resendCertificate(certificateId);
+      
       if (response.data.success) {
-        const sent = response.data.data.sent || response.data.data.sentCount || 0;
-        const failed = response.data.data.failed || 0;
-        
-        if (failed > 0) {
-          alert(`Sent ${sent} certificate${sent === 1 ? '' : 's'} successfully via email.\n${failed} failed to send.`);
-        } else if (sent > 0) {
-          alert(`Successfully sent ${sent} certificate${sent === 1 ? '' : 's'} via email!`);
-        } else {
-          alert('No certificates to send. Please generate certificates first.');
-        }
-        
+        alert(
+          `✅ Certificate Sent Successfully!\n\n` +
+          `The certificate has been sent to ${participantName} at ${participantEmail}.\n\n` +
+          `${response.data.emailDetails?.messageId ? `Message ID: ${response.data.emailDetails.messageId}\n` : ''}` +
+          `They should receive it shortly.`
+        );
         fetchCertificates();
       }
     } catch (error) {
+      console.error('Error sending certificate:', error);
+      const errorMsg = error.message || 'Failed to send certificate';
+      const isEmailConfigError = errorMsg.includes('auth') || errorMsg.includes('credentials') || errorMsg.includes('not configured');
+      
+      alert(
+        `❌ Failed to Send Certificate\n\n` +
+        `Recipient: ${participantName} (${participantEmail})\n` +
+        `Error: ${errorMsg}\n\n` +
+        `${
+          isEmailConfigError 
+            ? '🔧 Troubleshooting: Check your email configuration in the server .env file.\nRequired: EMAIL_USER and EMAIL_PASSWORD' 
+            : 'Please try again or check the Email Logs for more details.'
+        }`
+      );
+    } finally {
+      setSendingCertId(null);
+    }
+  };
+
+  const handleSendAllPending = async () => {
+    if (!selectedEvent) {
+      alert('Please select an event first.');
+      return;
+    }
+    
+    if (stats.pending === 0) {
+      alert('No pending certificates to send.');
+      return;
+    }
+    
+    const confirmed = window.confirm(
+      `📧 Send All Pending Certificates\n\n` +
+      `You are about to send ${stats.pending} certificate${stats.pending === 1 ? '' : 's'} to participants.\n\n` +
+      `Do you want to continue?`
+    );
+    
+    if (!confirmed) return;
+    
+    setSending(true);
+    try {
+      const response = await sendCertificates(selectedEvent, {});
+      
+      if (response.data.success) {
+        const { sent, failed } = response.data.data;
+        
+        if (failed > 0) {
+          alert(
+            `📧 Bulk Sending Complete\n\n` +
+            `✅ Successfully sent: ${sent}\n` +
+            `❌ Failed: ${failed}\n\n` +
+            `Please check the Email Logs or try resending failed ones individually.`
+          );
+        } else {
+          alert(
+            `✅ All Certificates Sent!\n\n` +
+            `Successfully sent ${sent} certificate${sent === 1 ? '' : 's'} to participants.`
+          );
+        }
+        
+        fetchCertificates();
+        fetchCertificateStats();
+      }
+    } catch (error) {
       console.error('Error sending certificates:', error);
-      alert(error.response?.data?.message || 'Failed to send certificates');
+      const errorMsg = error.message || 'Failed to send certificates';
+      alert(
+        `❌ Failed to Send Certificates\n\n` +
+        `Error: ${errorMsg}\n\n` +
+        `Please try again or check your email configuration.`
+      );
     } finally {
       setSending(false);
     }
   };
 
-  const handleResendCertificate = async (certificateId) => {
-    try {
-      await resendCertificate(certificateId);
-      alert('Certificate resent successfully!');
-      fetchCertificates();
-    } catch (error) {
-      console.error('Error resending certificate:', error);
-      alert('Failed to resend certificate');
+  const handleSendSelectedCertificates = async () => {
+    if (selectedCertificates.length === 0) {
+      alert('Please select at least one certificate to send.');
+      return;
     }
+    
+    const confirmed = window.confirm(
+      `📧 Send Selected Certificates\n\n` +
+      `You are about to send ${selectedCertificates.length} certificate${selectedCertificates.length === 1 ? '' : 's'}.\n\n` +
+      `Do you want to continue?`
+    );
+    
+    if (!confirmed) return;
+    
+    setSending(true);
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const certId of selectedCertificates) {
+      try {
+        await resendCertificate(certId);
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to send certificate ${certId}:`, error);
+        failCount++;
+      }
+    }
+    
+    setSending(false);
+    setSelectedCertificates([]);
+    
+    if (failCount > 0) {
+      alert(
+        `📧 Sending Complete\n\n` +
+        `✅ Successfully sent: ${successCount}\n` +
+        `❌ Failed: ${failCount}\n\n` +
+        `Please try resending the failed ones individually.`
+      );
+    } else {
+      alert(
+        `✅ All Certificates Sent!\n\n` +
+        `Successfully sent ${successCount} certificate${successCount === 1 ? '' : 's'}.`
+      );
+    }
+    
+    fetchCertificates();
   };
 
-  const handleApproveRequest = async (requestId) => {
-    const organizerId = localStorage.getItem('userId');
-    const achievement = prompt('Enter achievement type (e.g., Winner, Participant, Runner-up):', 'Participation');
-    
-    if (!achievement) return;
-    
-    const competitionName = prompt('Enter competition name (optional, press Enter to skip):');
-    
-    setProcessingRequest(requestId);
-    try {
-      const response = await approveCertificateRequest(requestId, {
-        organizerId,
-        achievement,
-        competitionName: competitionName || undefined,
-        template: 'default'
-      });
-      
-      if (response.data.success) {
-        alert('Certificate generated successfully!');
-        fetchCertificates();
-        fetchCertificateStats();
-      }
-    } catch (error) {
-      console.error('Error approving request:', error);
-      alert(error.message || 'Failed to approve certificate request');
-    } finally {
-      setProcessingRequest(null);
-    }
+  const toggleCertificateSelection = (certId) => {
+    setSelectedCertificates(prev => 
+      prev.includes(certId) 
+        ? prev.filter(id => id !== certId)
+        : [...prev, certId]
+    );
   };
 
-  const handleRejectRequest = async (requestId) => {
-    const reason = prompt('Enter rejection reason:');
-    
-    if (!reason) return;
-    
-    const organizerId = localStorage.getItem('userId');
-    
-    setProcessingRequest(requestId);
-    try {
-      const response = await rejectCertificateRequest(requestId, {
-        organizerId,
-        reason
-      });
-      
-      if (response.data.success) {
-        alert('Certificate request rejected');
-        fetchCertificates();
-      }
-    } catch (error) {
-      console.error('Error rejecting request:', error);
-      alert(error.message || 'Failed to reject certificate request');
-    } finally {
-      setProcessingRequest(null);
+  const toggleSelectAll = () => {
+    if (selectedCertificates.length === filteredCertificates.length) {
+      setSelectedCertificates([]);
+    } else {
+      setSelectedCertificates(filteredCertificates.map(cert => cert._id));
     }
   };
 
@@ -322,7 +385,6 @@ const Certificates = () => {
     sent: displayCertificates.filter((c) => c.status === 'SENT').length,
     pending: displayCertificates.filter((c) => c.status === 'GENERATED').length,
     failed: displayCertificates.filter((c) => c.status === 'FAILED').length,
-    requests: certificateRequests.filter((r) => r.status === 'PENDING').length,
   };
 
   const statusBadge = (status) => {
@@ -578,8 +640,24 @@ const Certificates = () => {
                   <option value="GENERATED">Pending</option>
                   <option value="FAILED">Failed</option>
                 </select>
+                
+                {selectedCertificates.length > 0 && (
+                  <button
+                    onClick={handleSendSelectedCertificates}
+                    disabled={sending}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {sending ? (
+                      <RefreshCw size={18} className="animate-spin" />
+                    ) : (
+                      <Send size={18} />
+                    )}
+                    Send Selected ({selectedCertificates.length})
+                  </button>
+                )}
+                
                 <button
-                  onClick={handleSendCertificates}
+                  onClick={handleSendAllPending}
                   disabled={sending || stats.pending === 0}
                   className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold disabled:opacity-50 disabled:hover:scale-100"
                 >
@@ -588,10 +666,25 @@ const Certificates = () => {
                   ) : (
                     <Send size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
                   )}
-                  )}
                   Send All Pending
                 </button>
               </div>
+
+              {/* Email Sending Info */}
+              {(stats.pending > 0 || selectedCertificates.length > 0) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                  <Mail size={20} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-1">Email Distribution Options</h4>
+                    <ul className="text-xs text-blue-700 space-y-1">
+                      <li>• <strong>Send All Pending:</strong> Sends certificates to all participants with GENERATED status</li>
+                      <li>• <strong>Send Selected:</strong> Select specific certificates using checkboxes and send them in bulk</li>
+                      <li>• <strong>Individual Send:</strong> Use the <Mail size={12} className="inline" /> icon next to each certificate to send individually</li>
+                      <li>• Certificates are sent to participants' registered email addresses</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
 
               {/* Certificate List */}
               {loading ? (
@@ -610,6 +703,14 @@ const Certificates = () => {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-100">
                       <tr>
+                        <th className="text-left px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedCertificates.length === filteredCertificates.length && filteredCertificates.length > 0}
+                            onChange={toggleSelectAll}
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                        </th>
                         <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Certificate ID</th>
                         <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Participant</th>
                         <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Email</th>
@@ -621,6 +722,14 @@ const Certificates = () => {
                     <tbody className="divide-y divide-gray-50">
                       {filteredCertificates.map((cert) => (
                         <tr key={cert._id} className="hover:bg-gray-50/50">
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedCertificates.includes(cert._id)}
+                              onChange={() => toggleCertificateSelection(cert._id)}
+                              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            />
+                          </td>
                           <td className="px-4 py-3 font-mono text-sm text-gray-600">{cert.certificateId}</td>
                           <td className="px-4 py-3">
                             <span className="font-medium text-gray-800">{cert.participant?.name}</span>
@@ -633,22 +742,27 @@ const Certificates = () => {
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => cert.certificateUrl && window.open(`http://localhost:5000${cert.certificateUrl}`, '_blank')}
-                                disabled={!cert.certificateUrl}
+                                onClick={() => {
+                                  const url = cert.cloudinaryUrl || (cert.certificateUrl ? `http://localhost:5000${cert.certificateUrl}` : null);
+                                  if (url) window.open(url, '_blank');
+                                }}
+                                disabled={!cert.cloudinaryUrl && !cert.certificateUrl}
                                 className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Preview"
                               >
                                 <Eye size={16} />
                               </button>
                               <a
-                                href={cert.certificateUrl ? `http://localhost:5000${cert.certificateUrl}` : '#'}
-                                download={cert.pdfFilename || `Certificate_${cert.participant?.name}.pdf`}
-                                className={`p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 ${!cert.certificateUrl ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                                href={cert.cloudinaryUrl || (cert.certificateUrl ? `http://localhost:5000${cert.certificateUrl}` : '#')}
+                                download={cert.pdfFilename || `Certificate_${cert.participant?.name}.jpg`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 ${!cert.cloudinaryUrl && !cert.certificateUrl ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                                 title="Download"
                                 onClick={(e) => {
-                                  if (!cert.certificateUrl) {
+                                  if (!cert.cloudinaryUrl && !cert.certificateUrl) {
                                     e.preventDefault();
-                                    alert('Certificate PDF not available');
+                                    alert('Certificate not available');
                                   }
                                 }}
                               >
@@ -656,20 +770,30 @@ const Certificates = () => {
                               </a>
                               {cert.status !== 'SENT' && (
                                 <button
-                                  onClick={() => handleResendCertificate(cert._id)}
-                                  className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600"
-                                  title="Send"
+                                  onClick={() => handleResendCertificate(cert._id, cert.participant?.name, cert.participant?.email)}
+                                  disabled={sendingCertId === cert._id}
+                                  className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed relative"
+                                  title="Send via Email"
                                 >
-                                  <Mail size={16} />
+                                  {sendingCertId === cert._id ? (
+                                    <RefreshCw size={16} className="animate-spin" />
+                                  ) : (
+                                    <Mail size={16} />
+                                  )}
                                 </button>
                               )}
                               {cert.status === 'SENT' && (
                                 <button
-                                  onClick={() => handleResendCertificate(cert._id)}
-                                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700"
-                                  title="Resend"
+                                  onClick={() => handleResendCertificate(cert._id, cert.participant?.name, cert.participant?.email)}
+                                  disabled={sendingCertId === cert._id}
+                                  className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Resend via Email"
                                 >
-                                  <RefreshCw size={16} />
+                                  {sendingCertId === cert._id ? (
+                                    <RefreshCw size={16} className="animate-spin" />
+                                  ) : (
+                                    <RefreshCw size={16} />
+                                  )}
                                 </button>
                               )}
                             </div>

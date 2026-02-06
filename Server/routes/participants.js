@@ -211,7 +211,7 @@ router.post('/register', async (req, res) => {
       year,
       branch,
       event: eventId,
-      registrationStatus: 'PENDING',
+      registrationStatus: event.registrationFee === 0 ? 'CONFIRMED' : 'PENDING', // Auto-confirm free events
       registrationType: 'ONLINE',
       attendanceStatus: 'PENDING',
       certificateStatus: 'PENDING'
@@ -221,7 +221,9 @@ router.post('/register', async (req, res) => {
     
     res.status(201).json({
       success: true,
-      message: 'Registration successful!',
+      message: event.registrationFee === 0 
+        ? 'Registration successful! You are confirmed.' 
+        : 'Registration successful! Awaiting confirmation.',
       data: participant
     });
   } catch (error) {
@@ -496,50 +498,8 @@ router.get('/attendance/:eventId', async (req, res) => {
 // CERTIFICATE APIs
 // =====================
 
-// GET /api/participant/certificates - Get all certificates for participant
-router.get('/certificates', async (req, res) => {
-  try {
-    const { email } = req.query;
-    
-    if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email is required' 
-      });
-    }
-    
-    // Find all participant records for this email
-    const participants = await Participant.find({ 
-      email: email.toLowerCase(),
-      attendanceStatus: 'ATTENDED'
-    });
-    
-    const participantIds = participants.map(p => p._id);
-    
-    // Find certificates for these participants
-    const certificates = await Certificate.find({ 
-      participant: { $in: participantIds }
-    })
-      .populate({
-        path: 'event',
-        select: 'title description startDate endDate location'
-      })
-      .populate({
-        path: 'participant',
-        select: 'fullName email'
-      })
-      .sort({ issuedAt: -1 });
-    
-    res.json({
-      success: true,
-      count: certificates.length,
-      data: certificates
-    });
-  } catch (error) {
-    console.error('Error fetching certificates:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
+// Old simple route removed - using detailed route below (line ~870)
+// that returns certificates, attended events, all events, and stats
 
 // GET /api/participant/certificates/:certificateId - Get single certificate
 router.get('/certificates/:certificateId', async (req, res) => {
@@ -866,25 +826,19 @@ router.get('/calendar', async (req, res) => {
 // CERTIFICATE APIs
 // =====================
 
-// GET /api/participant/certificates/:participantId - Get all certificates for a participant
-router.get('/certificates/:participantId', async (req, res) => {
+// GET /api/participant/certificates - Get all certificates for a participant by email
+router.get('/certificates', async (req, res) => {
   try {
-    const { participantId } = req.params;
+    const { email } = req.query;
     
-    if (!isValidObjectId(participantId)) {
-      return res.status(400).json({ success: false, message: 'Invalid participant ID' });
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
     }
     
-    // Get current participant to find their email
-    const currentParticipant = await Participant.findById(participantId);
-    if (!currentParticipant) {
-      return res.status(404).json({ success: false, message: 'Participant not found' });
-    }
-    
-    console.log(`📋 Fetching certificates for participant: ${currentParticipant.email}`);
+    console.log(`📋 Fetching certificates for participant: ${email}`);
     
     // Find ALL participant records for this email (across all events)
-    const allParticipantRecords = await Participant.find({ email: currentParticipant.email })
+    const allParticipantRecords = await Participant.find({ email: email.toLowerCase() })
       .populate('event', 'title name startDate endDate status');
     
     console.log(`📊 Found ${allParticipantRecords.length} participant records`);

@@ -72,13 +72,12 @@ const certificateSchema = new mongoose.Schema({
 
 certificateSchema.index({ event: 1, participant: 1 }, { unique: true });
 
-certificateSchema.pre('validate', function(next) {
+certificateSchema.pre('validate', function() {
   if (!this.certificateId) {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);
     this.certificateId = `CERT-${timestamp}-${random}`.toUpperCase();
   }
-  next();
 });
 
 export default mongoose.model('Certificate', certificateSchema);

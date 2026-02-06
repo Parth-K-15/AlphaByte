@@ -10,8 +10,7 @@ const __dirname = path.dirname(__filename);
 
 /**
  * Certificate Generator Service
- * Note: PDF generation temporarily disabled for Vercel deployment
- * Consider using external services like PDFShift, CloudConvert, or Cloudinary
+ * Generates JPG certificate images from HTML templates using Puppeteer
  */
 class CertificateGenerator {
   constructor() {
@@ -116,18 +115,63 @@ class CertificateGenerator {
       const html = await this.loadTemplate(template, templateData);
       console.log('\u2705 Template loaded successfully');
 
-      // TODO: PDF generation disabled for Vercel deployment
-      // For production, integrate with external PDF service:
-      // - PDFShift API (https://pdfshift.io/)
-      // - CloudConvert API (https://cloudconvert.com/)
-      // - Cloudinary Transformations
-      // - Or deploy a separate PDF service
+      // Generate PDF using Puppeteer
+      console.log('\ud83d\ude80 Launching Puppeteer...');
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      console.log('\u2705 Browser launched');
+
+      const page = await browser.newPage();
       
-      console.warn('⚠️ PDF generation is disabled. Puppeteer removed for Vercel compatibility.');
-      console.warn('📄 HTML certificate generated, but PDF conversion skipped.');
+      // Set viewport for high-quality image (A4 landscape dimensions)
+      await page.setViewport({
+        width: 1754,  // A4 landscape width at 150 DPI
+        height: 1240, // A4 landscape height at 150 DPI
+        deviceScaleFactor: 2 // Retina display for better quality
+      });
       
-      // For now, return a mock certificate URL
-      // In production, replace this with actual PDF service integration
+      console.log('\ud83d\udcc4 Setting content...');
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      console.log('\u2705 Content set');
+
+      // Generate filename with .jpg extension
+      const filename = `${certificateId}_${Date.now()}.jpg`;
+      const filepath = path.join(this.outputDir, filename);
+      console.log('\ud83d\udcbe Saving JPG to:', filepath);
+
+      // Generate JPG Screenshot
+      await page.screenshot({
+        path: filepath,
+        type: 'jpeg',
+        quality: 95,
+        fullPage: true
+      });
+      console.log('✅ JPG generated successfully');
+
+      await browser.close();
+      console.log('✅ Browser closed');
+
+      // Upload to Cloudinary as image
+      console.log('☁️ Uploading to Cloudinary...');
+      const cloudinaryResult = await cloudinary.uploader.upload(filepath, {
+        resource_type: 'image',
+        folder: 'alphabyte/certificates',
+        public_id: `cert_${certificateId}_${Date.now()}`,
+        format: 'jpg',
+        quality: 95
+      });
+      console.log('✅ Uploaded to Cloudinary:', cloudinaryResult.secure_url);
+
+      // Delete local file after successful upload (optional)
+      try {
+        await fs.unlink(filepath);
+        console.log('🗑️ Local file deleted');
+      } catch (unlinkError) {
+        console.log('⚠️ Could not delete local file:', unlinkError.message);
+      }
+
       return {
         success: false,
         message: 'Certificate generation temporarily disabled. Please configure PDF service.',

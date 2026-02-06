@@ -38,7 +38,7 @@ export const registerForEvent = (data) => fetchApi('/participant/register', { me
 export const cancelRegistration = (registrationId) => fetchApi(`/participant/registrations/${registrationId}/cancel`, { method: 'DELETE' });
 
 // Certificates
-export const getMyCertificates = (participantId) => fetchApi(`/participant/certificates/${participantId}`);
+export const getMyCertificates = (email) => fetchApi(`/participant/certificates?email=${encodeURIComponent(email)}`);
 export const requestCertificate = (data) => fetchApi('/participant/certificates/request', { method: 'POST', body: data });
 
 // Profile

@@ -170,54 +170,94 @@ export const sendBulkEmails = async (recipients, subject, message, event) => {
 export const sendCertificateEmail = async (recipient, event, certificatePath, certificateUrl) => {
   try {
     const transporter = createTransporter();
+    
+    // Check if certificate URL exists (Cloudinary URL)
+    if (!certificateUrl) {
+      console.error('⚠️  No certificate URL provided for email');
+      return { success: false, error: 'Certificate URL is required' };
+    }
+    
+    console.log(`📧 Sending certificate email to ${recipient.email}`);
+    console.log(`📎 Certificate URL: ${certificateUrl}`);
 
     const mailOptions = {
       from: `"${process.env.EMAIL_FROM_NAME || 'Event Management System'}" <${process.env.EMAIL_USER}>`,
       to: recipient.email,
-      subject: `Your Certificate for ${event.title || event.name}`,
+      subject: `🎓 Your Certificate for ${event.title || event.name}`,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="UTF-8">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #10b981; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-            .content { background: #f0fdf4; padding: 30px; border-radius: 0 0 8px 8px; }
-            .button { background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 20px 0; }
+            .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px 20px; border-radius: 12px 12px 0 0; text-align: center; }
+            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; }
+            .certificate-preview { text-align: center; margin: 20px 0; }
+            .certificate-preview img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .button { background: #10b981; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 20px 0; font-weight: 600; }
+            .button:hover { background: #059669; }
+            .footer { text-align: center; margin-top: 20px; padding: 20px; color: #6b7280; font-size: 12px; }
+            .info-box { background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; margin: 15px 0; border-radius: 4px; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0;">🎉 Certificate of Completion</h1>
+              <h1 style="margin: 0; font-size: 28px;">🎉 Congratulations!</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.95;">Your Certificate is Ready</p>
             </div>
             <div class="content">
-              <p>Dear ${recipient.name || 'Participant'},</p>
-              <p>Congratulations on successfully completing <strong>${event.title || event.name}</strong>!</p>
-              <p>Your certificate is attached to this email. You can also download it from the participant portal.</p>
-              ${certificateUrl ? `<a href="${certificateUrl}" class="button">Download Certificate</a>` : ''}
-              <p>Thank you for your participation. We hope to see you at our future events!</p>
-              <p>Best regards,<br>The Organizing Team</p>
+              <p style="font-size: 16px; color: #374151;"><strong>Dear ${recipient.name || 'Participant'},</strong></p>
+              
+              <p style="font-size: 15px; color: #4b5563;">
+                Congratulations on successfully completing <strong>${event.title || event.name}</strong>! 
+                We are pleased to share your certificate of achievement.
+              </p>
+              
+              <div class="certificate-preview">
+                <img src="${certificateUrl}" alt="Certificate Preview" style="max-width: 500px;" />
+              </div>
+              
+              <div style="text-align: center;">
+                <a href="${certificateUrl}" class="button" target="_blank">📥 Download Certificate</a>
+              </div>
+              
+              <div class="info-box">
+                <p style="margin: 0; font-size: 14px; color: #065f46;">
+                  <strong>💡 Tip:</strong> You can also access your certificate anytime from the participant portal.
+                  Right-click the image above or use the download button to save your certificate.
+                </p>
+              </div>
+              
+              <p style="font-size: 14px; color: #6b7280; margin-top: 25px;">
+                Thank you for your participation. We hope to see you at our future events!
+              </p>
+              
+              <p style="font-size: 14px; color: #374151; margin-top: 20px;">
+                Best regards,<br>
+                <strong>${process.env.EMAIL_FROM_NAME || 'The Organizing Team'}</strong>
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p>This is an automated email. Please do not reply to this message.</p>
+              <p>If you have any questions, please contact the event organizers.</p>
             </div>
           </div>
         </body>
         </html>
-      `,
-      attachments: certificatePath ? [
-        {
-          filename: `Certificate_${recipient.name || 'Participant'}.pdf`,
-          path: certificatePath,
-          contentType: 'application/pdf'
-        }
-      ] : []
+      `
+      // NOTE: Attachments removed - certificates are now stored on Cloudinary
+      // Users can download directly from the URL provided in the email
     };
 
     const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Email sent successfully to ${recipient.email} (Message ID: ${info.messageId})`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending certificate email:', error);
+    console.error('❌ Error sending certificate email:', error);
     return { success: false, error: error.message };
   }
 };

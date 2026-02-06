@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Certificate JPG</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        img {
+            max-width: 100%;
+            border: 2px solid #ccc;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: green;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Certificate JPG Test</h1>
+    <div class="success">✅ If you can see the certificate image below, JPG format is working perfectly!</div>
+    
+    <h2>Certificate from Cloudinary (JPG Format)</h2>
+    <img src="https://res.cloudinary.com/dnsvwgime/image/upload/v1770372917/alphabyte/certificates/cert_CERT-MLAQBN2Y-7NJ1RY_1770372916614.jpg" 
+         alt="Certificate" 
+         onload="console.log('✅ Certificate loaded successfully!')"
+         onerror="console.error('❌ Failed to load certificate')">
+    
+    <h3>Links:</h3>
+    <ul>
+        <li>
+            <a href="https://res.cloudinary.com/dnsvwgime/image/upload/v1770372917/alphabyte/certificates/cert_CERT-MLAQBN2Y-7NJ1RY_1770372916614.jpg" 
+               target="_blank">
+                Open in New Tab
+            </a>
+        </li>
+        <li>
+            <a href="https://res.cloudinary.com/dnsvwgime/image/upload/v1770372917/alphabyte/certificates/cert_CERT-MLAQBN2Y-7NJ1RY_1770372916614.jpg" 
+               download="certificate.jpg">
+                Download Certificate
+            </a>
+        </li>
+    </ul>
+</body>
+</html>
