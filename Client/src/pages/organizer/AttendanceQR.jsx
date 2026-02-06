@@ -226,18 +226,21 @@ const AttendanceQR = () => {
   ) : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-full overflow-x-hidden">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Attendance</h1>
-          <p className="text-gray-500 mt-1">QR-based attendance tracking</p>
+          <div className="inline-block">
+            <h1 className="text-4xl font-black text-gray-900 mb-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text">Attendance Tracking</h1>
+            <div className="h-1 w-28 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 rounded-full"></div>
+          </div>
+          <p className="text-gray-600 mt-3 text-lg font-semibold">QR-based attendance tracking</p>
         </div>
         {events.length > 0 ? (
           <select
             value={selectedEvent}
             onChange={(e) => setSelectedEvent(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="mt-4 px-4 py-2 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hover:border-blue-300 transition-all font-bold text-gray-900 bg-white w-full md:w-auto"
           >
             {events.map((event) => (
               <option key={event._id} value={event._id}>
@@ -246,88 +249,98 @@ const AttendanceQR = () => {
             ))}
           </select>
         ) : (
-          <div className="text-gray-500 text-sm">No events assigned</div>
+          <div className="mt-4 text-gray-500 text-sm font-semibold">No events assigned</div>
         )}
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Registered</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{liveCount.total || 0}</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="group relative bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl p-4 md:p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 md:w-24 md:h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="mb-3 md:mb-0">
+              <p className="text-[10px] md:text-sm text-gray-700 font-bold">Total Registered</p>
+              <p className="text-2xl md:text-4xl font-black text-gray-900 mt-1 md:mt-2">{liveCount.total || 0}</p>
             </div>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <Users size={20} className="text-blue-600" />
+            <div className="p-2 md:p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
+              <Users size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Present</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{liveCount.present || 0}</p>
+        <div className="group relative bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-4 md:p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 md:w-24 md:h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="mb-3 md:mb-0">
+              <p className="text-[10px] md:text-sm text-gray-700 font-bold">Present</p>
+              <p className="text-2xl md:text-4xl font-black text-emerald-700 mt-1 md:mt-2">{liveCount.present || 0}</p>
             </div>
-            <div className="p-3 bg-green-50 rounded-xl">
-              <CheckCircle size={20} className="text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Absent</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">{(liveCount.total || 0) - (liveCount.present || 0)}</p>
-            </div>
-            <div className="p-3 bg-red-50 rounded-xl">
-              <XCircle size={20} className="text-red-600" />
+            <div className="p-2 md:p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+              <CheckCircle size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Attendance Rate</p>
-              <p className="text-2xl font-bold text-primary-600 mt-1">
+        <div className="group relative bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl p-4 md:p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 md:w-24 md:h-24 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="mb-3 md:mb-0">
+              <p className="text-[10px] md:text-sm text-gray-700 font-bold">Absent</p>
+              <p className="text-2xl md:text-4xl font-black text-red-700 mt-1 md:mt-2">{(liveCount.total || 0) - (liveCount.present || 0)}</p>
+            </div>
+            <div className="p-2 md:p-3 bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg">
+              <XCircle size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
+            </div>
+          </div>
+        </div>
+
+        <div className="group relative bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl p-4 md:p-6 border border-white/60 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-20 h-20 md:w-24 md:h-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+          <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div className="mb-3 md:mb-0">
+              <p className="text-[10px] md:text-sm text-gray-700 font-bold">Attendance Rate</p>
+              <p className="text-2xl md:text-4xl font-black text-purple-700 mt-1 md:mt-2">
                 {liveCount.total > 0 ? Math.round((liveCount.present / liveCount.total) * 100) : 0}%
               </p>
             </div>
-            <div className="p-3 bg-primary-50 rounded-xl">
-              <Activity size={20} className="text-primary-600" />
+            <div className="p-2 md:p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
+              <Activity size={18} className="text-white md:w-6 md:h-6" strokeWidth={2.5} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg overflow-hidden">
         <div className="border-b border-gray-100">
           <div className="flex">
             <button
               onClick={() => setActiveTab('qr')}
-              className={`flex-1 py-4 text-center font-medium transition-colors ${
+              className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
                 activeTab === 'qr'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
+                  ? 'text-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <QrCode size={18} className="inline-block mr-2" />
+              <QrCode size={18} className="inline-block mr-2" strokeWidth={2.5} />
               QR Code Display
+              {activeTab === 'qr' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('logs')}
-              className={`flex-1 py-4 text-center font-medium transition-colors ${
+              className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
                 activeTab === 'logs'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
+                  ? 'text-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <UserPlus size={18} className="inline-block mr-2" />
+              <UserPlus size={18} className="inline-block mr-2" strokeWidth={2.5} />
               Manual Attendance
+              {activeTab === 'logs' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+              )}
             </button>
           </div>
         </div>
@@ -339,7 +352,7 @@ const AttendanceQR = () => {
                 <div className="text-center">
                   {/* QR Code Display */}
                   <div className="relative inline-block">
-                    <div className="w-72 h-72 bg-white rounded-2xl shadow-lg p-6 flex items-center justify-center border-4 border-primary-100">
+                    <div className="w-80 h-80 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-3xl shadow-2xl p-8 flex items-center justify-center border-4 border-gradient-to-br from-blue-200 to-purple-200">
                       <QRCodeCanvas 
                         value={qrData.qrData} 
                         size={240}
@@ -347,20 +360,20 @@ const AttendanceQR = () => {
                     </div>
                     
                     {/* Timer Badge */}
-                    <div className="absolute -top-3 -right-3 bg-primary-600 text-white px-3 py-1.5 rounded-xl shadow-lg">
-                      <span className="font-mono font-bold">{formatTime(timeRemaining)}</span>
+                    <div className="absolute -top-4 -right-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-2xl shadow-xl animate-pulse">
+                      <span className="font-mono font-black text-lg">{formatTime(timeRemaining)}</span>
                     </div>
                   </div>
 
-                  <p className="text-gray-600 mt-6 mb-2">Session ID: {qrData.sessionId}</p>
-                  <p className="text-sm text-gray-400">QR code will expire in {formatTime(timeRemaining)}</p>
+                  <p className="text-gray-700 font-bold mt-6 mb-2">Session ID: <span className="font-black text-blue-600">{qrData.sessionId}</span></p>
+                  <p className="text-sm text-gray-600 font-semibold">QR code will expire in {formatTime(timeRemaining)}</p>
 
                   <div className="flex items-center justify-center gap-4 mt-6">
                     <button
                       onClick={handleGenerateQR}
-                      className="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
+                      className="group flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all font-bold hover:scale-105"
                     >
-                      <RefreshCw size={18} />
+                      <RefreshCw size={18} strokeWidth={2.5} className="group-hover:rotate-180 transition-transform duration-300" />
                       Refresh QR
                     </button>
                   </div>
@@ -369,8 +382,11 @@ const AttendanceQR = () => {
                 <div className="text-center">
                   {/* Static QR Code for Selected Event */}
                   <div className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Event QR Code</h3>
-                    <div className="inline-block bg-white rounded-2xl shadow-lg p-6 border-4 border-gray-100">
+                    <h3 className="text-2xl font-black text-gray-900 mb-4 flex items-center gap-2">
+                      <span className="w-1.5 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></span>
+                      Event QR Code
+                    </h3>
+                    <div className="inline-block bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-3xl shadow-2xl p-8 border-4 border-gradient-to-br from-blue-200 to-purple-200">
                       <QRCodeCanvas 
                         value={JSON.stringify({ 
                           eventId: selectedEvent, 
@@ -380,42 +396,42 @@ const AttendanceQR = () => {
                         size={240}
                       />
                     </div>
-                    <p className="text-sm text-gray-500 mt-4">
-                      Static QR code for {events.find(e => e._id === selectedEvent)?.title}
+                    <p className="text-sm text-gray-600 font-bold mt-4">
+                      Static QR code for <span className="text-blue-600 font-black">{events.find(e => e._id === selectedEvent)?.title}</span>
                     </p>
                   </div>
 
                   {/* Generate Dynamic QR Section */}
                   <div className="border-t border-gray-200 pt-8">
-                    <div className="w-32 h-32 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                      <QrCode size={64} className="text-gray-300" />
+                    <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                      <QrCode size={64} className="text-gray-500" strokeWidth={2} />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Generate Dynamic QR Code</h3>
-                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                    <h3 className="text-2xl font-black text-gray-900 mb-2">Generate Dynamic QR Code</h3>
+                    <p className="text-gray-600 font-semibold mb-6 max-w-md mx-auto">
                       Click the button below to generate a time-limited QR code for attendance. 
                       Participants can scan this code to mark their attendance.
                     </p>
                     <button
                       onClick={handleGenerateQR}
                       disabled={loading}
-                      className="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors mx-auto disabled:opacity-50"
+                      className="group flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold mx-auto disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg"
                     >
                       {loading ? (
-                        <RefreshCw size={18} className="animate-spin" />
+                        <RefreshCw size={18} strokeWidth={2.5} className="animate-spin" />
                       ) : (
-                        <QrCode size={18} />
+                        <QrCode size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
                       )}
                       Generate Dynamic QR Code
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <div className="w-32 h-32 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <QrCode size={64} className="text-gray-300" />
+                <div className="text-center py-16">
+                  <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <QrCode size={64} className="text-gray-500" strokeWidth={2} />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">No Events Available</h3>
-                  <p className="text-gray-500 mb-6 max-w-md">
+                  <h3 className="text-2xl font-black text-gray-900 mb-2">No Events Available</h3>
+                  <p className="text-gray-600 font-semibold mb-6 max-w-md mx-auto">
                     You don't have any events assigned yet. Please contact an admin to get assigned to events.
                   </p>
                 </div>
@@ -423,26 +439,26 @@ const AttendanceQR = () => {
 
               {/* Live Feed */}
               {qrData && (
-                <div className="w-full max-w-2xl mt-8 border-t border-gray-100 pt-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                <div className="w-full max-w-2xl mt-8 border-t border-gray-200 pt-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
                       <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                       Live Check-ins
                     </h3>
                   </div>
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {filteredLogs.slice(0, 5).map((log) => (
-                      <div key={log._id} className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+                      <div key={log._id} className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100 hover:shadow-lg transition-all">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                            <CheckCircle size={20} className="text-green-600" />
+                          <div className="w-10 h-10 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl flex items-center justify-center">
+                            <CheckCircle size={20} className="text-green-600" strokeWidth={2.5} />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-800">{log.participant?.name}</p>
-                            <p className="text-sm text-gray-500">{log.participant?.email}</p>
+                            <p className="font-black text-gray-900">{log.participant?.name}</p>
+                            <p className="text-sm text-gray-600 font-semibold">{log.participant?.email}</p>
                           </div>
                         </div>
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm text-gray-500 font-bold">
                           {new Date(log.scannedAt).toLocaleTimeString()}
                         </span>
                       </div>
@@ -456,45 +472,45 @@ const AttendanceQR = () => {
           {activeTab === 'logs' && (
             <div>
               {/* Search & Filter */}
-              <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+              <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} strokeWidth={2} />
                   <input
                     type="text"
                     placeholder="Search by name or email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm font-semibold"
                   />
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50">
-                  <Download size={18} />
+                <button className="group flex items-center gap-2 px-6 py-3 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-blue-300 transition-all font-bold text-gray-700">
+                  <Download size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
                   Export Data
                 </button>
               </div>
 
               {/* Manual Attendance Table */}
               {loadingParticipants ? (
-                <div className="text-center py-12">
-                  <RefreshCw className="animate-spin mx-auto text-gray-400 mb-4" size={48} />
-                  <p className="text-gray-500">Loading participants...</p>
+                <div className="text-center py-16">
+                  <RefreshCw className="animate-spin mx-auto text-gray-400 mb-4" size={48} strokeWidth={2} />
+                  <p className="text-gray-600 font-bold text-lg">Loading participants...</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-lg">
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-100">
+                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                       <tr>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">#</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Name</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Email</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">College</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Branch</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Date/Time</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Status</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Action</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden md:table-cell">#</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Name</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden md:table-cell">Email</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden lg:table-cell">College</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden lg:table-cell">Branch</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700 hidden lg:table-cell">Date/Time</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Status</th>
+                        <th className="text-left px-6 py-4 text-sm font-black text-gray-700">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-gray-100">
                       {participants
                         .filter((p) =>
                           p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -507,52 +523,52 @@ const AttendanceQR = () => {
                           const attendedAt = participant.attendedAt;
                           
                           return (
-                            <tr key={participant._id} className="hover:bg-gray-50/50">
-                              <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                              <td className="px-4 py-3">
+                            <tr key={participant._id} className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all">
+                              <td className="px-6 py-4 text-sm text-gray-600 font-bold hidden md:table-cell">{index + 1}</td>
+                              <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                                    <span className="text-primary-600 font-medium text-sm">
+                                  <div className="w-10 h-10 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl flex items-center justify-center shadow-sm">
+                                    <span className="text-blue-600 font-black text-sm">
                                       {participant.name?.charAt(0).toUpperCase()}
                                     </span>
                                   </div>
-                                  <span className="font-medium text-gray-800">{participant.name}</span>
+                                  <span className="font-bold text-gray-900">{participant.name}</span>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{participant.email}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{participant.college || '-'}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{participant.branch || '-'}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">
+                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold hidden md:table-cell">{participant.email}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold hidden lg:table-cell">{participant.college || '-'}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold hidden lg:table-cell">{participant.branch || '-'}</td>
+                              <td className="px-6 py-4 text-sm text-gray-700 font-semibold hidden lg:table-cell">
                                 {attendedAt ? new Date(attendedAt).toLocaleString() : '-'}
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-6 py-4">
                                 {hasAttended ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium">
-                                    <CheckCircle size={12} />
+                                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-xl text-xs font-black border border-green-200">
+                                    <CheckCircle size={12} strokeWidth={2.5} />
                                     Present
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
-                                    <XCircle size={12} />
+                                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl text-xs font-black border border-gray-200">
+                                    <XCircle size={12} strokeWidth={2.5} />
                                     Absent
                                   </span>
                                 )}
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-6 py-4">
                                 {hasAttended ? (
                                   <button
                                     onClick={() => handleUnmarkAttendance(participant._id)}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs font-medium"
+                                    className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all text-xs font-bold"
                                   >
-                                    <XCircle size={14} />
+                                    <XCircle size={14} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform" />
                                     Unmark
                                   </button>
                                 ) : (
                                   <button
                                     onClick={() => handleManualAttendance(participant._id)}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-xs font-medium"
+                                    className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all text-xs font-bold"
                                   >
-                                    <CheckCircle size={14} />
+                                    <CheckCircle size={14} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
                                     Mark
                                   </button>
                                 )}
@@ -566,10 +582,12 @@ const AttendanceQR = () => {
               )}
 
               {!loadingParticipants && participants.length === 0 && (
-                <div className="text-center py-12">
-                  <Users size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">No participants found</h3>
-                  <p className="text-gray-500">Participants will appear here once they register for this event.</p>
+                <div className="text-center py-16">
+                  <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <Users size={48} className="text-gray-500" strokeWidth={2} />
+                  </div>
+                  <h3 className="text-2xl font-black text-gray-900 mb-2">No participants found</h3>
+                  <p className="text-gray-600 font-semibold">Participants will appear here once they register for this event.</p>
                 </div>
               )}
             </div>

@@ -72,20 +72,20 @@ const MyRegistrations = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      CONFIRMED: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-red-100 text-red-800',
+      PENDING: 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white',
+      CONFIRMED: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white',
+      CANCELLED: 'bg-gradient-to-r from-red-500 to-pink-500 text-white',
     };
-    return badges[status] || 'bg-gray-100 text-gray-800';
+    return badges[status] || 'bg-gradient-to-r from-gray-400 to-gray-500 text-white';
   };
 
   const getAttendanceBadge = (status) => {
     const badges = {
-      PENDING: 'bg-gray-100 text-gray-800',
-      ATTENDED: 'bg-green-100 text-green-800',
-      ABSENT: 'bg-red-100 text-red-800',
+      PENDING: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white',
+      ATTENDED: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white',
+      ABSENT: 'bg-gradient-to-r from-red-500 to-pink-500 text-white',
     };
-    return badges[status] || 'bg-gray-100 text-gray-800';
+    return badges[status] || 'bg-gradient-to-r from-gray-400 to-gray-500 text-white';
   };
 
   const formatDate = (dateString) => {
@@ -288,16 +288,21 @@ const MyRegistrations = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">My Registrations</h1>
-        <p className="text-purple-100">Track your event registrations and attendance status</p>
-        <p className="text-sm text-purple-200 mt-2">📧 {email}</p>
+      <div className="bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
+        <h1 className="text-4xl font-black mb-3">My Registrations</h1>
+        <p className="text-cyan-50 text-lg">Track your event registrations and attendance status</p>
+        <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+          <Mail size={18} />
+          <span className="font-semibold">{email}</span>
+        </div>
       </div>
 
       {/* Message */}
       {message.text && (
-        <div className={`p-4 rounded-lg ${
-          message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        <div className={`p-5 rounded-xl font-semibold backdrop-blur-lg border-2 ${
+          message.type === 'success' 
+            ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200' 
+            : 'bg-gradient-to-r from-red-100 to-pink-100 text-red-800 border-red-200'
         }`}>
           {message.text}
         </div>
@@ -305,15 +310,17 @@ const MyRegistrations = () => {
 
       {/* Registrations List */}
       {registrations.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-          <div className="text-6xl mb-4">📭</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Registrations Yet</h3>
-          <p className="text-gray-500 mb-6">You haven't registered for any events yet.</p>
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-12 text-center border border-white/20">
+          <div className="w-24 h-24 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <div className="text-5xl">📭</div>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800 mb-3">No Registrations Yet</h3>
+          <p className="text-gray-600 mb-8 text-lg">You haven't registered for any events yet.</p>
           <Link
             to="/participant"
-            className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700"
+            className="inline-block px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 hover:scale-105"
           >
-            Browse Events
+            Browse Events →
           </Link>
         </div>
       ) : (
@@ -321,11 +328,11 @@ const MyRegistrations = () => {
           {registrations.map((reg) => (
             <div
               key={reg._id}
-              className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-white/20"
             >
               <div className="flex flex-col md:flex-row">
                 {/* Event Image */}
-                <div className="w-full md:w-48 h-32 md:h-auto bg-gradient-to-br from-indigo-500 to-purple-600">
+                <div className="w-full md:w-56 h-40 md:h-auto bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 relative overflow-hidden">
                   {reg.event?.bannerImage && (
                     <img
                       src={reg.event.bannerImage}
@@ -333,27 +340,28 @@ const MyRegistrations = () => {
                       className="w-full h-full object-cover"
                     />
                   )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                 </div>
 
                 {/* Event Info */}
-                <div className="flex-1 p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                <div className="flex-1 p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-lg text-gray-800">
+                      <h3 className="font-bold text-xl text-gray-900 mb-2">
                         {reg.event?.title || 'Event Deleted'}
                       </h3>
-                      <p className="text-gray-500 text-sm">
-                        📅 {formatDate(reg.event?.startDate)}
-                        {reg.event?.venue && ` • 📍 ${reg.event.venue}`}
+                      <p className="text-gray-600 text-sm flex items-center gap-2">
+                        <span>📅 {formatDate(reg.event?.startDate)}</span>
+                        {reg.event?.venue && <span>• 📍 {reg.event.venue}</span>}
                       </p>
                     </div>
                     
                     {/* Event Status */}
                     {reg.event?.status && (
-                      <span className={`self-start px-3 py-1 rounded-full text-xs font-medium capitalize ${
-                        reg.event.status === 'upcoming' ? 'bg-blue-100 text-blue-800' :
-                        reg.event.status === 'ongoing' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
+                      <span className={`self-start px-4 py-2 rounded-xl text-xs font-bold capitalize shadow-sm ${
+                        reg.event.status === 'upcoming' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' :
+                        reg.event.status === 'ongoing' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
+                        'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
                       }`}>
                         {reg.event.status}
                       </span>
@@ -361,26 +369,26 @@ const MyRegistrations = () => {
                   </div>
 
                   {/* Status Badges */}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(reg.registrationStatus)}`}>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm ${getStatusBadge(reg.registrationStatus)}`}>
                       Registration: {reg.registrationStatus}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getAttendanceBadge(reg.attendanceStatus)}`}>
+                    <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm ${getAttendanceBadge(reg.attendanceStatus)}`}>
                       Attendance: {reg.attendanceStatus}
                     </span>
                     {reg.certificate && (
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <span className="px-4 py-2 rounded-xl text-xs font-bold shadow-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white">
                         🏆 Certificate: {reg.certificate.status}
                       </span>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-5 flex flex-wrap gap-3">
                     {reg.event && (
                       <Link
                         to={`/participant/event/${reg.event._id}`}
-                        className="px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                        className="px-5 py-3 text-sm font-bold bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 hover:from-cyan-100 hover:to-blue-100 rounded-xl transition-all duration-300 hover:scale-105 border border-cyan-200"
                       >
                         View Event →
                       </Link>
@@ -388,22 +396,22 @@ const MyRegistrations = () => {
                     {reg.attendanceStatus !== 'ATTENDED' && reg.event && (
                       <button
                         onClick={() => handleOpenScanner(reg.event)}
-                        className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-1"
+                        className="px-5 py-3 text-sm bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 flex items-center gap-2 font-bold transition-all duration-300 hover:scale-105 shadow-md"
                       >
-                        <Camera size={16} />
+                        <Camera size={18} />
                         Scan QR Code
                       </button>
                     )}
                     {reg.attendanceStatus === 'ATTENDED' && (
-                      <span className="px-4 py-2 text-sm bg-green-100 text-green-700 rounded-lg flex items-center gap-1">
-                        <CheckCircle size={16} />
+                      <span className="px-5 py-3 text-sm bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-xl flex items-center gap-2 font-bold border-2 border-green-200">
+                        <CheckCircle size={18} />
                         Attendance Marked
                       </span>
                     )}
                     {reg.certificate && reg.certificate.certificateUrl && (
                       <Link
                         to={`/participant/certificates`}
-                        className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                        className="px-5 py-3 text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 font-bold transition-all duration-300 hover:scale-105 shadow-md"
                       >
                         📜 View Certificate
                       </Link>
@@ -417,54 +425,57 @@ const MyRegistrations = () => {
       )}
 
       {/* Change Email */}
-      <div className="text-center">
+      <div className="text-center mt-8">
         <button
           onClick={() => {
             localStorage.removeItem('participantEmail');
             setEmail('');
             setInputEmail('');
           }}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm font-semibold text-cyan-600 hover:text-cyan-800 hover:underline transition-all"
         >
-          Use a different email
+          ← Use a different email
         </button>
       </div>
 
       {/* QR Scanner Modal */}
       {showScanModal && selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-lg w-full p-8 relative shadow-2xl border border-white/20">
             {/* Close Button */}
             <button
               onClick={handleCloseScanner}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg z-10"
+              className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-xl z-10 transition-all duration-300 hover:scale-110"
             >
-              <X size={20} className="text-gray-500" />
+              <X size={22} className="text-gray-600" />
             </button>
 
             {/* Modal Content */}
             <div className="text-center">
-              <div className="mb-4">
-                <h3 className="text-xl font-bold text-gray-800">{selectedEvent.title}</h3>
-                <p className="text-sm text-gray-500 mt-1">Scan the organizer's QR code</p>
+              <div className="mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Camera size={32} className="text-white" />
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 mb-2">{selectedEvent.title}</h3>
+                <p className="text-gray-600 font-medium">Scan the organizer's QR code</p>
               </div>
 
               {/* Result Display */}
               {scannedData && (
-                <div className={`mb-4 p-4 rounded-lg ${
+                <div className={`mb-6 p-6 rounded-2xl shadow-lg ${
                   scannedData.success 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
+                    ? 'bg-gradient-to-br from-green-100 to-emerald-100 text-green-800 border-2 border-green-200' 
+                    : 'bg-gradient-to-br from-red-100 to-pink-100 text-red-800 border-2 border-red-200'
                 }`}>
-                  <div className="text-3xl mb-2">{scannedData.success ? '✅' : '❌'}</div>
-                  <p className="font-medium">{scannedData.message}</p>
+                  <div className="text-5xl mb-3">{scannedData.success ? '✅' : '❌'}</div>
+                  <p className="font-bold text-lg">{scannedData.message}</p>
                 </div>
               )}
 
               {!scannedData && (
                 <>
                   {/* Camera Scanner */}
-                  <div className="relative aspect-square bg-gray-900 rounded-xl overflow-hidden mb-4">
+                  <div className="relative aspect-square bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden mb-6 shadow-2xl">
                     {scanning ? (
                       <>
                         <video
@@ -476,20 +487,20 @@ const MyRegistrations = () => {
                         <canvas ref={canvasRef} style={{ display: 'none' }} />
                         {/* QR Frame Overlay */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-64 h-64 border-2 border-white rounded-lg relative">
-                            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-green-500"></div>
-                            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-green-500"></div>
-                            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-green-500"></div>
-                            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-green-500"></div>
+                          <div className="w-64 h-64 border-2 border-white/80 rounded-2xl relative animate-pulse">
+                            <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-cyan-400 rounded-tl-xl"></div>
+                            <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-cyan-400 rounded-tr-xl"></div>
+                            <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-cyan-400 rounded-bl-xl"></div>
+                            <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-cyan-400 rounded-br-xl"></div>
                           </div>
                         </div>
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
-                          <p className="text-white text-sm mb-2 bg-black bg-opacity-50 px-4 py-2 rounded-lg">
-                            Scanning for QR code...
+                        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-center">
+                          <p className="text-white text-sm font-bold mb-3 bg-black/60 backdrop-blur-sm px-6 py-3 rounded-xl">
+                            🔍 Scanning for QR code...
                           </p>
                           <button
                             onClick={stopScanning}
-                            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            className="px-8 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-bold hover:from-red-700 hover:to-pink-700 transition-all duration-300 hover:scale-105 shadow-lg"
                           >
                             Stop Camera
                           </button>
@@ -499,9 +510,9 @@ const MyRegistrations = () => {
                       <div className="h-full flex items-center justify-center">
                         <button
                           onClick={startScanning}
-                          className="px-8 py-4 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 flex items-center gap-2"
+                          className="px-10 py-5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-2xl font-bold hover:from-cyan-700 hover:to-blue-700 flex items-center gap-3 transition-all duration-300 hover:scale-105 shadow-xl"
                         >
-                          <Camera size={20} />
+                          <Camera size={24} />
                           Start Camera
                         </button>
                       </div>
@@ -509,24 +520,24 @@ const MyRegistrations = () => {
                   </div>
 
                   {/* Manual Entry Option */}
-                  <div className="border-t border-gray-200 pt-4">
-                    <p className="text-sm text-gray-600 mb-3">Or enter session ID manually:</p>
+                  <div className="border-t-2 border-gray-200 pt-6">
+                    <p className="text-sm text-gray-700 font-semibold mb-4">🔢 Or enter session ID manually:</p>
                     <form onSubmit={(e) => {
                       e.preventDefault();
                       const sessionId = e.target.sessionId.value;
                       handleManualEntry(sessionId);
-                    }} className="flex gap-2">
+                    }} className="flex gap-3">
                       <input
                         type="text"
                         name="sessionId"
                         placeholder="Enter session ID"
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        className="flex-1 px-5 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent font-medium transition-all"
                         required
                       />
                       <button
                         type="submit"
                         disabled={markingAttendance}
-                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400"
+                        className="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-blue-700 disabled:opacity-50 transition-all duration-300 hover:scale-105 shadow-lg"
                       >
                         {markingAttendance ? 'Marking...' : 'Submit'}
                       </button>

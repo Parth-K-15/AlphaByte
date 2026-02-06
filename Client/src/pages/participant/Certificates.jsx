@@ -68,211 +68,225 @@ const Certificates = () => {
   };
 
   const getStatusBadge = (status) => {
-    const config = {
-      GENERATED: { color: 'bg-green-100 text-green-700', icon: CheckCircle, text: 'Available' },
-      SENT: { color: 'bg-blue-100 text-blue-700', icon: CheckCircle, text: 'Available' }
+    const badges = {
+      GENERATED: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white',
+      SENT: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white',
+      DOWNLOADED: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
+      FAILED: 'bg-gradient-to-r from-red-500 to-pink-500 text-white',
     };
-    const { color, icon: Icon, text } = config[status] || { color: 'bg-green-100 text-green-700', icon: CheckCircle, text: 'Available' };
+    return badges[status] || 'bg-gradient-to-r from-gray-400 to-gray-500 text-white';
+  };
+
+  // If no email, show email input
+  if (!email) {
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${color}`}>
-        <Icon size={12} />
-        {text}
-      </span>
+      <div className="max-w-md mx-auto mt-12 px-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-10 text-center border border-white/20">
+          <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <div className="text-5xl">🏆</div>
+          </div>
+          <h2 className="text-3xl font-black text-gray-900 mb-3">My Certificates</h2>
+          <p className="text-gray-600 mb-8 text-lg">Enter your email to view your certificates</p>
+          
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <input
+              type="email"
+              value={inputEmail}
+              onChange={(e) => setInputEmail(e.target.value)}
+              placeholder="Enter your email"
+              className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all font-medium"
+              required
+            />
+            <button
+              type="submit"
+              className="w-full py-4 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-bold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 hover:scale-[1.02] shadow-lg"
+            >
+              View Certificates →
+            </button>
+          </form>
+        </div>
+      </div>
     );
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="text-gray-500 mt-4">Loading certificates...</p>
+      <div className="flex justify-center py-20">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-200"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-amber-600 absolute top-0 left-0"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">My Certificates</h1>
-        <p className="text-gray-500 mt-1">View and download your event certificates</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Certificates</p>
-              <p className="text-2xl font-bold text-gray-800 mt-1">{stats.total}</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <Award size={20} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Attended Events</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">{stats.attended}</p>
-            </div>
-            <div className="p-3 bg-green-50 rounded-xl">
-              <CheckCircle size={20} className="text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Registered Events</p>
-              <p className="text-2xl font-bold text-blue-600 mt-1">{stats.registered}</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <Calendar size={20} className="text-blue-600" />
-            </div>
-          </div>
+      <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-yellow-600 rounded-2xl p-8 text-white shadow-xl">
+        <h1 className="text-4xl font-black mb-3">My Certificates 🏆</h1>
+        <p className="text-amber-50 text-lg">Download and share your achievement certificates</p>
+        <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
+          <span className="text-sm font-semibold">📧 {email}</span>
         </div>
       </div>
 
-      {/* Attended Events - Awaiting Certificate Generation */}
-      {attendedEvents.length > 0 ? (
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-md border-2 border-yellow-300 p-6">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="p-3 bg-yellow-500 rounded-xl">
-              <AlertCircle size={24} className="text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-1">
-                ⏳ Certificates Being Processed
-              </h2>
-              <p className="text-sm text-gray-600">
-                You attended these completed events. Certificates will appear below once the organizer generates them.
-              </p>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            {attendedEvents.map((event) => (
-              <div key={event._id} className="bg-white rounded-xl p-4 border-2 border-yellow-200 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CheckCircle size={18} className="text-green-600" />
-                      <p className="font-semibold text-gray-800">{event.title || event.name}</p>
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                        Attended ({event.attendanceType})
-                      </span>
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                        Event Completed
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 ml-6">
-                      Event Date: {formatDate(event.startDate)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-yellow-600">
-                    <Clock size={18} />
-                    <span className="text-sm font-medium">Pending Generation</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-blue-50 rounded-2xl shadow-sm border border-blue-200 p-6">
-          <div className="flex items-start gap-3">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <AlertCircle size={24} className="text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                No Completed Events Awaiting Certificates
-              </h3>
-              <p className="text-sm text-gray-600">
-                Certificates will appear here after you attend an event, the event is marked as "completed", and the organizer generates certificates.
-              </p>
-              <div className="mt-3 text-xs text-gray-500 space-y-1">
-                <p>✓ You are currently registered for <strong>{stats.registered}</strong> event{stats.registered !== 1 ? 's' : ''}</p>
-                <p>• Attend events and have your attendance marked (QR scan or manual)</p>
-                <p>• Wait for the event to be marked as "completed" by organizers</p>
-                <p>• Organizer will generate and distribute certificates</p>
-              </div>
-            </div>
-          </div>
+      {/* Message */}
+      {message.text && (
+        <div className={`p-5 rounded-xl font-semibold backdrop-blur-lg border-2 ${
+          message.type === 'success' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200' :
+          message.type === 'info' ? 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-blue-200' :
+          'bg-gradient-to-r from-red-100 to-pink-100 text-red-800 border-red-200'
+        }`}>
+          {message.text}
         </div>
       )}
 
-      {/* My Certificates */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
-          My Certificates
-        </h2>
-        
-        {certificates.length === 0 ? (
-          <div className="text-center py-12">
-            <Award size={48} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-800 mb-2">No Certificates Yet</h3>
-            <p className="text-gray-500">
-              Certificates will appear here once the organizer processes your request
-            </p>
+      {/* Certificates Grid */}
+      {certificates.length === 0 ? (
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg p-12 text-center border border-white/20">
+          <div className="w-24 h-24 bg-gradient-to-br from-amber-100 to-orange-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <div className="text-5xl">📜</div>
           </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {certificates.map((cert) => (
-              <div
-                key={cert._id}
-                className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                {/* Certificate Header */}
-                <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 relative flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <Award size={40} className="mx-auto mb-2" />
-                    <p className="font-semibold text-sm">{cert.achievement || 'Participation'}</p>
+          <h3 className="text-2xl font-black text-gray-800 mb-3">No Certificates Yet</h3>
+          <p className="text-gray-600 mb-4 text-lg">Certificates are issued after:</p>
+          <ul className="text-gray-700 font-medium space-y-2">
+            <li>✓ You attend an event</li>
+            <li>✓ The event is completed</li>
+            <li>✓ The organizer generates certificates</li>
+          </ul>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {certificates.map((cert) => (
+            <div
+              key={cert._id}
+              className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-white/20"
+            >
+              {/* Certificate Preview */}
+              <div className="h-48 bg-gradient-to-br from-amber-400 via-orange-500 to-yellow-500 relative flex items-center justify-center">
+                <div className="text-center text-white">
+                  <div className="text-6xl mb-3 animate-pulse">🏆</div>
+                  <p className="font-black text-lg">Certificate of Participation</p>
+                </div>
+                <div className="absolute top-4 right-4">
+                  <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-lg ${getStatusBadge(cert.status)}`}>
+                    {cert.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Certificate Info */}
+              <div className="p-6">
+                <h3 className="font-black text-xl text-gray-900 mb-4">
+                  {cert.event?.title || 'Event'}
+                </h3>
+                
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
+                    <span className="text-gray-600 font-semibold">Certificate ID</span>
+                    <span className="font-mono text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-lg font-bold">
+                      {cert.certificateId}
+                    </span>
                   </div>
-                  <div className="absolute top-2 right-2">
-                    {getStatusBadge(cert.status)}
+                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
+                    <span className="text-gray-600 font-semibold">Issued</span>
+                    <span className="font-bold text-gray-800">{formatDate(cert.issuedAt)}</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
+                    <span className="text-gray-600 font-semibold">Recipient</span>
+                    <span className="font-bold text-gray-800">{cert.participant?.fullName}</span>
                   </div>
                 </div>
 
-                {/* Certificate Details */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 mb-2">
-                    {cert.event?.title || cert.event?.name}
-                  </h3>
-                  
-                  <div className="space-y-1 text-xs text-gray-600 mb-4">
-                    <div className="flex justify-between">
-                      <span>Certificate ID:</span>
-                      <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
-                        {cert.certificateId}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Issued:</span>
-                      <span>{formatDate(cert.issuedAt)}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
+                {/* Actions */}
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={() => setSelectedCertificate(cert)}
+                    className="flex-1 py-3 bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 hover:from-cyan-100 hover:to-blue-100 rounded-xl font-bold transition-all duration-300 hover:scale-105 border border-cyan-200"
+                  >
+                    👁️ View
+                  </button>
                   <button
                     onClick={() => handleDownload(cert)}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-bold hover:from-amber-700 hover:to-orange-700 transition-all duration-300 hover:scale-105 shadow-lg"
                   >
                     <Download size={16} />
                     Download Certificate
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Change Email */}
+      <div className="text-center mt-8">
+        <button
+          onClick={() => {
+            localStorage.removeItem('participantEmail');
+            setEmail('');
+            setInputEmail('');
+          }}
+          className="text-sm font-semibold text-amber-600 hover:text-amber-800 hover:underline transition-all"
+        >
+          ← Use a different email
+        </button>
       </div>
+
+      {/* Certificate Detail Modal */}
+      {selectedCertificate && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20">
+            {/* Certificate Display */}
+            <div className="bg-gradient-to-br from-amber-100 via-orange-100 to-yellow-100 p-10 text-center border-b-8 border-amber-500">
+              <div className="border-8 border-amber-600 p-12 bg-white/90 backdrop-blur-sm shadow-2xl rounded-2xl">
+                <div className="text-7xl mb-6 animate-pulse">🏆</div>
+                <h2 className="text-4xl font-serif font-black text-amber-800 mb-4">
+                  Certificate of Participation
+                </h2>
+                <p className="text-gray-700 mb-6 text-lg font-semibold">This is to certify that</p>
+                <h3 className="text-3xl font-black text-gray-900 mb-6">
+                  {selectedCertificate.participant?.fullName}
+                </h3>
+                <p className="text-gray-700 mb-6 text-lg font-semibold">has successfully participated in</p>
+                <h4 className="text-2xl font-black bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-6">
+                  {selectedCertificate.event?.title}
+                </h4>
+                <p className="text-gray-600 font-medium">
+                  Held on {formatDate(selectedCertificate.event?.startDate)}
+                  {selectedCertificate.event?.location && ` at ${selectedCertificate.event.location}`}
+                </p>
+                <div className="mt-8 pt-6 border-t-4 border-amber-300">
+                  <p className="text-xs text-gray-600 font-bold">
+                    Certificate ID: {selectedCertificate.certificateId}
+                  </p>
+                  <p className="text-xs text-gray-600 font-bold mt-1">
+                    Issued on: {formatDate(selectedCertificate.issuedAt)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-6 flex justify-between">
+              <button
+                onClick={() => setSelectedCertificate(null)}
+                className="px-8 py-3 text-gray-600 hover:bg-gray-100 rounded-xl font-bold transition-all duration-300 hover:scale-105"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => handleDownload(selectedCertificate)}
+                className="px-8 py-3 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl hover:from-amber-700 hover:to-orange-700 font-bold transition-all duration-300 hover:scale-105 shadow-lg"
+              >
+                ⬇️ Download Certificate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

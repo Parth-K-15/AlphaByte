@@ -29,6 +29,46 @@ import {
 } from 'recharts';
 import { dashboardApi } from '../../services/api';
 
+// Enhanced StatCard Component
+const StatCard = ({ title, value, icon: Icon, trend, change, color }) => {
+  const colorClasses = {
+    blue: 'from-blue-500 to-blue-600',
+    green: 'from-emerald-500 to-emerald-600',
+    purple: 'from-purple-500 to-purple-600',
+    orange: 'from-orange-500 to-orange-600',
+  };
+
+  const bgColorClasses = {
+    blue: 'bg-gradient-to-br from-blue-50 to-blue-100/50',
+    green: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50',
+    purple: 'bg-gradient-to-br from-purple-50 to-purple-100/50',
+    orange: 'bg-gradient-to-br from-orange-50 to-orange-100/50',
+  };
+
+  return (
+    <div className={`relative ${bgColorClasses[color]} rounded-2xl p-4 md:p-6 border border-white/60 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group overflow-hidden`}>
+      {/* Decorative gradient orb */}
+      <div className={`absolute -right-8 -top-8 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br ${colorClasses[color]} rounded-full opacity-10 group-hover:opacity-20 transition-opacity blur-2xl`}></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-2 md:mb-4">
+          <div className={`p-2 md:p-3 rounded-xl bg-gradient-to-br ${colorClasses[color]} shadow-lg`}>
+            <Icon size={20} strokeWidth={2.5} className="text-white md:w-6 md:h-6" />
+          </div>
+        </div>
+        <p className="text-gray-600 text-[10px] md:text-xs font-semibold uppercase tracking-wider mb-1 md:mb-2">{title}</p>
+        <h3 className="text-2xl md:text-4xl font-black text-gray-900 mb-1 md:mb-2">{value}</h3>
+        {trend && (
+          <div className={`inline-flex items-center gap-1.5 px-2 md:px-2.5 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-bold ${trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+            <TrendingUp size={12} className={trend === 'down' ? 'rotate-180' : ''} strokeWidth={3} />
+            <span>{change}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -83,7 +123,7 @@ const Dashboard = () => {
       change: '+12%',
       trend: 'up',
       icon: Calendar,
-      color: 'bg-blue-500',
+      color: 'blue',
     },
     {
       title: 'Total Participants',
@@ -91,7 +131,7 @@ const Dashboard = () => {
       change: '+8%',
       trend: 'up',
       icon: Users,
-      color: 'bg-green-500',
+      color: 'green',
     },
     {
       title: 'Total Organizers',
@@ -99,7 +139,7 @@ const Dashboard = () => {
       change: '+4%',
       trend: 'up',
       icon: UserCheck,
-      color: 'bg-purple-500',
+      color: 'purple',
     },
     {
       title: 'Total Site Views',
@@ -107,7 +147,7 @@ const Dashboard = () => {
       change: '-2%',
       trend: 'down',
       icon: Eye,
-      color: 'bg-orange-500',
+      color: 'orange',
     },
   ];
 
@@ -159,53 +199,36 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome back! Here's what's happening.</p>
+      <div className="px-2 sm:px-0">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">Dashboard</h1>
+        <p className="text-sm sm:text-base text-gray-500 mt-1">Welcome back! Here's what's happening.</p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {kpiData.map((item, index) => (
-          <div key={index} className="card">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-gray-500">{item.title}</p>
-                <p className="text-3xl font-bold text-gray-800 mt-2">{item.value}</p>
-                <div className="flex items-center gap-1 mt-2">
-                  {item.trend === 'up' ? (
-                    <TrendingUp size={16} className="text-green-500" />
-                  ) : (
-                    <TrendingDown size={16} className="text-red-500" />
-                  )}
-                  <span
-                    className={`text-sm font-medium ${
-                      item.trend === 'up' ? 'text-green-500' : 'text-red-500'
-                    }`}
-                  >
-                    {item.change}
-                  </span>
-                  <span className="text-sm text-gray-400">vs last month</span>
-                </div>
-              </div>
-              <div className={`${item.color} p-3 rounded-xl`}>
-                <item.icon size={24} className="text-white" />
-              </div>
-            </div>
-          </div>
+          <StatCard 
+            key={index}
+            title={item.title}
+            value={item.value}
+            icon={item.icon}
+            trend={item.trend}
+            change={item.change}
+            color={item.color}
+          />
         ))}
       </div>
 
       {/* Charts and Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Registration Trends Chart */}
-        <div className="lg:col-span-2 card">
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-semibold text-gray-800">Registration Trends</h2>
-              <p className="text-sm text-gray-500">Daily registrations over the last 7 days</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">Registration Trends</h2>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">Daily registrations over the last 7 days</p>
             </div>
           </div>
           <div className="h-80">
@@ -251,11 +274,11 @@ const Dashboard = () => {
         </div>
 
         {/* Registration Status Breakdown */}
-        <div className="card">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-semibold text-gray-800">Registration Status</h2>
-              <p className="text-sm text-gray-500">Breakdown by status</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">Registration Status</h2>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">Breakdown by status</p>
             </div>
           </div>
           <div className="h-80">
@@ -289,22 +312,61 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Recent Registrations & Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Registrations */}
-        <div className="card">
+      {/* Top Events and Recent Registrations */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Top Events by Registration */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-800">Recent Registrations</h2>
-            <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">Top Events</h2>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">Events with most registrations</p>
+            </div>
+          </div>
+          <div className="h-80">
+            {topEvents.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topEvents} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 12 }}
+                    width={100}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                    }}
+                  />
+                  <Bar dataKey="registrations" fill="#10b981" radius={[0, 8, 8, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400">
+                <p>No event data available</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Registrations */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-base sm:text-lg font-bold text-gray-800">Recent Registrations</h2>
+            <button className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-semibold hover:underline">
               View All
             </button>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {recentRegistrations.length > 0 ? (
               recentRegistrations.map((registration, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="p-2 rounded-lg bg-primary-100">
-                    <Users size={16} className="text-primary-600" />
+                <div key={index} className="flex items-start gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-xl border border-gray-100 hover:shadow-md transition-all duration-200">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-sm">
+                    <Users size={16} className="text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800">{registration.name}</p>
@@ -333,22 +395,71 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Charts and Activity Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Event Registrations Chart */}
+        <div className="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">Event Registrations</h2>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">Registration count by event</p>
+            </div>
+            <button className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 hover:gap-2 transition-all">
+              View All <ArrowUpRight size={14} strokeWidth={2.5} />
+            </button>
+          </div>
+          <div className="h-80">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#e5e7eb' }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#e5e7eb' }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                    }}
+                  />
+                  <Bar dataKey="registrations" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400">
+                <p>No event data available yet</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Recent Activity */}
-        <div className="card">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/60 shadow-md hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-gray-800">Recent Activity</h2>
-            <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <h2 className="text-base sm:text-lg font-bold text-gray-800">Recent Activity</h2>
+            <button className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 font-semibold hover:underline">
               View All
             </button>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {recentActivity.length > 0 ? (
               recentActivity.map((activity, index) => {
                 const ActivityIcon = getActivityIcon(activity.type);
                 return (
-                  <div key={index} className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${getStatusColor(activity.status)}`}>
+                  <div key={index} className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-50/50 transition-colors duration-200">
+                    <div className={`p-2 rounded-xl shadow-sm ${getStatusColor(activity.status)}`}>
                       <ActivityIcon size={16} />
                     </div>
                     <div className="flex-1 min-w-0">

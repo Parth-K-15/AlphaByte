@@ -140,12 +140,12 @@ const TeamManagement = () => {
                   <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
                     Event Name
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Status</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Dates</th>
+                  <th className="hidden md:table-cell text-left px-6 py-4 text-sm font-semibold text-gray-600">Status</th>
+                  <th className="hidden md:table-cell text-left px-6 py-4 text-sm font-semibold text-gray-600">Dates</th>
                   <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
                     Team Lead
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                  <th className="hidden lg:table-cell text-left px-6 py-4 text-sm font-semibold text-gray-600">
                     Team Size
                   </th>
                   <th className="text-right px-6 py-4 text-sm font-semibold text-gray-600">
@@ -167,7 +167,7 @@ const TeamManagement = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="hidden md:table-cell px-6 py-4">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(
                           event.status
@@ -176,7 +176,7 @@ const TeamManagement = () => {
                         {event.status || 'Draft'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-600">
                       {event.startDate
                         ? new Date(event.startDate).toLocaleDateString()
                         : 'Not set'}
@@ -193,7 +193,7 @@ const TeamManagement = () => {
                         <span className="text-sm text-gray-400">Not assigned</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="hidden lg:table-cell px-6 py-4">
                       <div className="flex items-center gap-2">
                         <UsersRound size={16} className="text-gray-500" />
                         <span className="text-sm text-gray-600">

@@ -274,30 +274,40 @@ const Communication = () => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 px-4 sm:px-0">
+    <div className="relative min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Animated floating orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute top-40 right-16 w-96 h-96 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full opacity-20 animate-pulse animation-delay-2000"></div>
+        <div className="absolute bottom-20 left-1/4 w-80 h-80 bg-gradient-to-br from-pink-200 to-blue-200 rounded-full opacity-20 animate-pulse animation-delay-4000"></div>
+      </div>
+
+      <div className="relative z-10 p-6 space-y-8">
       {/* Email Configuration Status Banner */}
       {emailConfigStatus && (
-        <div className={`rounded-xl p-4 flex items-start gap-3 ${
+        <div className={`rounded-2xl p-6 flex items-start gap-4 shadow-lg ${
           emailConfigStatus === 'configured' 
-            ? 'bg-green-50 border border-green-200' 
-            : 'bg-red-50 border border-red-200'
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200' 
+            : 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200'
         }`}>
-          <div className={`p-2 rounded-lg ${
-            emailConfigStatus === 'configured' ? 'bg-green-100' : 'bg-red-100'
+          <div className={`p-3 rounded-xl shadow-sm ${
+            emailConfigStatus === 'configured' 
+              ? 'bg-gradient-to-r from-green-100 to-emerald-100' 
+              : 'bg-gradient-to-r from-red-100 to-pink-100'
           }`}>
             {emailConfigStatus === 'configured' ? (
-              <CheckCircle2 size={20} className="text-green-600" />
+              <CheckCircle2 size={24} className="text-green-600" strokeWidth={2.5} />
             ) : (
-              <XCircle size={20} className="text-red-600" />
+              <XCircle size={24} className="text-red-600" strokeWidth={2.5} />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className={`font-medium text-sm md:text-base ${
-              emailConfigStatus === 'configured' ? 'text-green-800' : 'text-red-800'
+            <h3 className={`font-black text-lg ${
+              emailConfigStatus === 'configured' ? 'text-green-900' : 'text-red-900'
             }`}>
               {emailConfigStatus === 'configured' ? 'Email Service Configured' : 'Email Service Not Configured'}
             </h3>
-            <p className={`text-xs md:text-sm mt-1 ${
+            <p className={`font-semibold mt-2 ${
               emailConfigStatus === 'configured' ? 'text-green-700' : 'text-red-700'
             }`}>
               {emailConfigStatus === 'configured' 
@@ -308,37 +318,57 @@ const Communication = () => {
           <button
             onClick={checkEmailConfiguration}
             disabled={checkingConfig}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`group p-3 rounded-xl transition-all hover:scale-105 ${
               emailConfigStatus === 'configured' 
-                ? 'hover:bg-green-100' 
-                : 'hover:bg-red-100'
+                ? 'hover:bg-green-100 border border-green-300' 
+                : 'hover:bg-red-100 border border-red-300'
             }`}
             title="Recheck configuration"
           >
-            <Settings size={18} className={checkingConfig ? 'animate-spin' : ''} />
+            <Settings size={20} strokeWidth={2.5} className={`${checkingConfig ? 'animate-spin' : 'group-hover:rotate-90 transition-transform'}`} />
           </button>
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Communication</h1>
-          <p className="text-sm md:text-base text-gray-500 mt-1">Send emails and announcements to participants</p>
+      {/* Demo Mode Banner */}
+      {usingDemoData && (
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl p-6 flex items-start gap-4 shadow-lg">
+          <div className="p-3 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-xl shadow-sm">
+            <Mail size={24} className="text-amber-600" strokeWidth={2.5} />
+          </div>
+          <div>
+            <h3 className="font-black text-amber-900 text-lg">Demo Mode Active</h3>
+            <p className="text-amber-700 font-semibold mt-2">
+              Showing sample data. Create events from the Admin panel and get assigned to send real communications.
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2 items-center">
+      )}
+
+      {/* Page Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-xl">
+            <MessageSquare size={24} className="text-white" strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-gray-900">Communication Center</h1>
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full mt-1"></div>
+            <p className="text-gray-600 font-semibold mt-2">Send emails and announcements to participants</p>
+          </div>
+        </div>
+        <div className="flex gap-4 items-center">
           <button
             onClick={handleDebugParticipants}
-            className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="group px-4 py-2 border border-gray-300 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:border-blue-300 transition-all font-bold text-gray-700"
             title="Debug participants"
           >
-            🔍 Debug
+            <span className="group-hover:scale-110 transition-transform inline-block">🔍</span> Debug
           </button>
           <select
             value={selectedEvent}
             onChange={(e) => setSelectedEvent(e.target.value)}
-            className="px-3 md:px-4 py-2 text-sm md:text-base border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
-            disabled={displayEvents.length === 0}
+            className="px-6 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm font-bold text-gray-900 shadow-lg"
           >
             {displayEvents.length === 0 ? (
               <option value="">No events assigned</option>
@@ -354,87 +384,96 @@ const Communication = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-5 shadow-sm border border-gray-100">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs md:text-sm text-gray-500">Emails Sent</p>
-              <p className="text-xl md:text-2xl font-bold text-gray-800 mt-1">{displayHistory.length}</p>
+              <p className="text-sm text-gray-600 font-bold">Emails Sent</p>
+              <p className="text-3xl font-black text-gray-900 mt-2">{displayHistory.length}</p>
             </div>
-            <div className="p-2 md:p-3 bg-blue-50 rounded-lg md:rounded-xl">
-              <Mail size={18} className="text-blue-600 md:w-5 md:h-5" />
+            <div className="p-4 bg-gradient-to-r from-blue-100 to-blue-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+              <Mail size={24} className="text-blue-600" strokeWidth={2.5} />
             </div>
           </div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full opacity-60"></div>
         </div>
         
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-5 shadow-sm border border-gray-100">
+        <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs md:text-sm text-gray-500">Recipients Reached</p>
-              <p className="text-xl md:text-2xl font-bold text-green-600 mt-1">
+              <p className="text-sm text-gray-600 font-bold">Recipients Reached</p>
+              <p className="text-3xl font-black text-green-600 mt-2">
                 {displayHistory.reduce((sum, h) => sum + (h.recipientCount || 0), 0)}
               </p>
             </div>
-            <div className="p-2 md:p-3 bg-green-50 rounded-lg md:rounded-xl">
-              <Users size={18} className="text-green-600 md:w-5 md:h-5" />
+            <div className="p-4 bg-gradient-to-r from-green-100 to-emerald-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+              <Users size={24} className="text-green-600" strokeWidth={2.5} />
             </div>
           </div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full opacity-60"></div>
         </div>
 
-        <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-5 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1">
+        <div className="group bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs md:text-sm text-gray-500">Templates Available</p>
-              <p className="text-xl md:text-2xl font-bold text-purple-600 mt-1">{displayTemplates.length}</p>
+              <p className="text-sm text-gray-600 font-bold">Templates Available</p>
+              <p className="text-3xl font-black text-purple-600 mt-2">{displayTemplates.length}</p>
             </div>
-            <div className="p-2 md:p-3 bg-purple-50 rounded-lg md:rounded-xl">
-              <FileText size={18} className="text-purple-600 md:w-5 md:h-5" />
+            <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-200 rounded-2xl shadow-lg group-hover:scale-110 transition-transform">
+              <FileText size={24} className="text-purple-600" strokeWidth={2.5} />
             </div>
           </div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-purple-400 rounded-full opacity-60"></div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Compose Section */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/60 overflow-hidden">
             {/* Tabs */}
             <div className="border-b border-gray-100">
               <div className="flex">
                 <button
                   onClick={() => setActiveTab('compose')}
-                  className={`flex-1 py-3 md:py-4 text-center text-sm md:text-base font-medium transition-colors ${
+                  className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
                     activeTab === 'compose'
-                      ? 'text-primary-600 border-b-2 border-primary-600'
+                      ? 'text-blue-600'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  <Mail size={16} className="inline-block mr-2 md:w-[18px] md:h-[18px]" />
+                  <Mail size={18} className="inline-block mr-2" strokeWidth={2.5} />
                   <span className="hidden sm:inline">Compose Email</span>
                   <span className="sm:hidden">Email</span>
+                  {activeTab === 'compose' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+                  )}
                 </button>
                 <button
                   onClick={() => setActiveTab('announcement')}
-                  className={`flex-1 py-3 md:py-4 text-center text-sm md:text-base font-medium transition-colors ${
+                  className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
                     activeTab === 'announcement'
-                      ? 'text-primary-600 border-b-2 border-primary-600'
+                      ? 'text-blue-600'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  <MessageSquare size={16} className="inline-block mr-2 md:w-[18px] md:h-[18px]" />
+                  <MessageSquare size={18} className="inline-block mr-2" strokeWidth={2.5} />
                   <span className="hidden sm:inline">Announcement</span>
                   <span className="sm:hidden">Announce</span>
+                  {activeTab === 'announcement' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+                  )}
                 </button>
               </div>
             </div>
 
-            <div className="p-4 md:p-6">
+            <div className="p-8">
               {activeTab === 'compose' && (
-                <div className="space-y-5">
+                <div className="space-y-6">
                   {/* Template Selector */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Template</label>
+                    <label className="block text-sm font-black text-gray-900 mb-3">Email Template</label>
                     <select
                       value={emailData.template}
                       onChange={(e) => {
@@ -445,7 +484,7 @@ const Communication = () => {
                           subject: template?.subject || emailData.subject,
                         });
                       }}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-6 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm font-bold text-gray-900"
                     >
                       <option value="">Select a template (optional)</option>
                       {displayTemplates.map((template) => (
@@ -458,20 +497,23 @@ const Communication = () => {
 
                   {/* Recipient Filter */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Recipients</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+                    <label className="block text-sm font-black text-gray-900 mb-3">Recipients</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {recipientFilters.map((filter) => (
                         <button
                           key={filter.value}
                           onClick={() => setEmailData({ ...emailData, recipientFilter: filter.value })}
-                          className={`flex items-center gap-1.5 md:gap-2 p-2 md:p-3 rounded-lg md:rounded-xl border text-xs md:text-sm transition-colors ${
+                          className={`group flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${
                             emailData.recipientFilter === filter.value
-                              ? 'border-primary-500 bg-primary-50 text-primary-700'
-                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                              ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 shadow-lg'
+                              : 'border-gray-200 text-gray-600 hover:border-blue-300'
                           }`}
                         >
-                          <filter.icon size={14} className="flex-shrink-0 md:w-4 md:h-4" />
-                          <span className="truncate">{filter.label}</span>
+                          <filter.icon size={16} className="flex-shrink-0 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
+                          <span className="font-bold text-sm">{filter.label}</span>
+                          {emailData.recipientFilter === filter.value && (
+                            <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -479,19 +521,19 @@ const Communication = () => {
 
                   {/* Subject */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                    <label className="block text-sm font-black text-gray-900 mb-3">Subject</label>
                     <input
                       type="text"
                       value={emailData.subject}
                       onChange={(e) => setEmailData({ ...emailData, subject: e.target.value })}
                       placeholder="Enter email subject"
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-6 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm font-semibold text-gray-900 placeholder-gray-500"
                     />
                   </div>
 
                   {/* Message */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                    <label className="block text-sm font-black text-gray-900 mb-3">Message</label>
                     <textarea
                       value={emailData.message}
                       onChange={(e) => setEmailData({ ...emailData, message: e.target.value })}
@@ -502,24 +544,24 @@ You can use placeholders like:
 {{participantName}} - Participant's name
 {{eventName}} - Event name
 {{eventDate}} - Event date"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
+                      className="w-full px-6 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/80 backdrop-blur-sm font-mono text-sm resize-none"
                     />
                   </div>
 
                   {/* Send Button */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <p className="text-sm text-gray-500">
+                  <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                    <p className="text-sm text-gray-600 font-semibold">
                       This email will be sent to participants matching the selected filter.
                     </p>
                     <button
                       onClick={handleSendEmail}
                       disabled={sending || !emailData.subject || !emailData.message}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
+                      className="group flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:shadow-xl hover:scale-105 transition-all font-bold disabled:opacity-50 disabled:hover:scale-100"
                     >
                       {sending ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <Send size={18} />
+                        <Send size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
                       )}
                       Send Email
                     </button>
@@ -584,39 +626,39 @@ You can use placeholders like:
         </div>
 
         {/* History Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-              <History size={18} />
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/60 overflow-hidden">
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-xl font-black text-gray-900 flex items-center gap-3">
+              <History size={20} strokeWidth={2.5} />
               Communication History
             </h3>
           </div>
-          <div className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
+          <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
             {displayHistory.length === 0 ? (
-              <div className="p-6 text-center">
-                <Mail size={32} className="mx-auto text-gray-300 mb-2" />
-                <p className="text-sm text-gray-500">No communications sent yet</p>
+              <div className="p-8 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <Mail size={32} className="text-gray-500" strokeWidth={2} />
+                </div>
+                <p className="text-gray-600 font-bold">No communications sent yet</p>
               </div>
             ) : (
               displayHistory.map((item) => (
-                <div key={item._id} className="p-4 hover:bg-gray-50 cursor-pointer">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-medium text-gray-800 text-sm line-clamp-1">
-                      {replacePlaceholders(item.subject, currentEvent)}
-                    </h4>
+                <div key={item._id} className="p-5 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all cursor-pointer">
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="font-black text-gray-900 text-base line-clamp-1">{item.subject}</h4>
                     {statusBadge(item.status)}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Users size={12} />
+                  <div className="flex items-center gap-4 text-sm text-gray-600 font-semibold">
+                    <span className="flex items-center gap-2">
+                      <Users size={14} strokeWidth={2.5} />
                       {item.recipientCount} recipients
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} />
+                    <span className="flex items-center gap-2">
+                      <Clock size={14} strokeWidth={2.5} />
                       {new Date(item.sentAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <span className="inline-block mt-2 px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                  <span className="inline-block mt-3 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 rounded-xl text-sm font-bold border border-blue-200">
                     {item.recipientFilter}
                   </span>
                 </div>
@@ -624,6 +666,7 @@ You can use placeholders like:
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -35,3 +35,24 @@
     @apply bg-primary-600 text-white;
   }
 }
+
+@layer utilities {
+  /* Smooth horizontal scroll for mobile */
+  .overflow-x-auto {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none; /* WebKit */
+  }
+  
+  /* Scroll snap for better mobile experience */
+  .snap-x {
+    scroll-snap-type: x mandatory;
+  }
+  
+  .snap-center {
+    scroll-snap-align: center;
+  }
+}
