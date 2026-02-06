@@ -37,12 +37,23 @@ export const authApi = {
   login: (data) => fetchApi('/auth/login', { method: 'POST', body: data }),
   logout: () => fetchApi('/auth/logout', { method: 'POST' }),
   getMe: () => fetchApi('/auth/me'),
+  updateProfile: (data) => fetchApi('/auth/profile', { method: 'PUT', body: data }),
+  changePassword: (data) => fetchApi('/auth/password', { method: 'PUT', body: data }),
 };
 
 // Dashboard API
 export const dashboardApi = {
   getStats: () => fetchApi('/dashboard/stats'),
   getActivity: () => fetchApi('/dashboard/activity'),
+};
+
+// Reports API
+export const reportsApi = {
+  getAnalytics: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchApi(`/reports/analytics${query ? `?${query}` : ''}`);
+  },
+  getEvents: () => fetchApi('/reports/events'),
 };
 
 // Events API
@@ -76,18 +87,18 @@ export const eventsApi = {
 // Teams API
 export const teamsApi = {
   // Team Leads
-  getTeamLeads: () => fetchApi('/teams/leads'),
+  getTeamLeads: (includeInactive = false) => fetchApi(`/teams/leads${includeInactive ? '?includeInactive=true' : ''}`),
   createTeamLead: (data) => fetchApi('/teams/leads', { method: 'POST', body: data }),
 
   // Event Staff / Members
-  getMembers: () => fetchApi('/teams/members'),
+  getMembers: (includeInactive = false) => fetchApi(`/teams/members${includeInactive ? '?includeInactive=true' : ''}`),
   getEventStaff: (teamLeadId) =>
     fetchApi(`/teams/members${teamLeadId ? `?teamLeadId=${teamLeadId}` : ''}`),
   createMember: (data) => fetchApi('/teams/members', { method: 'POST', body: data }),
   createEventStaff: (data) => fetchApi('/teams/members', { method: 'POST', body: data }),
 
   // User operations
-  updateUser: (id, data) => fetchApi(`/teams/users/${id}`, { method: 'PUT', body: data }),
+  updateUser: (id, data) => fetchApi(`/teams/${id}`, { method: 'PUT', body: data }),
   deleteUser: (id) => fetchApi(`/teams/users/${id}`, { method: 'DELETE' }),
   resetPassword: (id, newPassword) =>
     fetchApi(`/teams/users/${id}/reset-password`, { method: 'PUT', body: { newPassword } }),

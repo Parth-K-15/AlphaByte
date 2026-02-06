@@ -7,8 +7,8 @@
     "node": ">=18.x"
   },
   "scripts": {
-    "start": "node app.js",
-    "dev": "node --watch app.js",
+    "start": "node index.js",
+    "dev": "node --watch index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -26,7 +26,6 @@
     "mongoose": "^9.1.5",
     "multer": "^2.0.2",
     "node-fetch": "^2.7.0",
-    "nodemailer": "^7.0.13",
-    "puppeteer": "^24.37.0"
+    "nodemailer": "^7.0.13"
   }
 }

@@ -13,6 +13,7 @@ import organizerRoutes from './routes/organizer.js';
 import participantRoutes from './routes/participants.js';
 import participantProfileRoutes from './routes/participantProfile.js';
 import authRoutes from './routes/auth.js';
+import reportsRoutes from './routes/reports.js';
 
 // Import email service
 import { testEmailConnection } from './utils/emailService.js';
@@ -49,8 +50,9 @@ app.use(cors({
   maxAge: 600 // Cache preflight request for 10 minutes
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase payload size limit for base64 image uploads
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve static files (for certificates)
 app.use('/certificates', express.static('public/certificates'));
@@ -74,6 +76,7 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/access-control', accessControlRoutes);
 app.use('/api/organizer', organizerRoutes);
+app.use('/api/reports', reportsRoutes);
 app.use('/api/participant', participantProfileRoutes); // Must be before participantRoutes
 app.use('/api/participant', participantRoutes);
 

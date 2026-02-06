@@ -11,10 +11,21 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 // GET /api/teams/leads - Get all team leads
 router.get('/leads', async (req, res) => {
   try {
-    const teamLeads = await User.find({ 
-      role: 'TEAM_LEAD',
-      isActive: true 
-    }).select('name email phone');
+    const { includeInactive } = req.query;
+    const query = { role: 'TEAM_LEAD' };
+    
+    // Only filter by isActive if includeInactive is not set
+    if (includeInactive !== 'true') {
+      query.isActive = true;
+    }
+    
+    const teamLeads = await User.find(query)
+      .select('name email phone role permissions isActive isSuspended');
+    
+    console.log('Team leads fetched:', teamLeads.length);
+    if (teamLeads.length > 0) {
+      console.log('Sample team lead:', JSON.stringify(teamLeads[0], null, 2));
+    }
     
     res.json({ 
       success: true, 
@@ -34,12 +45,22 @@ router.get('/leads', async (req, res) => {
 // GET /api/teams/members - Get all team members
 router.get('/members', async (req, res) => {
   try {
-    const teamMembers = await User.find({ 
-      role: 'EVENT_STAFF',
-      isActive: true 
-    })
-    .populate('teamLead', 'name email')
-    .select('name email phone teamLead assignedEvent');
+    const { includeInactive } = req.query;
+    const query = { role: 'EVENT_STAFF' };
+    
+    // Only filter by isActive if includeInactive is not set
+    if (includeInactive !== 'true') {
+      query.isActive = true;
+    }
+    
+    const teamMembers = await User.find(query)
+      .populate('teamLead', 'name email')
+      .select('name email phone teamLead assignedEvent role permissions isActive isSuspended');
+    
+    console.log('Team members fetched:', teamMembers.length);
+    if (teamMembers.length > 0) {
+      console.log('Sample team member:', JSON.stringify(teamMembers[0], null, 2));
+    }
     
     res.json({ 
       success: true, 
@@ -171,6 +192,59 @@ router.post('/members', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating team member:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error', 
+      error: error.message 
+    });
+  }
+});
+
+// PUT /api/teams/:userId - Update user permissions
+router.put('/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { permissions } = req.body;
+    
+    console.log('Update permissions request:', { userId, permissions });
+    
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid user ID' 
+      });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+    
+    if (permissions) {
+      user.permissions = {
+        canCreateEvents: permissions.canCreateEvents || false,
+        canManageTeams: permissions.canManageTeams || false,
+        canViewReports: permissions.canViewReports || false,
+        canManageParticipants: permissions.canManageParticipants || false,
+      };
+      // Mark the nested object as modified for Mongoose
+      user.markModified('permissions');
+    }
+    
+    await user.save();
+    
+    console.log('User after save:', user);
+    
+    res.json({ 
+      success: true, 
+      message: 'User permissions updated successfully',
+      data: user
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error', 

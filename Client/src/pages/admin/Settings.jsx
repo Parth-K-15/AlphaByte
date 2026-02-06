@@ -9,12 +9,14 @@ const Settings = () => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [avatarPreview, setAvatarPreview] = useState(null);
 
   const [profile, setProfile] = useState({
     name: '',
     email: '',
     phone: '',
     role: '',
+    avatar: '',
   });
 
   useEffect(() => {
@@ -30,7 +32,12 @@ const Settings = () => {
           email: response.data.email || '',
           phone: response.data.phone || '',
           role: response.data.role || 'Admin',
+          avatar: response.data.avatar || '',
         });
+        // Set avatar preview if exists
+        if (response.data.avatar) {
+          setAvatarPreview(response.data.avatar);
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -60,7 +67,36 @@ const Settings = () => {
     setSuccess('');
   };
 
-  const handleProfileSubmit = (e) => {
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        setError('Image size should be less than 2MB');
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+        setSuccess('Avatar preview loaded. Click Save Changes to update.');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerAvatarInput = () => {
+    document.getElementById('avatar-input').click();
+  };
+
+  const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -71,49 +107,37 @@ const Settings = () => {
       return;
     }
     
-    console.log('Profile saved:', profile);
-    // TODO: Add API call here
-    setSuccess('Profile updated successfully!');
-  };{/* Success/Error Messages */}
-      {success && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center mt-0.5">
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="text-green-800 font-medium">{success}</p>
-          </div>
-          <button onClick={() => setSuccess('')} className="text-green-600 hover:text-green-800">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-      )}
+    try {
+      const response = await authApi.updateProfile({
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        avatar: avatarPreview || profile.avatar,
+      });
       
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center mt-0.5">
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="text-red-800 font-medium">{error}</p>
-          </div>
-          <button onClick={() => setError('')} className="text-red-600 hover:text-red-800">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-      )}
+      if (response.success) {
+        setSuccess('Profile updated successfully!');
+        // Update local profile data if needed
+        if (response.data) {
+          setProfile({
+            name: response.data.name || '',
+            email: response.data.email || '',
+            phone: response.data.phone || '',
+            role: response.data.role || profile.role,
+            avatar: response.data.avatar || '',
+          });
+          // Update avatar preview
+          if (response.data.avatar) {
+            setAvatarPreview(response.data.avatar);
+          }
+        }
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to update profile');
+    }
+  };
 
-      
-
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -129,15 +153,24 @@ const Settings = () => {
       return;
     }
     
-    if (passwords.new.length < 8) {
-      setError('Password must be at least 8 characters long');
+    if (passwords.new.length < 6) {
+      setError('Password must be at least 6 characters long');
       return;
     }
     
-    console.log('Password changed');
-    // TODO: Add API call here
-    setSuccess('Password changed successfully!');
-    setPasswords({ current: '', new: '', confirm: '' });
+    try {
+      const response = await authApi.changePassword({
+        currentPassword: passwords.current,
+        newPassword: passwords.new,
+      });
+      
+      if (response.success) {
+        setSuccess('Password changed successfully!');
+        setPasswords({ current: '', new: '', confirm: '' });
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to change password');
+    }
   };
 
   if (loading) {
@@ -212,13 +245,61 @@ const Settings = () => {
               </div>
 
               <form onSubmit={handleProfileSubmit} className="space-y-6">
+                {/* Success/Error Messages */}
+                {success && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center mt-0.5">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-green-800 font-medium">{success}</p>
+                    </div>
+                    <button type="button" onClick={() => setSuccess('')} className="text-green-600 hover:text-green-800">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center mt-0.5">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-red-800 font-medium">{error}</p>
+                    </div>
+                    <button type="button" onClick={() => setError('')} className="text-red-600 hover:text-red-800">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
                 {/* Avatar Section */}
                 <div className="flex items-center gap-6">
-                  <div className="w-20 h-20 bg-primary-600 rounded-2xl flex items-center justify-center">
-                    <span className="text-white text-2xl font-bold">AU</span>
+                  <div className="w-20 h-20 bg-primary-600 rounded-2xl flex items-center justify-center overflow-hidden">
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white text-2xl font-bold">AU</span>
+                    )}
                   </div>
                   <div>
-                    <button type="button" className="btn-secondary text-sm">
+                    <input
+                      type="file"
+                      id="avatar-input"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                    />
+                    <button type="button" onClick={triggerAvatarInput} className="btn-secondary text-sm">
                       Change Avatar
                     </button>
                     <p className="text-xs text-gray-500 mt-2">JPG, PNG. Max 2MB</p>
@@ -294,6 +375,43 @@ const Settings = () => {
               </div>
 
               <form onSubmit={handlePasswordSubmit} className="space-y-6 max-w-md">
+                {/* Success/Error Messages */}
+                {success && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center mt-0.5">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-green-800 font-medium">{success}</p>
+                    </div>
+                    <button type="button" onClick={() => setSuccess('')} className="text-green-600 hover:text-green-800">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center mt-0.5">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-red-800 font-medium">{error}</p>
+                    </div>
+                    <button type="button" onClick={() => setError('')} className="text-red-600 hover:text-red-800">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Current Password
@@ -380,37 +498,46 @@ const Settings = () => {
               <div className="space-y-6">
                 {/* Two Factor Auth */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div>
-                    <h3 className="font-medium text-gray-800">Two-Factor Authentication</h3>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-gray-800">Two-Factor Authentication</h3>
+                      <span className="px-2 py-1 text-xs font-medium text-amber-700 bg-amber-100 rounded-full">Coming Soon</span>
+                    </div>
                     <p className="text-sm text-gray-500 mt-1">
                       Add an extra layer of security to your account
                     </p>
                   </div>
-                  <button className="btn-secondary text-sm">Enable</button>
+                  <button className="btn-secondary text-sm" disabled>Enable</button>
                 </div>
 
                 {/* Session Management */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div>
-                    <h3 className="font-medium text-gray-800">Active Sessions</h3>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-gray-800">Active Sessions</h3>
+                      <span className="px-2 py-1 text-xs font-medium text-amber-700 bg-amber-100 rounded-full">Coming Soon</span>
+                    </div>
                     <p className="text-sm text-gray-500 mt-1">
                       Manage and logout from active sessions
                     </p>
                   </div>
-                  <button className="btn-secondary text-sm">View Sessions</button>
+                  <button className="btn-secondary text-sm" disabled>View Sessions</button>
                 </div>
 
                 {/* Login Alerts */}
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div>
-                    <h3 className="font-medium text-gray-800">Login Alerts</h3>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-gray-800">Login Alerts</h3>
+                      <span className="px-2 py-1 text-xs font-medium text-amber-700 bg-amber-100 rounded-full">Coming Soon</span>
+                    </div>
                     <p className="text-sm text-gray-500 mt-1">
                       Get notified of new logins to your account
                     </p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" defaultChecked className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  <label className="relative inline-flex items-center cursor-not-allowed opacity-50">
+                    <input type="checkbox" disabled className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                   </label>
                 </div>
               </div>

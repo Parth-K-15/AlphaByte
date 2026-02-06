@@ -47,11 +47,11 @@ function App() {
       <Router>
         <Routes>
           {/* Redirect root to landing page */}
-          <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="/" element={<Navigate to="/" replace />} />
 
           {/* Landing Page */}
           <Route
-            path="/auth"
+            path="/"
             element={
               <PublicRoute>
                 <Landing />

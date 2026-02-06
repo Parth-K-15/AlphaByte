@@ -38,10 +38,8 @@ const Dashboard = () => {
     totalSiteViews: 0,
     activeEvents: 0,
   });
-  const [chartData, setChartData] = useState([]);
   const [registrationTrends, setRegistrationTrends] = useState([]);
   const [registrationsByStatus, setRegistrationsByStatus] = useState([]);
-  const [topEvents, setTopEvents] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [recentRegistrations, setRecentRegistrations] = useState([]);
 
@@ -62,10 +60,8 @@ const Dashboard = () => {
       if (statsResponse.success) {
         const data = statsResponse.data;
         setStats(data.stats || {});
-        setChartData(data.eventRegistrations || []);
         setRegistrationTrends(data.registrationTrends || []);
         setRegistrationsByStatus(data.registrationsByStatus || []);
-        setTopEvents(data.topEvents || []);
         setRecentRegistrations(data.recentRegistrations || []);
       }
 
@@ -293,47 +289,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Top Events and Recent Registrations */}
+      {/* Recent Registrations & Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Events by Registration */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">Top Events</h2>
-              <p className="text-sm text-gray-500">Events with most registrations</p>
-            </div>
-          </div>
-          <div className="h-80">
-            {topEvents.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topEvents} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    width={100}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    }}
-                  />
-                  <Bar dataKey="registrations" fill="#10b981" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                <p>No event data available</p>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Recent Registrations */}
         <div className="card">
           <div className="flex items-center justify-between mb-6">
@@ -373,55 +330,6 @@ const Dashboard = () => {
               ))
             ) : (
               <p className="text-gray-400 text-center py-4">No recent registrations</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Charts and Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Event Registrations Chart */}
-        <div className="lg:col-span-2 card">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">Event Registrations</h2>
-              <p className="text-sm text-gray-500">Registration count by event</p>
-            </div>
-            <button className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-              View All <ArrowUpRight size={16} />
-            </button>
-          </div>
-          <div className="h-80">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    }}
-                  />
-                  <Bar dataKey="registrations" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400">
-                <p>No event data available yet</p>
-              </div>
             )}
           </div>
         </div>

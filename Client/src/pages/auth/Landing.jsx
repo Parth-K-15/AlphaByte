@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Users, Shield, Calendar, Zap, CheckCircle, BarChart3 } from 'lucide-react';
-
+// import logo from '../../assets/EventSync logo.png';
 const Landing = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
@@ -8,10 +8,7 @@ const Landing = () => {
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">α</span>
-            </div>
-            <span className="text-2xl font-bold text-gray-900">AlphaByte</span>
+            <img src='/EventSync logo (1).png' alt="EventSync" className="h-10 object-contain" />
           </div>
           <div className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-gray-600 hover:text-gray-900 transition">Features</a>
@@ -31,7 +28,7 @@ const Landing = () => {
             </span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Manage events effortlessly with AlphaByte. From registration to certification, 
+            Manage events effortlessly with EventSync. From registration to certification, 
             handle everything in one powerful platform.
           </p>
           <div className="flex justify-center gap-4">
@@ -139,7 +136,7 @@ const Landing = () => {
           </div>
 
           <div className="text-center text-gray-600">
-            <p>New to AlphaByte? You'll create your account after selecting your role.</p>
+            <p>New to EventSync? You'll create your account after selecting your role.</p>
           </div>
         </section>
       </div>
@@ -150,10 +147,7 @@ const Landing = () => {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">α</span>
-                </div>
-                <span className="text-gray-900 font-bold">AlphaByte</span>
+                <img src="/EventSync logo (1).png" alt="EventSync" className="h-20 w-auto object-contain" />
               </div>
               <p className="text-gray-600 text-sm">Professional event management platform</p>
             </div>
@@ -183,7 +177,7 @@ const Landing = () => {
             </div>
           </div>
           <div className="border-t border-gray-200 pt-8 flex justify-between items-center text-gray-600 text-sm">
-            <p>&copy; 2026 AlphaByte. All rights reserved.</p>
+            <p>&copy; 2026 EventSync. All rights reserved.</p>
             <div className="flex space-x-6">
               <a href="#" className="hover:text-gray-900 transition">Twitter</a>
               <a href="#" className="hover:text-gray-900 transition">LinkedIn</a>

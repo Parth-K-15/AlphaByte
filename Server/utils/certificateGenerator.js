@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer';
+// Certificate generator - Puppeteer removed for Vercel compatibility
+// For production, consider using an external PDF service or Cloudinary transformations
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,7 +10,8 @@ const __dirname = path.dirname(__filename);
 
 /**
  * Certificate Generator Service
- * Generates PDF certificates from HTML templates
+ * Note: PDF generation temporarily disabled for Vercel deployment
+ * Consider using external services like PDFShift, CloudConvert, or Cloudinary
  */
 class CertificateGenerator {
   constructor() {
@@ -114,69 +116,26 @@ class CertificateGenerator {
       const html = await this.loadTemplate(template, templateData);
       console.log('\u2705 Template loaded successfully');
 
-      // Generate PDF using Puppeteer
-      console.log('\ud83d\ude80 Launching Puppeteer...');
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      console.log('\u2705 Browser launched');
-
-      const page = await browser.newPage();
-      console.log('\ud83d\udcc4 Setting content...');
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      console.log('\u2705 Content set');
-
-      // Generate filename
-      const filename = `${certificateId}_${Date.now()}.pdf`;
-      const filepath = path.join(this.outputDir, filename);
-      console.log('\ud83d\udcbe Saving PDF to:', filepath);
-
-      // Generate PDF
-      await page.pdf({
-        path: filepath,
-        format: 'A4',
-        landscape: true,
-        printBackground: true,
-        margin: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0
-        }
-      });
-      console.log('✅ PDF generated successfully');
-
-      await browser.close();
-      console.log('✅ Browser closed');
-
-      // Upload to Cloudinary
-      console.log('☁️ Uploading to Cloudinary...');
-      const cloudinaryResult = await cloudinary.uploader.upload(filepath, {
-        resource_type: 'auto',
-        folder: 'alphabyte/certificates',
-        public_id: `cert_${certificateId}_${Date.now()}`,
-        format: 'pdf',
-        access_mode: 'public'
-      });
-      console.log('✅ Uploaded to Cloudinary:', cloudinaryResult.secure_url);
-
-      // Delete local file after successful upload (optional)
-      try {
-        await fs.unlink(filepath);
-        console.log('🗑️ Local file deleted');
-      } catch (unlinkError) {
-        console.log('⚠️ Could not delete local file:', unlinkError.message);
-      }
-
+      // TODO: PDF generation disabled for Vercel deployment
+      // For production, integrate with external PDF service:
+      // - PDFShift API (https://pdfshift.io/)
+      // - CloudConvert API (https://cloudconvert.com/)
+      // - Cloudinary Transformations
+      // - Or deploy a separate PDF service
+      
+      console.warn('⚠️ PDF generation is disabled. Puppeteer removed for Vercel compatibility.');
+      console.warn('📄 HTML certificate generated, but PDF conversion skipped.');
+      
+      // For now, return a mock certificate URL
+      // In production, replace this with actual PDF service integration
       return {
-        success: true,
-        filename,
-        filepath,
-        url: `/certificates/${filename}`,
-        cloudinaryUrl: cloudinaryResult.secure_url,
-        cloudinaryPublicId: cloudinaryResult.public_id
+        success: false,
+        message: 'Certificate generation temporarily disabled. Please configure PDF service.',
+        certificateUrl: null,
+        cloudinaryUrl: null,
+        html: html // Return HTML for debugging/alternative use
       };
+
     } catch (error) {
       console.error('❌ Certificate Generation Failed:');
       console.error('  Error:', error.message);

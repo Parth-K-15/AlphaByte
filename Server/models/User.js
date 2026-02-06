@@ -43,6 +43,26 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
+    // Permissions fields
+    permissions: {
+      canCreateEvents: {
+        type: Boolean,
+        default: false,
+      },
+      canManageTeams: {
+        type: Boolean,
+        default: false,
+      },
+      canViewReports: {
+        type: Boolean,
+        default: false,
+      },
+      canManageParticipants: {
+        type: Boolean,
+        default: false,
+      },
+    },
+
     // Restriction fields
     restrictionReason: {
       type: String,
@@ -61,6 +81,14 @@ const userSchema = new mongoose.Schema(
     },
     suspendedAt: {
       type: Date,
+    },
+
+    avatar: {
+      type: String,
+    },
+
+    avatarPublicId: {
+      type: String,
     },
   },
   { timestamps: true }

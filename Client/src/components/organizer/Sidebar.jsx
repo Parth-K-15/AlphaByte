@@ -112,11 +112,14 @@ const Sidebar = () => {
     >
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-800">
-        {!collapsed && (
-          <span className="text-xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
-            Organizer
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {!collapsed && (
+            <img src="/logo-full.png" alt="EventSync" className="h-8 object-contain" />
+          )}
+          {collapsed && (
+            <img src="/logo-icon.png" alt="EventSync" className="w-10 h-10 object-contain" />
+          )}
+        </div>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="p-2 hover:bg-gray-800 rounded-lg transition-colors"

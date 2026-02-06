@@ -299,4 +299,211 @@ router.get('/me', async (req, res) => {
   }
 });
 
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+router.put('/profile', async (req, res) => {
+  try {
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided',
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const { name, email, phone, avatar } = req.body;
+
+    // Validate required fields
+    if (!name || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name and email are required',
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address',
+      });
+    }
+
+    // Check if email is already taken by another user
+    let existingUser;
+    if (decoded.isParticipant) {
+      existingUser = await ParticipantAuth.findOne({
+        email: email.toLowerCase(),
+        _id: { $ne: decoded.id }
+      });
+    } else {
+      existingUser = await User.findOne({
+        email: email.toLowerCase(),
+        _id: { $ne: decoded.id }
+      });
+    }
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is already taken',
+      });
+    }
+
+    // Update user in appropriate collection
+    let updatedUser;
+    const updateData = {
+      name,
+      email: email.toLowerCase(),
+      phone: phone || '',
+    };
+
+    // Add avatar if provided
+    if (avatar) {
+      updateData.avatar = avatar;
+    }
+
+    if (decoded.isParticipant) {
+      updatedUser = await ParticipantAuth.findByIdAndUpdate(
+        decoded.id,
+        updateData,
+        { new: true, runValidators: true }
+      ).select('-password');
+    } else {
+      updatedUser = await User.findByIdAndUpdate(
+        decoded.id,
+        updateData,
+        { new: true, runValidators: true }
+      ).select('-password');
+    }
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser,
+    });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token',
+      });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired',
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Error updating profile',
+      error: error.message,
+    });
+  }
+});
+
+// @desc    Change password
+// @route   PUT /api/auth/password
+router.put('/password', async (req, res) => {
+  try {
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'No token provided',
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const { currentPassword, newPassword } = req.body;
+
+    // Validate required fields
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required',
+      });
+    }
+
+    // Validate new password length
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long',
+      });
+    }
+
+    // Get user from appropriate collection (with password)
+    let user;
+    if (decoded.isParticipant) {
+      user = await ParticipantAuth.findById(decoded.id);
+    } else {
+      user = await User.findById(decoded.id);
+    }
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token',
+      });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token expired',
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Error changing password',
+      error: error.message,
+    });
+  }
+});
+
 export default router;

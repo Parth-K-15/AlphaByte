@@ -74,11 +74,7 @@ const Sidebar = () => {
     {
       title: 'Access Control',
       icon: Lock,
-      key: 'access',
-      children: [
-        { title: 'Restrict User', icon: UserX, path: '/admin/access/restrict' },
-        { title: 'Suspended Accounts', icon: Ban, path: '/admin/access/suspended' },
-      ],
+      path: '/admin/access/restrict'
     },
     {
       title: 'Analytics & Reports',
@@ -97,11 +93,11 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="flex items-center justify-between p-4 border-b border-sidebar-light">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-xl">A</span>
+          <div className="w-10 h-10 flex items-center justify-center">
+            <img src="/logo-icon.png" alt="EventSync" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
-            <span className="text-white font-semibold text-lg">AlphaByte</span>
+            <span className="text-white font-semibold text-lg">EventSync</span>
           )}
         </div>
         <button
