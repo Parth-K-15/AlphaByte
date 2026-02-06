@@ -134,10 +134,21 @@ export const accessControlApi = {
   deleteUser: (id) => fetchApi(`/access-control/users/${id}`, { method: 'DELETE' }),
 };
 
+// Logs API
+export const logsApi = {
+  getAll: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchApi(`/logs${query ? `?${query}` : ''}`);
+  },
+  create: (data) => fetchApi('/logs', { method: 'POST', body: data }),
+  clear: (olderThan) => fetchApi(`/logs/clear?olderThan=${olderThan}`, { method: 'DELETE' }),
+};
+
 export default {
   dashboard: dashboardApi,
   events: eventsApi,
   teams: teamsApi,
   users: usersApi,
   accessControl: accessControlApi,
+  logs: logsApi,
 };
