@@ -21,6 +21,7 @@ import {
   Shield,
   UserX,
   Ban,
+  FileText,
 } from 'lucide-react';
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -79,6 +80,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       title: 'Analytics & Reports',
       icon: BarChart3,
       path: '/admin/reports',
+    },
+    {
+      title: 'System Logs',
+      icon: FileText,
+      path: '/admin/logs',
     },
     {
       title: 'Settings',
