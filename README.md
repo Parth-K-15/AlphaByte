@@ -1,4 +1,4 @@
-# 🎯 AlphaByte - Event Management System
+# 🎯 PLANIX - Event Management System
 
 A modern, full-stack event management platform built with the MERN stack, featuring role-based access control, QR-based attendance tracking, automated certificate generation, and real-time analytics.
 
