@@ -1,16 +1,78 @@
-# React + Vite
+# AlphaByte Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React-based frontend for the AlphaByte Event Management System, built with Vite and Tailwind CSS.
 
-Currently, two official plugins are available:
+## 🚀 Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 19.2** - UI library with latest features
+- **Vite 7** - Lightning-fast build tool
+- **Tailwind CSS 3.4** - Utility-first CSS framework
+- **React Router DOM 7** - Client-side routing
+- **Recharts 3** - Charts and data visualization
+- **Lucide React** - Beautiful icon library
+- **QRCode.react** - QR code generation and scanning
 
-## Expanding the ESLint configuration
+## 📦 Available Scripts
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `npm run dev` - Start development server (http://localhost:5173)
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## 🏗️ Project Structure
+
+```
+src/
+├── components/       # Reusable UI components
+│   ├── admin/       # Admin-specific components
+│   └── organizer/   # Organizer-specific components
+├── context/         # React Context providers
+├── layouts/         # Layout wrappers (Admin, Organizer, Participant)
+├── pages/           # Page components by role
+├── services/        # API integration layer
+└── assets/          # Static assets
+```
+
+## 🔧 Environment Variables
+
+Create a `.env` file:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+## 🎨 Features
+
+- Role-based dashboards (Admin, Organizer, Participant)
+- QR code generation and scanning
+- Real-time analytics with Recharts
+- Responsive design with Tailwind CSS
+- Protected routes with JWT authentication
+- Modern UI with Lucide icons
+
+## 📱 Responsive Design
+
+Optimized for all screen sizes:
+- Mobile: 320px+
+- Tablet: 768px+
+- Desktop: 1024px+
+
+## 🚀 Deployment
+
+Built for Vercel deployment with optimized settings in `vercel.json`.
+
+```bash
+npm run build
+vercel --prod
+```
+
+---
+
+See main [README.md](../README.md) for complete project documentation.
