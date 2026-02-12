@@ -19,6 +19,7 @@ import {
   AccessControl,
   Reports,
   Settings,
+  Logs,
 } from './pages/admin';
 import {
   Dashboard as OrganizerDashboard,
@@ -116,6 +117,9 @@ function App() {
           
           {/* Analytics & Reports */}
           <Route path="reports" element={<Reports />} />
+          
+          {/* System Logs */}
+          <Route path="logs" element={<Logs />} />
           
           {/* Settings */}
           <Route path="settings" element={<Settings />} />
