@@ -31,16 +31,120 @@ const EventsHome = () => {
   const [typeFilter, setTypeFilter] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [userProfile, setUserProfile] = useState(null);
+  const [myRegistrations, setMyRegistrations] = useState([]);
+  const [eventDates, setEventDates] = useState([]);
   const [userStats, setUserStats] = useState({
-    eventsAttended: 24,
-    certificatesEarned: 18,
+    eventsAttended: 0,
+    certificatesEarned: 0,
     learningGoal: 30,
-    attendanceScore: 92,
+    attendanceScore: 0,
+    currentMonthEvents: 0,
+    learningStreak: 0,
   });
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     fetchEvents();
   }, [search, statusFilter, typeFilter]);
+
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      // Fetch user profile
+      const profileResponse = await fetch(`${API_BASE}/participant/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const profileData = await profileResponse.json();
+
+      if (profileData.success) {
+        setUserProfile(profileData.data);
+
+        // Fetch user's registered events
+        if (profileData.data.email) {
+          const registrationsResponse = await fetch(
+            `${API_BASE}/participant/my-events?email=${encodeURIComponent(profileData.data.email)}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          const registrationsData = await registrationsResponse.json();
+
+          if (registrationsData.success) {
+            setMyRegistrations(registrationsData.data);
+
+            // Calculate stats from registrations
+            const confirmedRegistrations = registrationsData.data.filter(
+              reg => reg.registrationStatus === 'CONFIRMED'
+            );
+
+            const certificatesCount = registrationsData.data.filter(
+              reg => reg.certificate && (reg.certificate.status === 'ISSUED' || reg.certificate.status === 'SENT' || reg.certificate.status === 'GENERATED')
+            ).length;
+
+            const currentDate = new Date();
+            const currentMonthRegs = registrationsData.data.filter(reg => {
+              if (!reg.event?.startDate) return false;
+              const eventDate = new Date(reg.event.startDate);
+              return eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getFullYear() === currentDate.getFullYear();
+            }).length;
+
+            // Calculate attendance score
+            const attendedCount = registrationsData.data.filter(
+              reg => reg.attendanceStatus === 'ATTENDED'
+            ).length;
+            const attendanceScore = registrationsData.data.length > 0
+              ? Math.round((attendedCount / registrationsData.data.length) * 100)
+              : 0;
+
+            // Extract event dates for calendar (current month)
+            const dates = registrationsData.data
+              .filter(reg => {
+                if (!reg.event?.startDate) return false;
+                const d = new Date(reg.event.startDate);
+                return d.getMonth() === currentMonth.getMonth() &&
+                       d.getFullYear() === currentMonth.getFullYear();
+              })
+              .map(reg => new Date(reg.event.startDate).getDate());
+            setEventDates(dates);
+
+            // Calculate learning streak (events in past 30 days)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const recentEvents = registrationsData.data.filter(reg => {
+              if (!reg.event?.startDate) return false;
+              const eventDate = new Date(reg.event.startDate);
+              return eventDate >= thirtyDaysAgo && eventDate <= currentDate;
+            });
+            const learningStreak = recentEvents.length;
+
+            setUserStats({
+              eventsAttended: attendedCount,
+              certificatesEarned: certificatesCount,
+              learningGoal: 30,
+              attendanceScore,
+              currentMonthEvents: currentMonthRegs,
+              learningStreak,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -58,26 +162,6 @@ const EventsHome = () => {
       }
     } catch (error) {
       console.error("Error fetching events:", error);
-      setEvents([
-        {
-          _id: "1",
-          title: "Tech Conference 2024",
-          status: "upcoming",
-          type: "Online",
-          startDate: "2024-03-15",
-          registrationFee: 0,
-          spotsLeft: 50,
-        },
-        {
-          _id: "2",
-          title: "Professional Development Workshop",
-          status: "ongoing",
-          type: "Offline",
-          startDate: "2024-03-10",
-          registrationFee: 500,
-          spotsLeft: 15,
-        },
-      ]);
     } finally {
       setLoading(false);
     }
@@ -148,7 +232,7 @@ const EventsHome = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-dark mb-1">
-            Hi, Amanda! 👋
+            Hi, {userProfile?.name || 'there'}! 👋
           </h1>
           <p className="text-dark-300 text-sm md:text-base">
             Let's take a look at your learning journey today
@@ -345,7 +429,7 @@ const EventsHome = () => {
                   <div className="w-3 h-1 bg-lime/30 rounded-full"></div>
                   <span className="text-xs text-dark-200">This month</span>
                 </div>
-                <div className="text-lg font-bold text-white">8</div>
+                <div className="text-lg font-bold text-white">{userStats.currentMonthEvents}</div>
               </div>
             </div>
           </div>
@@ -402,7 +486,7 @@ const EventsHome = () => {
                   today.getDate() === day &&
                   today.getMonth() === currentMonth.getMonth() &&
                   today.getFullYear() === currentMonth.getFullYear();
-                const hasEvent = [8, 15, 22, 28].includes(day);
+                const hasEvent = eventDates.includes(day);
 
                 return (
                   <button
@@ -497,94 +581,95 @@ const EventsHome = () => {
         <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-card border border-light-400/50">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-dark">My Learning Activity</h3>
-            <button className="text-sm font-bold text-dark bg-light-300 hover:bg-light-400 px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+            <Link to="/participant/registrations" className="text-sm font-bold text-dark bg-light-300 hover:bg-light-400 px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
               View All <ArrowUpRight size={14} />
-            </button>
+            </Link>
           </div>
 
           <div className="space-y-3">
-            {[
-              {
-                name: "Web Development Bootcamp",
-                instructor: "Sarah Wilson",
-                progress: "8/10",
-                completion: 80,
-                avatar: "💻",
-                variant: "dark",
-              },
-              {
-                name: "Data Science Workshop",
-                instructor: "Michael Chen",
-                progress: "6/8",
-                completion: 75,
-                avatar: "📊",
-                variant: "lime",
-              },
-              {
-                name: "UI/UX Design Masterclass",
-                instructor: "Lisa Anderson",
-                progress: "4/6",
-                completion: 67,
-                avatar: "🎨",
-                variant: "dark",
-              },
-              {
-                name: "Machine Learning Basics",
-                instructor: "David Kumar",
-                progress: "3/5",
-                completion: 60,
-                avatar: "🤖",
-                variant: "lime",
-              },
-            ].map((course, index) => (
-              <div
-                key={index}
-                className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.01] ${
-                  course.variant === "dark"
-                    ? "bg-dark text-white"
-                    : "bg-lime/20 text-dark"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`text-lg w-10 h-10 flex items-center justify-center rounded-xl ${
-                      course.variant === "dark" ? "bg-lime/15" : "bg-dark/10"
+            {myRegistrations.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-dark-200 mb-2">
+                  <BookOpen className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-dark-300 text-sm">No registered events yet</p>
+                <p className="text-dark-200 text-xs mt-1">Browse events and start your learning journey!</p>
+              </div>
+            ) : (
+              myRegistrations.slice(0, 4).map((registration, index) => {
+                const icons = ['💻', '📊', '🎨', '🤖', '🎯', '📚', '🚀', '⚡'];
+                const variant = index % 2 === 0 ? "dark" : "lime";
+
+                // Calculate progress based on event/registration status
+                const event = registration.event;
+                const completion = event?.status === 'completed' ? 100
+                  : event?.status === 'ongoing' ? 50
+                  : registration.attendanceStatus === 'ATTENDED' ? 75
+                  : registration.registrationStatus === 'CONFIRMED' ? 25 : 10;
+
+                const progressLabel = registration.certificate ? 'Certificate Issued'
+                  : registration.attendanceStatus === 'ATTENDED' ? 'Attended'
+                  : event?.status === 'ongoing' ? 'In Progress'
+                  : registration.registrationStatus === 'CONFIRMED' ? 'Registered'
+                  : 'Pending';
+
+                return (
+                  <Link
+                    key={registration._id}
+                    to={`/participant/event/${registration.event?._id}`}
+                    className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.01] ${
+                      variant === "dark"
+                        ? "bg-dark text-white"
+                        : "bg-lime/20 text-dark"
                     }`}
                   >
-                    {course.avatar}
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm">{course.name}</div>
-                    <div
-                      className={`text-xs ${course.variant === "dark" ? "text-dark-200" : "text-dark/60"}`}
-                    >
-                      Instructor: {course.instructor}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div
-                    className={`text-xs mb-2 ${course.variant === "dark" ? "text-dark-200" : "text-dark/60"}`}
-                  >
-                    Completed: {course.progress}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-20 h-1.5 rounded-full overflow-hidden ${
-                        course.variant === "dark" ? "bg-white/10" : "bg-dark/10"
-                      }`}
-                    >
+                    <div className="flex items-center gap-3">
                       <div
-                        className={`h-full rounded-full ${
-                          course.variant === "dark" ? "bg-lime" : "bg-dark"
+                        className={`text-lg w-10 h-10 flex items-center justify-center rounded-xl ${
+                          variant === "dark" ? "bg-lime/15" : "bg-dark/10"
                         }`}
-                        style={{ width: `${course.completion}%` }}
-                      />
+                      >
+                        {icons[index % icons.length]}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm">
+                          {registration.event?.title || 'Event'}
+                        </div>
+                        <div
+                          className={`text-xs ${variant === "dark" ? "text-dark-200" : "text-dark/60"}`}
+                        >
+                          Status: {registration.registrationStatus}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    <div className="text-right">
+                      <div
+                        className={`text-xs mb-2 flex items-center gap-1 justify-end ${variant === "dark" ? "text-dark-200" : "text-dark/60"}`}
+                      >
+                        {progressLabel}
+                        {registration.certificate && (
+                          <Award size={14} className="text-yellow-400" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-20 h-1.5 rounded-full overflow-hidden ${
+                            variant === "dark" ? "bg-white/10" : "bg-dark/10"
+                          }`}
+                        >
+                          <div
+                            className={`h-full rounded-full ${
+                              variant === "dark" ? "bg-lime" : "bg-dark"
+                            }`}
+                            style={{ width: `${completion}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -604,7 +689,16 @@ const EventsHome = () => {
           </div>
 
           <div className="space-y-4">
-            {events.slice(0, 3).map((event, index) => {
+            {events.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-dark-200 mb-2">
+                  <Calendar className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-dark-300 text-sm font-medium">No upcoming events</p>
+                <p className="text-dark-200 text-xs mt-1">Check back soon for new events!</p>
+              </div>
+            ) : (
+            events.slice(0, 3).map((event, index) => {
               const variants = ["dark", "lime", "white"];
               const variant = variants[index % 3];
 
@@ -695,7 +789,8 @@ const EventsHome = () => {
                   </div>
                 </Link>
               );
-            })}
+            })
+            )}
           </div>
         </div>
 
@@ -708,7 +803,7 @@ const EventsHome = () => {
                 name: "Scan QR",
                 icon: CheckCircle,
                 variant: "lime",
-                path: "/participant/qr-scanner",
+                path: "/participant/scan",
               },
               {
                 name: "My Events",
@@ -751,17 +846,26 @@ const EventsHome = () => {
                   Learning Streak
                 </h4>
                 <p className="text-xs text-dark-200 mt-1">
-                  Keep up the great work!
+                  {userStats.learningStreak > 0 ? 'Keep up the great work!' : 'Start your journey!'}
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-black text-lime">12</div>
-                <div className="text-xs text-dark-200">days</div>
+                <div className="text-2xl font-black text-lime">{userStats.learningStreak}</div>
+                <div className="text-xs text-dark-200">events</div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Floating QR Scanner Button */}
+      <Link
+        to="/participant/scan"
+        className="fixed bottom-6 right-6 z-50 bg-lime text-dark p-4 rounded-full shadow-lg hover:shadow-lime hover:scale-110 transition-all duration-300 group"
+        title="Scan QR Code"
+      >
+        <Zap size={24} className="group-hover:animate-pulse" />
+      </Link>
     </div>
   );
 };

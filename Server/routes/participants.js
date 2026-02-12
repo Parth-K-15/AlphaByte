@@ -7,6 +7,7 @@ import Certificate from '../models/Certificate.js';
 import CertificateRequest from '../models/CertificateRequest.js';
 import EventUpdate from '../models/EventUpdate.js';
 import User from '../models/User.js';
+import activeSessions from '../utils/sessionStore.js';
 
 const router = express.Router();
 
@@ -366,7 +367,7 @@ router.delete('/registration/:eventId', async (req, res) => {
 // POST /api/participant/attendance/scan - Scan QR to mark attendance
 router.post('/attendance/scan', async (req, res) => {
   try {
-    const { eventId, email, qrCode } = req.body;
+    const { eventId, email, sessionId } = req.body;
     
     if (!eventId || !email) {
       return res.status(400).json({ 
@@ -377,6 +378,43 @@ router.post('/attendance/scan', async (req, res) => {
     
     if (!isValidObjectId(eventId)) {
       return res.status(400).json({ success: false, message: 'Invalid event ID' });
+    }
+
+    // Validate QR session if sessionId provided (from dynamic QR)
+    if (sessionId) {
+      const session = activeSessions.get(sessionId);
+      if (!session) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired QR code. Ask the organizer to generate a new one.',
+          code: 'INVALID_SESSION'
+        });
+      }
+      if (Date.now() > session.expiresAt) {
+        activeSessions.delete(sessionId);
+        return res.status(400).json({
+          success: false,
+          message: 'QR code has expired. Ask the organizer to generate a new one.',
+          code: 'SESSION_EXPIRED'
+        });
+      }
+      if (session.eventId !== eventId) {
+        return res.status(400).json({
+          success: false,
+          message: 'QR code does not match this event.',
+          code: 'EVENT_MISMATCH'
+        });
+      }
+    }
+
+    // Verify event exists and is active
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found',
+        code: 'EVENT_NOT_FOUND'
+      });
     }
     
     // Find the participant
@@ -418,13 +456,20 @@ router.post('/attendance/scan', async (req, res) => {
     }
     
     // Mark attendance
-    const attendance = new Attendance({
+    const attendanceData = {
       event: eventId,
       participant: participant._id,
       scannedAt: new Date(),
-      markedBy: participant._id, // Self-marked via QR scan
       status: 'PRESENT'
-    });
+    };
+    if (sessionId) {
+      attendanceData.sessionId = sessionId;
+    }
+    // markedBy expects a User ObjectId – look up the linked user, else skip
+    if (participant.user) {
+      attendanceData.markedBy = participant.user;
+    }
+    const attendance = new Attendance(attendanceData);
     
     await attendance.save();
     
@@ -442,6 +487,7 @@ router.post('/attendance/scan', async (req, res) => {
       data: {
         participantName: participant.fullName,
         eventId,
+        eventTitle: event.title,
         scannedAt: attendance.scannedAt
       }
     });

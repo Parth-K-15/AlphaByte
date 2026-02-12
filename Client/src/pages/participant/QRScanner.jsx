@@ -9,13 +9,23 @@ const QRScanner = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [email, setEmail] = useState("");
+  const emailRef = useRef("");
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const canvasRef = useRef(null);
   const scanIntervalRef = useRef(null);
-  const email = localStorage.getItem("participantEmail") || "";
 
   useEffect(() => {
+    // Get participant email from stored user object
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.email) {
+        setEmail(user.email);
+        emailRef.current = user.email;
+      }
+    } catch {}
+    startScanning();
     return () => {
       stopScanning();
     };
@@ -48,7 +58,7 @@ const QRScanner = () => {
 
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d", { willReadFrequently: true });
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -84,22 +94,33 @@ const QRScanner = () => {
         parsedData = { qrData: data };
       }
 
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE}/participant/attendance/scan`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           eventId: parsedData.eventId,
-          email: email,
-          qrData: parsedData.qrData || data,
+          email: emailRef.current,
+          sessionId: parsedData.sessionId || null,
         }),
       });
 
       const responseData = await response.json();
 
       if (responseData.success) {
+        const { eventTitle, scannedAt } = responseData.data || {};
+        const timestamp = scannedAt ? new Date(scannedAt).toLocaleString('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        }) : '';
         setResult({
           success: true,
           message: responseData.message || "Attendance marked successfully!",
+          eventTitle,
+          timestamp
         });
       } else {
         setResult({
@@ -165,6 +186,18 @@ const QRScanner = () => {
             >
               {result.message}
             </p>
+            {result.success && result.eventTitle && (
+              <div className="mt-4 pt-4 border-t border-lime/20">
+                <div className="text-xs text-dark-200 uppercase tracking-wide mb-1">Event</div>
+                <div className="text-base font-semibold text-dark">{result.eventTitle}</div>
+              </div>
+            )}
+            {result.success && result.timestamp && (
+              <div className="mt-3">
+                <div className="text-xs text-dark-200 uppercase tracking-wide mb-1">Marked At</div>
+                <div className="text-sm text-dark-300">{result.timestamp}</div>
+              </div>
+            )}
             <button
               onClick={resetScanner}
               className="mt-4 px-6 py-2.5 bg-dark text-lime rounded-2xl font-bold text-sm hover:bg-dark-600 transition-all"
