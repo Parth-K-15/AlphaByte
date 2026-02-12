@@ -1,274 +1,227 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  Clock,
+  MapPin,
+  CheckCircle,
+  XCircle,
+  ArrowUpRight,
+} from "lucide-react";
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = "http://localhost:5000/api";
 
 const History = () => {
   const [history, setHistory] = useState([]);
-  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState(localStorage.getItem('participantEmail') || '');
-  const [inputEmail, setInputEmail] = useState('');
-  const [filter, setFilter] = useState('all'); // all, attended, certificates
+  const [filter, setFilter] = useState("all");
+  const email = localStorage.getItem("participantEmail") || "";
 
   useEffect(() => {
-    if (email) {
-      fetchHistory();
-    } else {
-      setLoading(false);
-    }
-  }, [email]);
+    fetchHistory();
+  }, []);
 
   const fetchHistory = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem("token");
       const response = await fetch(
-        `${API_BASE}/participant/history?email=${encodeURIComponent(email)}`
+        `${API_BASE}/participant/history${email ? `?email=${encodeURIComponent(email)}` : ""}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
       );
       const data = await response.json();
-      
+
       if (data.success) {
-        setHistory(data.data);
-        setStats(data.stats);
+        setHistory(data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching history:', error);
+      console.error("Error fetching history:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEmailSubmit = (e) => {
-    e.preventDefault();
-    if (inputEmail) {
-      localStorage.setItem('participantEmail', inputEmail);
-      setEmail(inputEmail);
-    }
-  };
-
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
-  const filteredHistory = history.filter(item => {
-    if (filter === 'attended') return item.attendanceStatus === 'ATTENDED';
-    if (filter === 'certificates') return item.certificate;
-    return true;
-  });
-
-  // If no email, show email input
-  if (!email) {
-    return (
-      <div className="max-w-md mx-auto mt-12 px-4">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-10 text-center border border-white/20">
-          <div className="w-20 h-20 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <div className="text-5xl">📜</div>
-          </div>
-          <h2 className="text-3xl font-black text-gray-900 mb-3">Participation History</h2>
-          <p className="text-gray-600 mb-8 text-lg">Enter your email to view your complete history</p>
-          
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <input
-              type="email"
-              value={inputEmail}
-              onChange={(e) => setInputEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all font-medium"
-              required
-            />
-            <button
-              type="submit"
-              className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 hover:scale-[1.02] shadow-lg"
-            >
-              View History →
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  const filteredHistory =
+    filter === "all"
+      ? history
+      : history.filter((item) => item.attendanceStatus === filter);
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-cyan-200"></div>
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-cyan-600 absolute top-0 left-0"></div>
-        </div>
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lime"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
-        <h1 className="text-4xl font-black mb-3">Participation History</h1>
-        <p className="text-cyan-50 text-lg">Your complete event journey</p>
-        <div className="mt-4 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
-          <span className="text-sm font-semibold">📧 {email}</span>
+      <div className="bg-dark rounded-3xl p-8 text-white">
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">Event History</h1>
+        <p className="text-dark-200">Your past events and attendance records</p>
+        <div className="mt-4 flex items-center gap-3">
+          <div className="bg-lime/10 border border-lime/20 px-4 py-2 rounded-xl">
+            <span className="text-lime font-bold text-sm">
+              {history.length} Events
+            </span>
+          </div>
+          <div className="bg-lime/10 border border-lime/20 px-4 py-2 rounded-xl">
+            <span className="text-lime font-bold text-sm">
+              {history.filter((h) => h.attendanceStatus === "ATTENDED").length}{" "}
+              Attended
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 text-center border border-white/20 hover:-translate-y-1 transition-all duration-300">
-            <div className="text-4xl font-black bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">{stats.totalRegistrations}</div>
-            <div className="text-gray-600 text-sm font-semibold mt-2">Total Events</div>
-          </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 text-center border border-white/20 hover:-translate-y-1 transition-all duration-300">
-            <div className="text-4xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{stats.attended}</div>
-            <div className="text-gray-600 text-sm font-semibold mt-2">Attended</div>
-          </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 text-center border border-white/20 hover:-translate-y-1 transition-all duration-300">
-            <div className="text-4xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">{stats.certificatesEarned}</div>
-            <div className="text-gray-600 text-sm font-semibold mt-2">Certificates</div>
-          </div>
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-6 text-center border border-white/20 hover:-translate-y-1 transition-all duration-300">
-            <div className="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{stats.upcomingEvents}</div>
-            <div className="text-gray-600 text-sm font-semibold mt-2">Upcoming</div>
-          </div>
-        </div>
-      )}
-
-      {/* Filter Tabs */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg p-3 flex gap-3 border border-white/20">
+      {/* Filters */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
         {[
-          { value: 'all', label: 'All Events' },
-          { value: 'attended', label: 'Attended' },
-          { value: 'certificates', label: 'With Certificates' },
-        ].map(tab => (
+          { key: "all", label: "All" },
+          { key: "ATTENDED", label: "Attended" },
+          { key: "ABSENT", label: "Missed" },
+          { key: "PENDING", label: "Pending" },
+        ].map((f) => (
           <button
-            key={tab.value}
-            onClick={() => setFilter(tab.value)}
-            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 ${
-              filter === tab.value
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg scale-105'
-                : 'text-gray-600 hover:bg-gray-100'
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+              filter === f.key
+                ? "bg-dark text-lime"
+                : "bg-white text-dark-300 border border-light-400 hover:bg-light-300"
             }`}
           >
-            {tab.label}
+            {f.label}
           </button>
         ))}
       </div>
 
-      {/* History Timeline */}
+      {/* History List */}
       {filteredHistory.length === 0 ? (
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-lg p-12 text-center border border-white/20">
-          <div className="w-24 h-24 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <div className="text-5xl">📭</div>
+        <div className="bg-white rounded-3xl shadow-card p-12 text-center border border-light-400/50">
+          <div className="w-20 h-20 bg-dark rounded-3xl flex items-center justify-center mx-auto mb-4">
+            <Clock size={32} className="text-lime" />
           </div>
-          <h3 className="text-2xl font-black text-gray-800 mb-3">No History Found</h3>
-          <p className="text-gray-600 text-lg">
-            {filter === 'all' 
-              ? "You haven't registered for any events yet." 
-              : `No events match the "${filter}" filter.`}
+          <h3 className="text-xl font-bold text-dark mb-2">No History Found</h3>
+          <p className="text-dark-300 mb-6 text-sm">
+            You don't have any past events yet.
           </p>
+          <Link
+            to="/participant"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-lime text-dark rounded-2xl font-bold hover:shadow-lime transition-all"
+          >
+            Explore Events <ArrowUpRight size={16} />
+          </Link>
         </div>
       ) : (
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg divide-y divide-gray-200 border border-white/20">
-          {filteredHistory.map((record, index) => (
-            <div key={record._id} className="p-6 hover:bg-gray-50/50 transition-all duration-300">
-              <div className="flex items-start gap-5">
-                {/* Timeline Indicator */}
-                <div className="flex flex-col items-center">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
-                    record.attendanceStatus === 'ATTENDED' ? 'bg-gradient-to-br from-green-500 to-emerald-600' :
-                    record.registrationStatus === 'CANCELLED' ? 'bg-gradient-to-br from-red-500 to-pink-600' :
-                    'bg-gradient-to-br from-cyan-500 to-blue-600'
-                  }`}>
-                    {record.attendanceStatus === 'ATTENDED' ? '✓' :
-                     record.registrationStatus === 'CANCELLED' ? '✕' : '📅'}
+        <div className="space-y-3">
+          {filteredHistory.map((item, index) => {
+            const variant =
+              index % 3 === 0 ? "dark" : index % 3 === 1 ? "lime" : "white";
+
+            return (
+              <div
+                key={item._id}
+                className={`rounded-3xl p-5 transition-all hover:scale-[1.01] ${
+                  variant === "dark"
+                    ? "bg-dark text-white"
+                    : variant === "lime"
+                      ? "bg-lime text-dark"
+                      : "bg-white text-dark shadow-card border border-light-400/50"
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-bold text-lg">
+                      {item.event?.title || "Event"}
+                    </h3>
+                    <div
+                      className={`flex items-center gap-3 mt-1 text-sm ${
+                        variant === "dark"
+                          ? "text-dark-200"
+                          : variant === "lime"
+                            ? "text-dark/70"
+                            : "text-dark-300"
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        <Clock size={14} /> {formatDate(item.event?.startDate)}
+                      </span>
+                      {(item.event?.venue || item.event?.location) && (
+                        <span className="flex items-center gap-1">
+                          <MapPin size={14} />{" "}
+                          {item.event?.venue || item.event?.location}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {index < filteredHistory.length - 1 && (
-                    <div className="w-1 flex-1 bg-gradient-to-b from-gray-300 to-gray-100 mt-3 rounded-full min-h-[40px]"></div>
+
+                  <span
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 ${
+                      item.attendanceStatus === "ATTENDED"
+                        ? variant === "dark"
+                          ? "bg-lime/15 text-lime"
+                          : "bg-dark/10 text-dark"
+                        : item.attendanceStatus === "ABSENT"
+                          ? "bg-red-100 text-red-700"
+                          : variant === "dark"
+                            ? "bg-dark-400 text-dark-200"
+                            : "bg-light-400 text-dark-300"
+                    }`}
+                  >
+                    {item.attendanceStatus === "ATTENDED" ? (
+                      <CheckCircle size={12} />
+                    ) : (
+                      <XCircle size={12} />
+                    )}
+                    {item.attendanceStatus}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 mt-3">
+                  {item.event && (
+                    <Link
+                      to={`/participant/event/${item.event._id}`}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-all hover:scale-105 ${
+                        variant === "dark"
+                          ? "bg-lime/10 text-lime border border-lime/20"
+                          : variant === "lime"
+                            ? "bg-dark text-lime"
+                            : "bg-dark/5 text-dark border border-dark/10"
+                      }`}
+                    >
+                      View Details <ArrowUpRight size={12} />
+                    </Link>
+                  )}
+                  {item.certificate && (
+                    <Link
+                      to="/participant/certificates"
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 ${
+                        variant === "dark"
+                          ? "bg-lime text-dark"
+                          : "bg-dark text-white"
+                      }`}
+                    >
+                      🏆 Certificate
+                    </Link>
                   )}
                 </div>
-
-                {/* Event Details */}
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div>
-                      <h3 className="font-black text-lg text-gray-900">
-                        {record.event?.title || 'Event Deleted'}
-                      </h3>
-                      <p className="text-gray-600 text-sm font-medium mt-1">
-                        📅 {formatDate(record.event?.startDate)}
-                        {record.event?.venue && ` • 📍 ${record.event.venue}`}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm ${
-                        record.registrationStatus === 'CONFIRMED' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
-                        record.registrationStatus === 'CANCELLED' ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white' :
-                        'bg-gradient-to-r from-yellow-500 to-amber-500 text-white'
-                      }`}>
-                        {record.registrationStatus}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Status Details */}
-                  <div className="mt-4 flex flex-wrap gap-3 text-sm">
-                    {record.attendance && (
-                      <div className="flex items-center gap-2 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 px-4 py-2 rounded-xl font-bold border border-green-200">
-                        <span>✓</span>
-                        <span>Attended {formatDate(record.attendance.scannedAt)}</span>
-                      </div>
-                    )}
-                    {record.certificate && (
-                      <div className="flex items-center gap-2 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-4 py-2 rounded-xl font-bold border border-amber-200">
-                        <span>🏆</span>
-                        <span>Certificate: {record.certificate.status}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="mt-4 flex gap-3">
-                    {record.event && (
-                      <Link
-                        to={`/participant/event/${record.event._id}`}
-                        className="text-sm font-bold bg-gradient-to-r from-cyan-50 to-blue-50 text-cyan-700 px-4 py-2 rounded-xl hover:from-cyan-100 hover:to-blue-100 transition-all duration-300 hover:scale-105 border border-cyan-200"
-                      >
-                        View Event →
-                      </Link>
-                    )}
-                    {record.certificate && record.certificate.certificateUrl && (
-                      <Link
-                        to="/participant/certificates"
-                        className="text-sm font-bold bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 px-4 py-2 rounded-xl hover:from-amber-100 hover:to-orange-100 transition-all duration-300 hover:scale-105 border border-amber-200"
-                      >
-                        View Certificate →
-                      </Link>
-                    )}
-                  </div>
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
-
-      {/* Change Email */}
-      <div className="text-center mt-8">
-        <button
-          onClick={() => {
-            localStorage.removeItem('participantEmail');
-            setEmail('');
-            setInputEmail('');
-          }}
-          className="text-sm font-semibold text-cyan-600 hover:text-cyan-800 hover:underline transition-all"
-        >
-          ← Use a different email
-        </button>
-      </div>
     </div>
   );
 };
