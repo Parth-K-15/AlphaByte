@@ -59,9 +59,13 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       path: "/organizer",
     },
     {
-      title: "My Events",
+      title: "Events",
       icon: Calendar,
-      path: "/organizer/events" 
+      key: "events",
+      submenu: [
+        { title: "My Events", path: "/organizer/events" },
+        { title: "Attendance", path: "/organizer/attendance/qr" },
+      ],
     },
     {
       title: "Participants",
@@ -69,19 +73,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       path: "/organizer/participants",
     },
     {
-      title: "Attendance",
-      icon: QrCode,
-      path: "/organizer/attendance/qr",
-    },
-    {
       title: "Communication",
       icon: Mail,
       submenu: [
         { title: "Send Emails", path: "/organizer/communication/email" },
-        {
-          title: "Announcements",
-          path: "/organizer/communication/announcements",
-        },
+        { title: "Announcements", path: "/organizer/communication/announcements" },
       ],
       key: "communication",
     },
@@ -106,82 +102,69 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     submenu?.some((item) => location.pathname === item.path);
 
   const SidebarContent = () => (
-    <aside className="h-full bg-gradient-to-b from-white/90 via-white/85 to-white/90 backdrop-blur-2xl border-r border-white/60 shadow-xl flex flex-col">
+    <aside className="h-full bg-gray-50 flex flex-col">
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200/40 bg-white/50">
+      <div className="flex items-center justify-between px-6 py-6">
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
-              <span className="text-white font-black text-sm">P</span>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">P</span>
             </div>
-            <span className="text-xl font-black bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-              PLANIX
-            </span>
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg mx-auto">
-            <span className="text-white font-black text-sm">P</span>
+          <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center mx-auto">
+            <span className="text-white font-bold text-lg">P</span>
           </div>
         )}
         <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 rounded-lg transition-all hidden lg:block"
-        >
-          <ChevronLeft
-            className={`transition-transform duration-300 text-gray-600 ${collapsed ? "rotate-180" : ""}`}
-            size={20}
-            strokeWidth={2.5}
-          />
-        </button>
-        <button
           onClick={() => setMobileOpen(false)}
-          className="p-2 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 rounded-lg transition-all lg:hidden"
+          className="text-gray-400 hover:text-gray-600 lg:hidden"
         >
-          <X size={20} className="text-gray-600" strokeWidth={2.5} />
+          <X size={20} />
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto">
-        <ul className="space-y-1 px-3">
+      <nav className="flex-1 py-2 overflow-y-auto px-4">
+        <ul className="space-y-1">
           {menuItems.map((item) => (
             <li key={item.title}>
               {item.submenu ? (
                 <>
                   <button
                     onClick={() => toggleMenu(item.key)}
-                    className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-300 ${
-                      isParentActive(item.submenu)
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
-                        : "text-gray-700 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 hover:text-gray-900 hover:scale-105"
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-gray-700 hover:text-gray-900 group ${
+                      isParentActive(item.submenu) ? 'text-gray-900' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <item.icon size={20} strokeWidth={2.5} />
-                      {!collapsed && <span className="font-bold">{item.title}</span>}
-                    </div>
+                    <item.icon size={20} strokeWidth={1.5} />
                     {!collapsed && (
-                      <ChevronDown
-                        size={16}
-                        className={`transition-transform ${openMenus[item.key] ? "rotate-180" : ""}`}
-                      />
+                      <>
+                        <span className="flex-1 text-left text-sm font-medium">{item.title}</span>
+                        <ChevronDown
+                          size={16}
+                          className={`transition-transform text-gray-400 ${
+                            openMenus[item.key] ? "rotate-180" : ""
+                          }`}
+                        />
+                      </>
                     )}
                   </button>
                   {!collapsed && openMenus[item.key] && (
-                    <ul className="mt-1 ml-4 pl-4 border-l-2 border-gray-200 space-y-1">
+                    <ul className="mt-1 space-y-0.5 ml-3 pl-6 border-l border-gray-200">
                       {item.submenu.map((subItem) => (
                         <li key={subItem.path}>
                           <NavLink
                             to={subItem.path}
                             onClick={handleNavClick}
-                            className={`block px-3 py-2.5 rounded-lg text-sm transition-all duration-300 font-semibold ${
+                            className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
                               isActive(subItem.path)
-                                ? "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 scale-105"
-                                : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 hover:scale-105"
+                                ? "bg-white text-gray-900 font-medium shadow-sm"
+                                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                             }`}
                           >
-                            {subItem.title}
+                            <span>{subItem.title}</span>
                           </NavLink>
                         </li>
                       ))}
@@ -192,14 +175,14 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                 <NavLink
                   to={item.path}
                   onClick={handleNavClick}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                     isActive(item.path)
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 scale-105"
-                      : "text-gray-700 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 hover:text-gray-900 hover:scale-105"
+                      ? "bg-white text-gray-900 font-medium shadow-sm"
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                   }`}
                 >
-                  <item.icon size={20} strokeWidth={2.5} />
-                  {!collapsed && <span className="font-bold">{item.title}</span>}
+                  <item.icon size={20} strokeWidth={1.5} />
+                  {!collapsed && <span className="text-sm font-medium">{item.title}</span>}
                 </NavLink>
               )}
             </li>
@@ -208,15 +191,13 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-gray-200/40 bg-white/50">
+      <div className="p-4">
         <button
           onClick={handleLogout}
-          className={`flex items-center gap-3 px-3 py-3 rounded-xl text-red-600 hover:bg-gradient-to-br hover:from-red-50 hover:to-red-100 transition-all duration-300 w-full font-bold hover:scale-105 ${
-            collapsed ? "justify-center" : ""
-          }`}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all w-full"
         >
-          <LogOut size={20} strokeWidth={2.5} />
-          {!collapsed && <span>Logout</span>}
+          <LogOut size={20} strokeWidth={1.5} />
+          {!collapsed && <span className="text-sm font-medium">Logout</span>}
         </button>
       </div>
     </aside>

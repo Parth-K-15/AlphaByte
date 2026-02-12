@@ -27,139 +27,168 @@ import {
 
 const EventCard = ({ event }) => {
   const statusColors = {
-    upcoming:
-      "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30",
-    ongoing:
-      "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/30",
-    completed:
-      "bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-lg shadow-gray-500/30",
-    draft:
-      "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30",
+    upcoming: "UPCOMING",
+    ongoing: "ONGOING", 
+    completed: "COMPLETED",
+    draft: "DRAFT",
   };
+
+  const statusEmojis = {
+    upcoming: "🔥",
+    ongoing: "🚀",
+    completed: "✅", 
+    draft: "📝",
+  };
+
+  // Beautiful gradient backgrounds
+  const gradients = [
+    'from-emerald-400 via-cyan-500 to-blue-600',
+    'from-purple-400 via-pink-500 to-red-500',
+    'from-orange-400 via-amber-500 to-yellow-500',
+    'from-indigo-400 via-purple-500 to-pink-500',
+    'from-teal-400 via-green-500 to-emerald-600'
+  ];
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "TBA";
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", {
       month: "short",
-      day: "numeric",
+      day: "numeric", 
       year: "numeric",
     });
   };
 
+  const calculateDaysLeft = () => {
+    if (!event.date) return null;
+    const eventDate = new Date(event.date);
+    const today = new Date();
+    const diffTime = eventDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : null;
+  };
+
+  const daysLeft = calculateDaysLeft();
+  const gradientIndex = Math.abs((event.title || '').length) % gradients.length;
+
   return (
-    <div className="group bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-      {/* Event Banner */}
-      <div className="h-32 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 relative overflow-hidden">
-        {event.bannerImage && (
-          <img
-            src={event.bannerImage}
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
+    <div className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
+      {/* Background with Gradient */}
+      <div className={`h-64 bg-gradient-to-br ${gradients[gradientIndex]} relative`}>
+        {/* Overlay pattern for visual interest */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-8 left-8 w-24 h-24 bg-white/20 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-12 right-12 w-20 h-20 bg-white/15 rounded-full blur-xl"></div>
+          <div className="absolute top-1/3 right-1/4 w-16 h-16 bg-white/10 rounded-full blur-lg"></div>
+        </div>
+
+        {/* Status Badge */}
+        <div className="absolute top-4 left-4">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-white/90 text-gray-800 backdrop-blur-sm">
+            <span className="mr-1">{statusEmojis[event.status]}</span>
+            {statusColors[event.status]}
+          </span>
+        </div>
+
+        {/* Days Left Badge */}
+        {daysLeft && daysLeft > 0 && (
+          <div className="absolute top-4 right-4">
+            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-black/30 text-white backdrop-blur-sm">
+              {daysLeft} DAYS LEFT
+            </span>
+          </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-        <span
-          className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-black ${statusColors[event.status]}`}
-        >
-          {event.status?.charAt(0).toUpperCase() + event.status?.slice(1)}
-        </span>
+
+        {/* Event Content */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/70 via-black/30 to-transparent">
+          <h3 className="text-white font-bold text-xl mb-3 leading-tight">
+            {event.title}
+          </h3>
+
+          {/* Location & Date */}
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center text-white/90 text-sm">
+              <MapPin size={14} className="mr-2" />
+              <span>{event.venue || "Online Event"} 🌐</span>
+              {event.venue && event.venue !== "Online" && (
+                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-md text-xs font-medium">
+                  {event.venue.includes('India') ? '🇮🇳' : '🌍'} +2 more
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center text-white/90 text-sm">
+              <Calendar size={14} className="mr-2" />
+              <span className="font-medium">{formatDate(event.date)}</span>
+            </div>
+          </div>
+
+          {/* Bottom Row: Organizer & Stats */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center text-white/80 text-xs">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-2">
+                <Users size={14} />
+              </div>
+              <div>
+                <div className="font-medium">Lead Organizer</div>
+                <div className="text-white/70">{event.teamLead?.name || 'Event Team'}</div>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="flex items-center gap-4 text-white text-xs">
+              <div className="text-center">
+                <div className="font-bold text-sm">{event.participantCount || 0}</div>
+                <div className="text-white/70">Registered</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-sm">{event.attendanceCount || 0}</div>
+                <div className="text-white/70">Attended</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Event Details */}
-      <div className="p-6">
-        <h3 className="font-black text-lg text-gray-900 mb-3 line-clamp-1 group-hover:text-blue-600 transition-colors">
-          {event.title}
-        </h3>
-
-        <div className="space-y-2.5 text-sm text-gray-700 mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-blue-500" strokeWidth={2.5} />
-            <span className="font-bold">{formatDate(event.date)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock size={16} className="text-purple-500" strokeWidth={2.5} />
-            <span className="font-semibold">
-              {event.time || "10:00 AM - 5:00 PM"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin size={16} className="text-pink-500" strokeWidth={2.5} />
-            <span className="line-clamp-1 font-semibold">
-              {event.venue || "Online"}
-            </span>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="flex items-center gap-5 py-3 border-t border-gray-100">
-          <div className="flex items-center gap-2 text-sm">
-            <Users size={16} className="text-blue-600" strokeWidth={2.5} />
-            <span className="text-gray-900 font-black">
-              {event.participantCount || 0}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <QrCode size={16} className="text-emerald-600" strokeWidth={2.5} />
-            <span className="text-gray-900 font-black">
-              {event.attendanceCount || 0}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Award size={16} className="text-purple-600" strokeWidth={2.5} />
-            <span className="text-gray-900 font-black">
-              {event.certificateCount || 0}
-            </span>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex flex-col gap-2 mt-4">
-          {/* Top Row: View + Attendance */}
-          <div className="flex items-center gap-2">
-            <Link
-              to={`/organizer/events/${event._id || event.id}`}
-              className="flex-1 flex items-center justify-center gap-2 
-                 px-4 py-3 border-2 border-gray-300 text-gray-700 
-                 rounded-xl font-bold text-sm 
-                 hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 
-                 hover:scale-105 hover:border-gray-400 
-                 transition-all"
-            >
-              <Eye size={16} strokeWidth={2.5} />
-              View Details
-            </Link>
-
-            <Link
-              to={`/organizer/attendance/qr?event=${event._id || event.id}`}
-              className="flex-1 flex items-center justify-center gap-2 
-                 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 
-                 text-white rounded-xl font-bold text-sm 
-                 hover:scale-105 hover:shadow-xl 
-                 transition-all shadow-lg shadow-blue-500/30"
-            >
-              <QrCode size={16} strokeWidth={2.5} />
-              Attendance
-            </Link>
-          </div>
-
-          {/* Bottom Row: Manage Status */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              event.onManageLifecycle?.(event);
-            }}
-            className="w-full flex items-center justify-center gap-2 
-               px-4 py-3 border-2 border-gray-300 text-gray-700 
-               rounded-xl font-bold text-sm 
-               hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 
-               hover:scale-105 hover:border-gray-400 
-               transition-all"
+      {/* Action Buttons */}
+      <div className="bg-white p-4">
+        <div className="flex items-center gap-3">
+          <Link
+            to={`/organizer/events/${event._id || event.id}`}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 
+               border-2 border-gray-300 text-gray-700 rounded-xl font-semibold text-sm
+               hover:bg-gray-50 hover:border-gray-400 transition-all"
           >
-            <Settings size={16} strokeWidth={2.5} />
-            Manage Status
-          </button>
+            <Eye size={16} />
+            View Details
+          </Link>
+
+          <Link
+            to={`/organizer/attendance/qr?event=${event._id || event.id}`}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5
+               bg-gradient-to-r from-blue-600 to-purple-600 text-white 
+               rounded-xl font-semibold text-sm hover:scale-105 
+               transition-all shadow-lg hover:shadow-xl"
+          >
+            <QrCode size={16} />
+            Attendance
+          </Link>
         </div>
+
+        {/* Lifecycle Management */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            event.onManageLifecycle?.(event);
+          }}
+          className="w-full flex items-center justify-center gap-2 mt-3
+             px-4 py-2.5 border-2 border-gray-300 text-gray-700 
+             rounded-xl font-semibold text-sm 
+             hover:bg-gray-50 hover:border-gray-400 transition-all"
+        >
+          <Settings size={16} />
+          Manage Status
+        </button>
       </div>
     </div>
   );

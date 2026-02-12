@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   Users, Shield, Calendar, Zap, CheckCircle, BarChart3, 
   Award, Clock, TrendingUp, Star, ArrowRight, Sparkles,
-  Target, Globe, Lock, Smartphone
+  Target, Globe, Lock, Smartphone, MapPin
 } from 'lucide-react';
 
 const Landing = () => {
@@ -107,7 +107,7 @@ const Landing = () => {
               </p>
 
               {/* Email Signup */}
-              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto lg:mx-0">
+              {/* <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto lg:mx-0">
                 <input
                   type="email"
                   placeholder="Enter work email"
@@ -118,7 +118,7 @@ const Landing = () => {
                 <button className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold hover:shadow-xl hover:shadow-emerald-300/50 transition-all duration-300 hover:scale-105 whitespace-nowrap">
                   Book a demo
                 </button>
-              </div>
+              </div> */}
 
               {/* Stats */}
               <div className="flex flex-wrap gap-8 justify-center lg:justify-start pt-4">
@@ -165,17 +165,46 @@ const Landing = () => {
                   </div>
                 </div>
 
-                <div className="absolute top-40 -left-10 w-72 bg-white rounded-2xl shadow-2xl p-6 border border-gray-100 transform -rotate-2 hover:rotate-0 transition-all duration-500" style={{ transform: `translateY(${scrollY * 0.05}px) rotate(-2deg)` }}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full"></div>
-                    <div>
-                      <div className="font-bold text-gray-900">Tech Summit 2026</div>
-                      <div className="text-sm text-gray-500">Feb 15-17</div>
-                    </div>
+                <div className="absolute top-40 -left-10 w-72 bg-gradient-to-br from-emerald-400 via-cyan-500 to-blue-600 rounded-2xl shadow-2xl overflow-hidden transform -rotate-2 hover:rotate-0 transition-all duration-500" style={{ transform: `translateY(${scrollY * 0.05}px) rotate(-2deg)` }}>
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-20">
+                    <div className="absolute top-4 left-4 w-16 h-16 bg-white/20 rounded-full blur-lg"></div>
+                    <div className="absolute bottom-6 right-6 w-12 h-12 bg-white/15 rounded-full blur-md"></div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Users size={16} />
-                    <span className="font-semibold">1,234 registered</span>
+                  
+                  {/* Status Badge */}
+                  <div className="absolute top-4 left-4 z-10">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/90 text-gray-800">
+                      🔥 UPCOMING
+                    </span>
+                  </div>
+                  
+                  {/* Days Left */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-black/20 text-white backdrop-blur-sm">
+                      2 DAYS LEFT
+                    </span>
+                  </div>
+
+                  {/* Content */}
+                  <div className="relative p-6 pt-16 bg-gradient-to-t from-black/60 to-transparent h-full flex flex-col justify-end">
+                    <h4 className="font-bold text-white text-lg mb-2">Tech Summit 2026</h4>
+                    <div className="flex items-center text-white/90 text-sm mb-3">
+                      <MapPin size={12} className="mr-1" />
+                      <span>Toronto, Canada 🇨🇦</span>
+                    </div>
+                    <div className="flex items-center text-white/90 text-xs mb-3">
+                      <span>Mumbai, India 🇮🇳 +2 more</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-white/80 text-xs">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-2">
+                          <Users size={10} />
+                        </div>
+                        <span>Agent: Johannes Doelf</span>
+                      </div>
+                      <span className="text-white font-bold text-sm">1,234 registered</span>
+                    </div>
                   </div>
                 </div>
 

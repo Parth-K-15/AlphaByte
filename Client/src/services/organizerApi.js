@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://eventsync-blue.vercel.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Generic fetch wrapper
 const fetchApi = async (endpoint, options = {}) => {
@@ -25,7 +25,11 @@ const fetchApi = async (endpoint, options = {}) => {
 };
 
 // Dashboard
-export const getDashboardStats = () => fetchApi('/organizer/dashboard');
+export const getDashboardStats = () => {
+  const organizerId = localStorage.getItem('userId') || localStorage.getItem('organizerId');
+  const query = organizerId ? `?organizerId=${organizerId}` : '';
+  return fetchApi(`/organizer/dashboard${query}`);
+};
 
 // Events
 export const getAssignedEvents = (organizerId) => {
