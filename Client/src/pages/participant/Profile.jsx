@@ -251,15 +251,15 @@ const Profile = () => {
 
       {/* Profile Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="bg-white rounded-3xl shadow-card border border-light-400/50 p-6">
-          <h2 className="text-lg font-bold text-dark mb-5">
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5 p-6">
+          <h2 className="text-lg font-bold text-dark dark:text-white mb-5">
             Personal Information
           </h2>
 
           <div className="space-y-4">
             {/* Name */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-bold text-dark mb-1.5">
+              <label className="flex items-center gap-2 text-sm font-bold text-dark dark:text-white mb-1.5">
                 <User size={14} /> Full Name
               </label>
               <input
@@ -275,7 +275,7 @@ const Profile = () => {
 
             {/* Email */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-bold text-dark mb-1.5">
+              <label className="flex items-center gap-2 text-sm font-bold text-dark dark:text-white mb-1.5">
                 <Mail size={14} /> Email
               </label>
               <input
@@ -288,7 +288,7 @@ const Profile = () => {
 
             {/* Phone */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-bold text-dark mb-1.5">
+              <label className="flex items-center gap-2 text-sm font-bold text-dark dark:text-white mb-1.5">
                 <Phone size={14} /> Phone Number
               </label>
               <input
@@ -304,7 +304,7 @@ const Profile = () => {
 
             {/* College */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-bold text-dark mb-1.5">
+              <label className="flex items-center gap-2 text-sm font-bold text-dark dark:text-white mb-1.5">
                 <Building size={14} /> College/Organization
               </label>
               <input
@@ -321,7 +321,7 @@ const Profile = () => {
             {/* Year & Branch */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-dark mb-1.5">
+                <label className="flex items-center gap-2 text-sm font-bold text-dark dark:text-white mb-1.5">
                   <GraduationCap size={14} /> Year
                 </label>
                 <select
@@ -340,7 +340,7 @@ const Profile = () => {
                 </select>
               </div>
               <div>
-                <label className="flex items-center gap-2 text-sm font-bold text-dark mb-1.5">
+                <label className="flex items-center gap-2 text-sm font-bold text-dark dark:text-white mb-1.5">
                   <BookOpen size={14} /> Branch
                 </label>
                 <input
@@ -357,7 +357,7 @@ const Profile = () => {
 
             {/* Bio */}
             <div>
-              <label className="text-sm font-bold text-dark mb-1.5 block">
+              <label className="text-sm font-bold text-dark dark:text-white mb-1.5 block">
                 Bio
               </label>
               <textarea
@@ -385,15 +385,15 @@ const Profile = () => {
       </form>
 
       {/* Password Section */}
-      <div className="bg-white rounded-3xl shadow-card border border-light-400/50 p-6">
+      <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5 p-6">
         <button
           onClick={() => setShowPasswordSection(!showPasswordSection)}
           className="flex items-center justify-between w-full"
         >
-          <h2 className="text-lg font-bold text-dark flex items-center gap-2">
+          <h2 className="text-lg font-bold text-dark dark:text-white flex items-center gap-2">
             <Lock size={18} /> Change Password
           </h2>
-          <span className="text-dark-300 text-sm font-bold">
+          <span className="text-dark-300 dark:text-zinc-400 text-sm font-bold">
             {showPasswordSection ? "−" : "+"}
           </span>
         </button>
@@ -401,7 +401,7 @@ const Profile = () => {
         {showPasswordSection && (
           <form onSubmit={handlePasswordChange} className="mt-5 space-y-4">
             <div>
-              <label className="text-sm font-bold text-dark mb-1.5 block">
+              <label className="text-sm font-bold text-dark dark:text-white mb-1.5 block">
                 Current Password
               </label>
               <div className="relative">
@@ -420,7 +420,7 @@ const Profile = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-200"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-200 dark:text-zinc-500"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -428,7 +428,7 @@ const Profile = () => {
             </div>
 
             <div>
-              <label className="text-sm font-bold text-dark mb-1.5 block">
+              <label className="text-sm font-bold text-dark dark:text-white mb-1.5 block">
                 New Password
               </label>
               <input
@@ -447,7 +447,7 @@ const Profile = () => {
             </div>
 
             <div>
-              <label className="text-sm font-bold text-dark mb-1.5 block">
+              <label className="text-sm font-bold text-dark dark:text-white mb-1.5 block">
                 Confirm New Password
               </label>
               <input

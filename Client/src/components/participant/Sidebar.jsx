@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import {
   Home,
   Calendar,
@@ -9,10 +10,13 @@ import {
   User,
   LogOut,
   X,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const { logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -33,18 +37,20 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     { title: "Profile", icon: User, path: "/participant/profile" },
   ];
 
-  const SidebarContent = () => (
-    <aside className="h-full bg-gray-50 flex flex-col">
+  const sidebarContent = (
+    <aside className="h-full bg-gray-50 dark:bg-[#141420] flex flex-col transition-colors duration-300">
       {/* Logo */}
       <div className="flex items-center justify-between px-6 py-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">P</span>
+          <div className="w-10 h-10 bg-gray-900 dark:bg-lime rounded-full flex items-center justify-center">
+            <span className="text-white dark:text-dark font-bold text-lg">
+              P
+            </span>
           </div>
         </div>
         <button
           onClick={() => setMobileOpen(false)}
-          className="text-gray-400 hover:text-gray-600 lg:hidden"
+          className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 lg:hidden"
         >
           <X size={20} />
         </button>
@@ -62,8 +68,8 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                     isActive
-                      ? "bg-white text-gray-900 font-medium shadow-sm"
-                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                      ? "bg-white dark:bg-lime/10 text-gray-900 dark:text-lime font-medium shadow-sm dark:shadow-none"
+                      : "text-gray-700 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-white/5"
                   }`
                 }
               >
@@ -75,11 +81,35 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         </ul>
       </nav>
 
+      {/* Theme Toggle */}
+      <div className="px-4 pb-2">
+        <div className="flex items-center justify-between px-3 py-2.5">
+          <span className="text-sm font-medium text-gray-700 dark:text-zinc-400">
+            Theme
+          </span>
+          <button
+            onClick={toggleTheme}
+            className={`theme-toggle ${theme === "dark" ? "theme-toggle-dark" : "theme-toggle-light"}`}
+            aria-label="Toggle theme"
+          >
+            <div
+              className={`theme-toggle-knob ${theme === "dark" ? "theme-toggle-knob-dark" : "theme-toggle-knob-light"}`}
+            >
+              {theme === "dark" ? (
+                <Moon size={12} className="text-white" />
+              ) : (
+                <Sun size={12} className="text-white" />
+              )}
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Logout */}
       <div className="p-4">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all w-full"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all w-full"
         >
           <LogOut size={20} strokeWidth={1.5} />
           <span className="text-sm font-medium">Logout</span>
@@ -104,13 +134,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <SidebarContent />
+        {sidebarContent}
       </div>
 
       {/* Sidebar - Desktop */}
-      <div className="hidden lg:block w-64">
-        <SidebarContent />
-      </div>
+      <div className="hidden lg:block w-64">{sidebarContent}</div>
     </>
   );
 };

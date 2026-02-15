@@ -209,10 +209,12 @@ const EventDetails = () => {
         <div className="w-20 h-20 bg-dark rounded-3xl flex items-center justify-center mx-auto mb-4">
           <span className="text-3xl">😕</span>
         </div>
-        <h2 className="text-2xl font-bold text-dark mb-2">Event Not Found</h2>
+        <h2 className="text-2xl font-bold text-dark dark:text-white mb-2">
+          Event Not Found
+        </h2>
         <button
           onClick={() => navigate("/participant")}
-          className="text-dark font-bold hover:text-dark/70 flex items-center gap-2 mx-auto"
+          className="text-dark dark:text-zinc-300 font-bold hover:text-dark/70 dark:hover:text-zinc-100 flex items-center gap-2 mx-auto"
         >
           <ArrowLeft size={16} /> Back to Events
         </button>
@@ -246,13 +248,13 @@ const EventDetails = () => {
       {/* Back Button */}
       <button
         onClick={() => navigate("/participant")}
-        className="flex items-center gap-2 text-dark-300 hover:text-dark font-bold text-sm transition-colors"
+        className="flex items-center gap-2 text-dark-300 dark:text-zinc-400 hover:text-dark dark:hover:text-white font-bold text-sm transition-colors"
       >
         <ArrowLeft size={16} /> Back to Events
       </button>
 
       {/* Event Header */}
-      <div className="bg-white rounded-3xl shadow-card overflow-hidden border border-light-400/50">
+      <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none overflow-hidden border border-light-400/50 dark:border-white/5">
         {/* Banner */}
         <div className="h-48 md:h-64 bg-dark relative overflow-hidden">
           {event.bannerImage && (
@@ -289,17 +291,19 @@ const EventDetails = () => {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Left Column - Details */}
             <div className="space-y-4">
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-light-300">
+              <div className="flex items-start gap-3 p-3 rounded-2xl bg-light-300 dark:bg-white/5">
                 <div className="p-2 bg-dark rounded-xl text-lime">
                   <Calendar size={18} />
                 </div>
                 <div>
-                  <p className="font-bold text-dark text-sm">Date</p>
-                  <p className="text-dark-300 text-sm">
+                  <p className="font-bold text-dark dark:text-white text-sm">
+                    Date
+                  </p>
+                  <p className="text-dark-300 dark:text-zinc-400 text-sm">
                     {formatDate(event.startDate)}
                   </p>
                   {event.endDate && event.endDate !== event.startDate && (
-                    <p className="text-dark-200 text-xs">
+                    <p className="text-dark-200 dark:text-zinc-500 text-xs">
                       to {formatDate(event.endDate)}
                     </p>
                   )}
@@ -312,30 +316,36 @@ const EventDetails = () => {
               </div>
 
               {(event.venue || event.location) && (
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-light-300">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-light-300 dark:bg-white/5">
                   <div className="p-2 bg-lime rounded-xl text-dark">
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <p className="font-bold text-dark text-sm">Venue</p>
-                    <p className="text-dark-300 text-sm">
+                    <p className="font-bold text-dark dark:text-white text-sm">
+                      Venue
+                    </p>
+                    <p className="text-dark-300 dark:text-zinc-400 text-sm">
                       {event.venue || event.location}
                     </p>
                     {event.address && (
-                      <p className="text-dark-200 text-xs">{event.address}</p>
+                      <p className="text-dark-200 dark:text-zinc-500 text-xs">
+                        {event.address}
+                      </p>
                     )}
                   </div>
                 </div>
               )}
 
               {event.teamLead && (
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-light-300">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-light-300 dark:bg-white/5">
                   <div className="p-2 bg-dark rounded-xl text-lime">
                     <Users size={18} />
                   </div>
                   <div>
-                    <p className="font-bold text-dark text-sm">Organizer</p>
-                    <p className="text-dark-300 text-sm">
+                    <p className="font-bold text-dark dark:text-white text-sm">
+                      Organizer
+                    </p>
+                    <p className="text-dark-300 dark:text-zinc-400 text-sm">
                       {event.teamLead.name}
                     </p>
                   </div>
@@ -343,13 +353,17 @@ const EventDetails = () => {
               )}
 
               {event.category && (
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-light-300">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-light-300 dark:bg-white/5">
                   <div className="p-2 bg-lime rounded-xl text-dark">
                     <Tag size={18} />
                   </div>
                   <div>
-                    <p className="font-bold text-dark text-sm">Category</p>
-                    <p className="text-dark-300 text-sm">{event.category}</p>
+                    <p className="font-bold text-dark dark:text-white text-sm">
+                      Category
+                    </p>
+                    <p className="text-dark-300 dark:text-zinc-400 text-sm">
+                      {event.category}
+                    </p>
                   </div>
                 </div>
               )}
@@ -451,11 +465,11 @@ const EventDetails = () => {
 
           {/* Description */}
           {event.description && (
-            <div className="mt-6 pt-6 border-t border-light-400">
-              <h3 className="font-bold text-lg text-dark mb-3">
+            <div className="mt-6 pt-6 border-t border-light-400 dark:border-white/5">
+              <h3 className="font-bold text-lg text-dark dark:text-white mb-3">
                 About This Event
               </h3>
-              <p className="text-dark-300 whitespace-pre-wrap leading-relaxed">
+              <p className="text-dark-300 dark:text-zinc-400 whitespace-pre-wrap leading-relaxed">
                 {event.description}
               </p>
             </div>
@@ -467,7 +481,7 @@ const EventDetails = () => {
               {event.tags.map((tag, idx) => (
                 <span
                   key={idx}
-                  className="px-3 py-1.5 bg-lime/15 text-dark text-sm rounded-full font-medium"
+                  className="px-3 py-1.5 bg-lime/15 dark:bg-lime/10 text-dark dark:text-lime text-sm rounded-full font-medium"
                 >
                   #{tag}
                 </span>
@@ -478,10 +492,12 @@ const EventDetails = () => {
       </div>
 
       {/* Event Timeline */}
-      <div className="bg-white rounded-3xl shadow-card p-6 border border-light-400/50">
-        <h3 className="font-bold text-lg text-dark mb-4">Event Timeline</h3>
+      <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-6 border border-light-400/50 dark:border-white/5">
+        <h3 className="font-bold text-lg text-dark dark:text-white mb-4">
+          Event Timeline
+        </h3>
         <div className="relative">
-          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-light-400"></div>
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-light-400 dark:bg-white/10"></div>
           <div className="space-y-4">
             {["draft", "upcoming", "ongoing", "completed"].map((stage, idx) => {
               const isActive = event.status === stage;
@@ -498,7 +514,7 @@ const EventDetails = () => {
                         ? "bg-lime border-lime"
                         : isPast
                           ? "bg-dark border-dark"
-                          : "bg-white border-light-400"
+                          : "bg-white dark:bg-[#141420] border-light-400 dark:border-white/10"
                     }`}
                   >
                     {isPast && !isActive && (
@@ -508,10 +524,10 @@ const EventDetails = () => {
                   <span
                     className={`capitalize text-sm ${
                       isActive
-                        ? "font-bold text-dark"
+                        ? "font-bold text-dark dark:text-white"
                         : isPast
-                          ? "font-medium text-dark-300"
-                          : "text-dark-200"
+                          ? "font-medium text-dark-300 dark:text-zinc-400"
+                          : "text-dark-200 dark:text-zinc-600"
                     }`}
                   >
                     {stage}
@@ -525,8 +541,8 @@ const EventDetails = () => {
 
       {/* Updates */}
       {event.updates && event.updates.length > 0 && (
-        <div className="bg-white rounded-3xl shadow-card p-6 border border-light-400/50">
-          <h3 className="font-bold text-lg text-dark mb-4">
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-6 border border-light-400/50 dark:border-white/5">
+          <h3 className="font-bold text-lg text-dark dark:text-white mb-4">
             Updates & Announcements
           </h3>
           <div className="space-y-3">
@@ -535,8 +551,8 @@ const EventDetails = () => {
                 key={update._id}
                 className={`p-4 rounded-2xl ${
                   update.isPinned
-                    ? "bg-lime/10 border border-lime/30"
-                    : "bg-light-300"
+                    ? "bg-lime/10 dark:bg-lime/5 border border-lime/30 dark:border-lime/20"
+                    : "bg-light-300 dark:bg-white/5"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -551,8 +567,10 @@ const EventDetails = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-dark-300 text-sm">{update.message}</p>
-                <p className="text-dark-200 text-xs mt-2">
+                <p className="text-dark-300 dark:text-zinc-400 text-sm">
+                  {update.message}
+                </p>
+                <p className="text-dark-200 dark:text-zinc-500 text-xs mt-2">
                   {new Date(update.createdAt).toLocaleString()}
                 </p>
               </div>
@@ -564,23 +582,23 @@ const EventDetails = () => {
       {/* Registration Modal */}
       {showRegisterModal && (
         <div className="fixed inset-0 bg-dark/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-white dark:bg-[#1a1a2a] rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-dark">
+                <h3 className="text-xl font-bold text-dark dark:text-white">
                   Register for Event
                 </h3>
                 <button
                   onClick={() => setShowRegisterModal(false)}
-                  className="p-2 hover:bg-light-300 rounded-xl transition-colors"
+                  className="p-2 hover:bg-light-300 dark:hover:bg-white/5 rounded-xl transition-colors"
                 >
-                  <X size={18} className="text-dark-300" />
+                  <X size={18} className="text-dark-300 dark:text-zinc-400" />
                 </button>
               </div>
 
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-dark mb-1.5">
+                  <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
                     Full Name *
                   </label>
                   <input
@@ -595,7 +613,7 @@ const EventDetails = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-dark mb-1.5">
+                  <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
                     Email *
                   </label>
                   <input
@@ -610,7 +628,7 @@ const EventDetails = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-dark mb-1.5">
+                  <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
                     Phone
                   </label>
                   <input
@@ -624,7 +642,7 @@ const EventDetails = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-dark mb-1.5">
+                  <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
                     College/Organization
                   </label>
                   <input
@@ -639,7 +657,7 @@ const EventDetails = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-dark mb-1.5">
+                    <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
                       Year
                     </label>
                     <select
@@ -659,7 +677,7 @@ const EventDetails = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-dark mb-1.5">
+                    <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
                       Branch
                     </label>
                     <input

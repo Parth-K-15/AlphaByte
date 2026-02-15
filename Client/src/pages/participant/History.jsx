@@ -99,7 +99,7 @@ const History = () => {
             className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
               filter === f.key
                 ? "bg-dark text-lime"
-                : "bg-white text-dark-300 border border-light-400 hover:bg-light-300"
+                : "bg-white dark:bg-white/5 text-dark-300 dark:text-zinc-400 border border-light-400 dark:border-white/10 hover:bg-light-300 dark:hover:bg-white/10"
             }`}
           >
             {f.label}
@@ -109,12 +109,14 @@ const History = () => {
 
       {/* History List */}
       {filteredHistory.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow-card p-12 text-center border border-light-400/50">
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-12 text-center border border-light-400/50 dark:border-white/5">
           <div className="w-20 h-20 bg-dark rounded-3xl flex items-center justify-center mx-auto mb-4">
             <Clock size={32} className="text-lime" />
           </div>
-          <h3 className="text-xl font-bold text-dark mb-2">No History Found</h3>
-          <p className="text-dark-300 mb-6 text-sm">
+          <h3 className="text-xl font-bold text-dark dark:text-white mb-2">
+            No History Found
+          </h3>
+          <p className="text-dark-300 dark:text-zinc-400 mb-6 text-sm">
             You don't have any past events yet.
           </p>
           <Link
@@ -138,7 +140,7 @@ const History = () => {
                     ? "bg-dark text-white"
                     : variant === "lime"
                       ? "bg-lime text-dark"
-                      : "bg-white text-dark shadow-card border border-light-400/50"
+                      : "bg-white dark:bg-white/[0.03] text-dark dark:text-white shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5"
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">

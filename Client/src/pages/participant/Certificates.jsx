@@ -70,14 +70,14 @@ const Certificates = () => {
 
       {/* Certificates Grid */}
       {certificates.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow-card p-12 text-center border border-light-400/50">
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-12 text-center border border-light-400/50 dark:border-white/5">
           <div className="w-20 h-20 bg-lime rounded-3xl flex items-center justify-center mx-auto mb-4">
             <Award size={32} className="text-dark" />
           </div>
           <h3 className="text-xl font-bold text-dark mb-2">
             No Certificates Yet
           </h3>
-          <p className="text-dark-300 text-sm">
+          <p className="text-dark-300 dark:text-zinc-400 text-sm">
             Attend events to earn certificates!
           </p>
         </div>
@@ -95,7 +95,7 @@ const Certificates = () => {
                     ? "bg-dark text-white"
                     : variant === "lime"
                       ? "bg-lime text-dark"
-                      : "bg-white text-dark shadow-card border border-light-400/50"
+                      : "bg-white dark:bg-white/[0.03] text-dark dark:text-white shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5"
                 }`}
               >
                 {/* Certificate Icon */}

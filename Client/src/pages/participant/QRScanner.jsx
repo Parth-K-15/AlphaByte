@@ -112,15 +112,17 @@ const QRScanner = () => {
 
       if (responseData.success) {
         const { eventTitle, scannedAt } = responseData.data || {};
-        const timestamp = scannedAt ? new Date(scannedAt).toLocaleString('en-IN', {
-          dateStyle: 'medium',
-          timeStyle: 'short'
-        }) : '';
+        const timestamp = scannedAt
+          ? new Date(scannedAt).toLocaleString("en-IN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })
+          : "";
         setResult({
           success: true,
           message: responseData.message || "Attendance marked successfully!",
           eventTitle,
-          timestamp
+          timestamp,
         });
       } else {
         setResult({
@@ -167,35 +169,45 @@ const QRScanner = () => {
       </div>
 
       {/* Scanner Area */}
-      <div className="bg-white rounded-3xl shadow-card border border-light-400/50 overflow-hidden">
+      <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5 overflow-hidden">
         {/* Result Display */}
         {result && (
           <div
             className={`p-6 text-center ${
-              result.success ? "bg-lime/10" : "bg-red-50"
+              result.success
+                ? "bg-lime/10 dark:bg-lime/5"
+                : "bg-red-50 dark:bg-red-500/10"
             }`}
           >
             <div className="text-5xl mb-3">{result.success ? "✅" : "❌"}</div>
             <h3
-              className={`text-lg font-bold ${result.success ? "text-dark" : "text-red-800"}`}
+              className={`text-lg font-bold ${result.success ? "text-dark dark:text-white" : "text-red-800 dark:text-red-400"}`}
             >
               {result.success ? "Success!" : "Failed"}
             </h3>
             <p
-              className={`text-sm mt-1 ${result.success ? "text-dark-300" : "text-red-600"}`}
+              className={`text-sm mt-1 ${result.success ? "text-dark-300 dark:text-zinc-400" : "text-red-600 dark:text-red-400"}`}
             >
               {result.message}
             </p>
             {result.success && result.eventTitle && (
               <div className="mt-4 pt-4 border-t border-lime/20">
-                <div className="text-xs text-dark-200 uppercase tracking-wide mb-1">Event</div>
-                <div className="text-base font-semibold text-dark">{result.eventTitle}</div>
+                <div className="text-xs text-dark-200 dark:text-zinc-500 uppercase tracking-wide mb-1">
+                  Event
+                </div>
+                <div className="text-base font-semibold text-dark dark:text-white">
+                  {result.eventTitle}
+                </div>
               </div>
             )}
             {result.success && result.timestamp && (
               <div className="mt-3">
-                <div className="text-xs text-dark-200 uppercase tracking-wide mb-1">Marked At</div>
-                <div className="text-sm text-dark-300">{result.timestamp}</div>
+                <div className="text-xs text-dark-200 dark:text-zinc-500 uppercase tracking-wide mb-1">
+                  Marked At
+                </div>
+                <div className="text-sm text-dark-300 dark:text-zinc-400">
+                  {result.timestamp}
+                </div>
               </div>
             )}
             <button
@@ -209,8 +221,10 @@ const QRScanner = () => {
 
         {/* Error */}
         {error && (
-          <div className="p-6 text-center bg-red-50">
-            <p className="text-red-800 font-medium text-sm">{error}</p>
+          <div className="p-6 text-center bg-red-50 dark:bg-red-500/10">
+            <p className="text-red-800 dark:text-red-400 font-medium text-sm">
+              {error}
+            </p>
             <button
               onClick={() => setError("")}
               className="mt-3 px-6 py-2 bg-dark text-white rounded-2xl text-sm font-bold"
@@ -282,8 +296,10 @@ const QRScanner = () => {
       </div>
 
       {/* Instructions */}
-      <div className="bg-lime/10 rounded-3xl p-5 border border-lime/20">
-        <h3 className="font-bold text-dark text-sm mb-3">How it works</h3>
+      <div className="bg-lime/10 dark:bg-lime/5 rounded-3xl p-5 border border-lime/20">
+        <h3 className="font-bold text-dark dark:text-white text-sm mb-3">
+          How it works
+        </h3>
         <div className="space-y-2">
           {[
             "Open the scanner and allow camera access",
@@ -294,7 +310,9 @@ const QRScanner = () => {
               <span className="w-6 h-6 bg-dark rounded-lg flex items-center justify-center text-lime text-xs font-bold">
                 {i + 1}
               </span>
-              <span className="text-dark-300 text-sm">{step}</span>
+              <span className="text-dark-300 dark:text-zinc-400 text-sm">
+                {step}
+              </span>
             </div>
           ))}
         </div>
