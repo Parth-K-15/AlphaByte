@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import jsQR from "jsqr";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://eventsync-blue.vercel.app/api";
 
 const MyRegistrations = () => {
   const [registrations, setRegistrations] = useState([]);
@@ -113,25 +113,39 @@ const MyRegistrations = () => {
 
   const startScanning = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
+      // Set scanning=true FIRST so the <video> element renders in the DOM
+      setScanning(true);
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+        });
+      } catch {
+        // Fallback: try without specific facing mode (front camera)
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
 
       streamRef.current = stream;
+      // After await, React has committed the render — videoRef should be set
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play();
+        videoRef.current.onloadedmetadata = async () => {
+          try {
+            await videoRef.current?.play();
+          } catch (e) {
+            console.warn("Video play() failed:", e);
+          }
           scanQRCode();
         };
       }
-      setScanning(true);
     } catch (error) {
       console.error("Error accessing camera:", error);
       setMessage({
         type: "error",
         text: "Unable to access camera. Please allow camera permissions.",
       });
+      setScanning(false);
     }
   };
 
@@ -140,13 +154,17 @@ const MyRegistrations = () => {
 
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    const context = canvas.getContext("2d");
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
 
     scanIntervalRef.current = setInterval(() => {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      // Check dimensions INSIDE the interval — they may be 0 initially on mobile
+      if (
+        video.readyState === video.HAVE_ENOUGH_DATA &&
+        video.videoWidth > 0 &&
+        video.videoHeight > 0
+      ) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = context.getImageData(
           0,
@@ -574,6 +592,7 @@ const MyRegistrations = () => {
                           ref={videoRef}
                           autoPlay
                           playsInline
+                          muted
                           className="w-full h-full object-cover"
                         />
                         <canvas ref={canvasRef} style={{ display: "none" }} />
