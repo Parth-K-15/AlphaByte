@@ -626,7 +626,7 @@ router.post('/attendance/:eventId/generate-qr', async (req, res) => {
     const sessionId = crypto.randomBytes(16).toString('hex');
     const timestamp = Date.now();
     const expiresAt = timestamp + (5 * 60 * 1000);
-    activeSessions.set(sessionId, { eventId, organizerId, createdAt: timestamp, expiresAt });
+    await activeSessions.set(sessionId, { eventId, organizerId, createdAt: timestamp, expiresAt });
     const qrData = { eventId, sessionId, timestamp, expiresAt };
 
     // Log QR generation
@@ -662,9 +662,9 @@ router.post('/attendance/mark', async (req, res) => {
     const perm = await checkPermission(req, eventId, 'canManageAttendance');
     if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
-    const session = activeSessions.get(sessionId);
+    const session = await activeSessions.get(sessionId);
     if (!session) return res.status(400).json({ success: false, message: 'Invalid or expired QR code' });
-    if (Date.now() > session.expiresAt) { activeSessions.delete(sessionId); return res.status(400).json({ success: false, message: 'QR code has expired' }); }
+    if (Date.now() > session.expiresAt) { await activeSessions.delete(sessionId); return res.status(400).json({ success: false, message: 'QR code has expired' }); }
     if (session.eventId !== eventId) return res.status(400).json({ success: false, message: 'QR code does not match event' });
     const participant = await Participant.findOne({ _id: participantId, event: eventId });
     if (!participant) return res.status(404).json({ success: false, message: 'Participant not registered for this event' });
@@ -772,7 +772,7 @@ router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => 
     if (!attendance) return res.status(404).json({ success: false, message: 'Attendance record not found' });
 
     await Participant.findByIdAndUpdate(participantId, {
-      attendanceStatus: 'NOT_ATTENDED',
+      attendanceStatus: 'ABSENT',
       attendedAt: null
     });
 
@@ -795,7 +795,7 @@ router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => 
       severity: 'WARNING',
       reason: 'Attendance record removed by organizer',
       oldState: { attendanceStatus: 'ATTENDED' },
-      newState: { attendanceStatus: 'NOT_ATTENDED' }
+      newState: { attendanceStatus: 'ABSENT' }
     });
 
     res.json({ success: true, message: 'Attendance unmarked successfully' });
