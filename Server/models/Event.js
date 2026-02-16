@@ -41,6 +41,11 @@ const eventSchema = new mongoose.Schema(
     bannerImage: String,
     tags: [String],
 
+    rulebook: {
+      type: String,
+      default: ''
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // ADMIN
@@ -106,6 +111,27 @@ const eventSchema = new mongoose.Schema(
         ref: "Participant",
       },
     ],
+
+    // Certificate Configuration
+    enableCertificates: {
+      type: Boolean,
+      default: false
+    },
+    certificateTemplate: {
+      type: String,
+      enum: ['default', 'modern', 'classic'],
+      default: 'default'
+    },
+    certificateSettings: {
+      autoGenerate: {
+        type: Boolean,
+        default: false
+      },
+      autoSend: {
+        type: Boolean,
+        default: false
+      }
+    }
   },
   { timestamps: true }
 );

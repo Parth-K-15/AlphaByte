@@ -57,6 +57,34 @@ const participantSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // Lead or EVENT_STAFF who added walk-in participant
     },
+
+    // Retroactive Change & Audit Trail fields
+    isValid: {
+      type: Boolean,
+      default: true
+    },
+    invalidatedAt: {
+      type: Date,
+      default: null
+    },
+    invalidatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+    },
+    invalidationReason: {
+      type: String,
+      default: null
+    },
+    version: {
+      type: Number,
+      default: 1
+    },
+    previousVersion: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Participant",
+      default: null
+    }
   },
   { timestamps: true }
 );

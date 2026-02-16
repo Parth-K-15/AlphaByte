@@ -131,6 +131,27 @@ export const getLogs = (params = {}) => {
 
 // Permissions
 export const getMyPermissions = (eventId) => fetchApi(`/organizer/my-permissions/${eventId}`);
+// Retroactive Change & Audit Trail
+export const invalidateAttendance = (attendanceId, reason, organizerId) =>
+  fetchApi(`/organizer/attendance/${attendanceId}/invalidate`, {
+    method: 'POST',
+    body: { reason, organizerId }
+  });
+
+export const revokeCertificate = (certificateId, reason, organizerId) =>
+  fetchApi(`/organizer/certificates/${certificateId}/revoke`, {
+    method: 'POST',
+    body: { reason, organizerId }
+  });
+
+export const invalidateParticipant = (participantId, reason, organizerId) =>
+  fetchApi(`/organizer/participants/${participantId}/invalidate`, {
+    method: 'POST',
+    body: { reason, organizerId }
+  });
+
+export const getAuditTrail = (entityType, entityId) =>
+  fetchApi(`/organizer/audit-trail/${entityType}/${entityId}`);
 
 export default {
   getDashboardStats,
@@ -164,4 +185,8 @@ export default {
   updateTeamMemberPermissions,
   getLogs,
   getMyPermissions,
+  invalidateAttendance,
+  revokeCertificate,
+  invalidateParticipant,
+  getAuditTrail,
 };

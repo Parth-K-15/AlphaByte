@@ -59,12 +59,39 @@ const certificateSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['GENERATED', 'SENT', 'DOWNLOADED', 'FAILED'],
+    enum: ['GENERATED', 'SENT', 'DOWNLOADED', 'FAILED', 'REVOKED'],
     default: 'GENERATED'
   },
   template: {
     type: String,
     default: 'default'
+  },
+  // Retroactive Change & Audit Trail fields
+  isValid: {
+    type: Boolean,
+    default: true
+  },
+  revokedAt: {
+    type: Date,
+    default: null
+  },
+  revokedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  revocationReason: {
+    type: String,
+    default: null
+  },
+  version: {
+    type: Number,
+    default: 1
+  },
+  previousVersion: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Certificate',
+    default: null
   }
 }, {
   timestamps: true
@@ -72,7 +99,7 @@ const certificateSchema = new mongoose.Schema({
 
 certificateSchema.index({ event: 1, participant: 1 }, { unique: true });
 
-certificateSchema.pre('validate', function() {
+certificateSchema.pre('validate', function () {
   if (!this.certificateId) {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);

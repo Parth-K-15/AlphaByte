@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useLocation } from "react-router-dom";
-import { usePermissions } from "../../context/PermissionContext";
 import {
   Award,
   Download,
@@ -15,6 +14,8 @@ import {
   Eye,
   Filter,
   AlertCircle,
+  ShieldAlert,
+  History,
 } from "lucide-react";
 import {
   generateCertificates,
@@ -24,6 +25,8 @@ import {
   getAssignedEvents,
   getCertificateStats,
 } from "../../services/organizerApi";
+import RevokeCertificateModal from "../../components/organizer/RevokeCertificateModal";
+import AuditTrailViewer from "../../components/organizer/AuditTrailViewer";
 
 // Helper to check if ID is a valid MongoDB ObjectId
 const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
@@ -31,7 +34,6 @@ const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
 const Certificates = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const { setSelectedEventId } = usePermissions();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(
     searchParams.get("event") || "",
@@ -63,6 +65,11 @@ const Certificates = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("all");
 
+  // Retroactive Change & Audit Trail states
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
+  const [selectedCertificate, setSelectedCertificate] = useState(null);
+
   const [generateOptions, setGenerateOptions] = useState({
     template: "default",
     includeAll: true,
@@ -79,7 +86,6 @@ const Certificates = () => {
     if (selectedEvent && isValidObjectId(selectedEvent)) {
       fetchCertificates();
       fetchCertificateStats();
-      setSelectedEventId(selectedEvent);
     } else {
       setLoading(false);
       setCertStats(null);
@@ -235,10 +241,10 @@ const Certificates = () => {
     // Confirmation dialog
     const confirmed = window.confirm(
       `📧 Send Certificate via Email\n\n` +
-        `Recipient: ${participantName}\n` +
-        `Email: ${participantEmail}\n\n` +
-        `The certificate will be sent to this participant's email address.\n\n` +
-        `Do you want to continue?`,
+      `Recipient: ${participantName}\n` +
+      `Email: ${participantEmail}\n\n` +
+      `The certificate will be sent to this participant's email address.\n\n` +
+      `Do you want to continue?`,
     );
 
     if (!confirmed) return;
@@ -251,9 +257,9 @@ const Certificates = () => {
       if (response.data.success) {
         alert(
           `✅ Certificate Sent Successfully!\n\n` +
-            `The certificate has been sent to ${participantName} at ${participantEmail}.\n\n` +
-            `${response.data.emailDetails?.messageId ? `Message ID: ${response.data.emailDetails.messageId}\n` : ""}` +
-            `They should receive it shortly.`,
+          `The certificate has been sent to ${participantName} at ${participantEmail}.\n\n` +
+          `${response.data.emailDetails?.messageId ? `Message ID: ${response.data.emailDetails.messageId}\n` : ""}` +
+          `They should receive it shortly.`,
         );
         fetchCertificates();
       }
@@ -267,13 +273,12 @@ const Certificates = () => {
 
       alert(
         `❌ Failed to Send Certificate\n\n` +
-          `Recipient: ${participantName} (${participantEmail})\n` +
-          `Error: ${errorMsg}\n\n` +
-          `${
-            isEmailConfigError
-              ? "🔧 Troubleshooting: Check your email configuration in the server .env file.\nRequired: EMAIL_USER and EMAIL_PASSWORD"
-              : "Please try again or check the Email Logs for more details."
-          }`,
+        `Recipient: ${participantName} (${participantEmail})\n` +
+        `Error: ${errorMsg}\n\n` +
+        `${isEmailConfigError
+          ? "🔧 Troubleshooting: Check your email configuration in the server .env file.\nRequired: EMAIL_USER and EMAIL_PASSWORD"
+          : "Please try again or check the Email Logs for more details."
+        }`,
       );
     } finally {
       setSendingCertId(null);
@@ -293,8 +298,8 @@ const Certificates = () => {
 
     const confirmed = window.confirm(
       `📧 Send All Pending Certificates\n\n` +
-        `You are about to send ${stats.pending} certificate${stats.pending === 1 ? "" : "s"} to participants.\n\n` +
-        `Do you want to continue?`,
+      `You are about to send ${stats.pending} certificate${stats.pending === 1 ? "" : "s"} to participants.\n\n` +
+      `Do you want to continue?`,
     );
 
     if (!confirmed) return;
@@ -309,14 +314,14 @@ const Certificates = () => {
         if (failed > 0) {
           alert(
             `📧 Bulk Sending Complete\n\n` +
-              `✅ Successfully sent: ${sent}\n` +
-              `❌ Failed: ${failed}\n\n` +
-              `Please check the Email Logs or try resending failed ones individually.`,
+            `✅ Successfully sent: ${sent}\n` +
+            `❌ Failed: ${failed}\n\n` +
+            `Please check the Email Logs or try resending failed ones individually.`,
           );
         } else {
           alert(
             `✅ All Certificates Sent!\n\n` +
-              `Successfully sent ${sent} certificate${sent === 1 ? "" : "s"} to participants.`,
+            `Successfully sent ${sent} certificate${sent === 1 ? "" : "s"} to participants.`,
           );
         }
 
@@ -328,8 +333,8 @@ const Certificates = () => {
       const errorMsg = error.message || "Failed to send certificates";
       alert(
         `❌ Failed to Send Certificates\n\n` +
-          `Error: ${errorMsg}\n\n` +
-          `Please try again or check your email configuration.`,
+        `Error: ${errorMsg}\n\n` +
+        `Please try again or check your email configuration.`,
       );
     } finally {
       setSending(false);
@@ -344,8 +349,8 @@ const Certificates = () => {
 
     const confirmed = window.confirm(
       `📧 Send Selected Certificates\n\n` +
-        `You are about to send ${selectedCertificates.length} certificate${selectedCertificates.length === 1 ? "" : "s"}.\n\n` +
-        `Do you want to continue?`,
+      `You are about to send ${selectedCertificates.length} certificate${selectedCertificates.length === 1 ? "" : "s"}.\n\n` +
+      `Do you want to continue?`,
     );
 
     if (!confirmed) return;
@@ -353,7 +358,7 @@ const Certificates = () => {
     setSending(true);
     let successCount = 0;
     let failCount = 0;
-    
+
     const organizerId = localStorage.getItem("userId");
 
     for (const certId of selectedCertificates) {
@@ -372,14 +377,14 @@ const Certificates = () => {
     if (failCount > 0) {
       alert(
         `📧 Sending Complete\n\n` +
-          `✅ Successfully sent: ${successCount}\n` +
-          `❌ Failed: ${failCount}\n\n` +
-          `Please try resending the failed ones individually.`,
+        `✅ Successfully sent: ${successCount}\n` +
+        `❌ Failed: ${failCount}\n\n` +
+        `Please try resending the failed ones individually.`,
       );
     } else {
       alert(
         `✅ All Certificates Sent!\n\n` +
-          `Successfully sent ${successCount} certificate${successCount === 1 ? "" : "s"}.`,
+        `Successfully sent ${successCount} certificate${successCount === 1 ? "" : "s"}.`,
       );
     }
 
@@ -601,11 +606,10 @@ const Certificates = () => {
             <div className="flex">
               <button
                 onClick={() => setActiveTab("generate")}
-                className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
-                  activeTab === "generate"
-                    ? "text-[#191A23] dark:text-white"
-                    : "text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
-                }`}
+                className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${activeTab === "generate"
+                  ? "text-[#191A23] dark:text-white"
+                  : "text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
+                  }`}
               >
                 <Award
                   size={18}
@@ -619,11 +623,10 @@ const Certificates = () => {
               </button>
               <button
                 onClick={() => setActiveTab("distribution")}
-                className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
-                  activeTab === "distribution"
-                    ? "text-[#191A23] dark:text-white"
-                    : "text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
-                }`}
+                className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${activeTab === "distribution"
+                  ? "text-[#191A23] dark:text-white"
+                  : "text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
+                  }`}
               >
                 <Send
                   size={18}
@@ -657,11 +660,10 @@ const Certificates = () => {
                             template: template.id,
                           })
                         }
-                        className={`group relative p-5 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
-                          generateOptions.template === template.id
-                            ? "border-[#191A23] bg-[#B9FF66]/10 shadow-lg"
-                            : "border-gray-200 dark:border-white/10 hover:border-[#B9FF66] bg-white dark:bg-white/[0.03]"
-                        }`}
+                        className={`group relative p-5 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${generateOptions.template === template.id
+                          ? "border-[#191A23] bg-[#B9FF66]/10 shadow-lg"
+                          : "border-gray-200 dark:border-white/10 hover:border-[#B9FF66] bg-white dark:bg-white/[0.03]"
+                          }`}
                       >
                         <div className="h-28 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/5 dark:to-white/10 rounded-xl mb-4 flex items-center justify-center group-hover:scale-105 transition-transform">
                           <FileText
@@ -734,10 +736,32 @@ const Certificates = () => {
 
                 {/* Generate Button */}
                 <div className="flex justify-center pt-4">
+                  {/* Certificate Status Warning */}
+                  {selectedEvent && events.find(e => e._id === selectedEvent)?.enableCertificates === false && (
+                    <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-start gap-3">
+                      <AlertCircle size={20} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                          Certificates Not Enabled
+                        </h4>
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                          Certificate generation is disabled for this event. Please contact the admin to enable certificates in the event settings.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     onClick={handleGenerateCertificates}
-                    disabled={generating}
-                    className="group flex items-center gap-3 px-10 py-4 bg-[#191A23] text-[#B9FF66] rounded-2xl hover:shadow-2xl hover:scale-105 transition-all font-bold disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg"
+                    disabled={generating || (selectedEvent && events.find(e => e._id === selectedEvent)?.enableCertificates === false)}
+                    className="group flex items-center gap-3 px-10 py-4 bg-[#191A23] text-[#B9FF66] rounded-2xl hover:shadow-2xl hover:scale-105 transition-all font-bold disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg disabled:cursor-not-allowed"
+                    title={
+                      selectedEvent && events.find(e => e._id === selectedEvent)?.enableCertificates === false
+                        ? 'Certificates are not enabled for this event'
+                        : generating
+                          ? 'Generating certificates...'
+                          : 'Generate certificates for all participants who attended'
+                    }
                   >
                     {generating ? (
                       <RefreshCw
@@ -891,7 +915,7 @@ const Certificates = () => {
                               type="checkbox"
                               checked={
                                 selectedCertificates.length ===
-                                  filteredCertificates.length &&
+                                filteredCertificates.length &&
                                 filteredCertificates.length > 0
                               }
                               onChange={toggleSelectAll}
@@ -940,9 +964,22 @@ const Certificates = () => {
                               {cert.certificateId}
                             </td>
                             <td className="px-4 py-3">
-                              <span className="font-medium text-gray-800 dark:text-white">
-                                {cert.participant?.name}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-medium ${cert.status === 'REVOKED' || !cert.isValid
+                                  ? 'line-through text-red-500 dark:text-red-400'
+                                  : 'text-gray-800 dark:text-white'
+                                  }`}>
+                                  {cert.participant?.name}
+                                </span>
+                                {(cert.status === 'REVOKED' || !cert.isValid) && (
+                                  <span
+                                    className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 text-xs rounded-full font-semibold border border-red-200 dark:border-red-800"
+                                    title={cert.revocationReason || 'Certificate has been revoked'}
+                                  >
+                                    REVOKED
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-600 dark:text-zinc-400">
                               {cert.participant?.email}
@@ -1045,6 +1082,29 @@ const Certificates = () => {
                                     )}
                                   </button>
                                 )}
+                                {/* Revoke Certificate Button */}
+                                <button
+                                  onClick={() => {
+                                    setSelectedCertificate(cert);
+                                    setShowRevokeModal(true);
+                                  }}
+                                  disabled={cert.status === 'REVOKED' || !cert.isValid}
+                                  className="p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={cert.status === 'REVOKED' ? 'Already Revoked' : 'Revoke Certificate'}
+                                >
+                                  <ShieldAlert size={16} />
+                                </button>
+                                {/* View Audit Trail Button */}
+                                <button
+                                  onClick={() => {
+                                    setSelectedCertificate(cert);
+                                    setShowAuditTrail(true);
+                                  }}
+                                  className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg text-gray-500 hover:text-blue-600"
+                                  title="View Audit Trail"
+                                >
+                                  <History size={16} />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1058,6 +1118,31 @@ const Certificates = () => {
           </div>
         </div>
       </div>
+
+      {/* Retroactive Change & Audit Trail Modals */}
+      <RevokeCertificateModal
+        isOpen={showRevokeModal}
+        onClose={() => {
+          setShowRevokeModal(false);
+          setSelectedCertificate(null);
+        }}
+        certificate={selectedCertificate}
+        onSuccess={() => {
+          fetchCertificates();
+          fetchCertificateStats();
+        }}
+      />
+
+      <AuditTrailViewer
+        isOpen={showAuditTrail}
+        onClose={() => {
+          setShowAuditTrail(false);
+          setSelectedCertificate(null);
+        }}
+        entityType="certificate"
+        entityId={selectedCertificate?._id}
+        eventId={selectedEvent}
+      />
     </div>
   );
 };

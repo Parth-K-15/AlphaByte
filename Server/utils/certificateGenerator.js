@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cloudinary from '../config/cloudinary.js';
+import puppeteer from 'puppeteer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -173,17 +174,26 @@ class CertificateGenerator {
       }
 
       return {
-        success: false,
-        message: 'Certificate generation temporarily disabled. Please configure PDF service.',
-        certificateUrl: null,
-        cloudinaryUrl: null,
-        html: html // Return HTML for debugging/alternative use
+        success: true,
+        filename: filename,
+        filepath: filepath,
+        url: cloudinaryResult.secure_url,
+        cloudinaryUrl: cloudinaryResult.secure_url,
+        cloudinaryPublicId: cloudinaryResult.public_id
       };
 
     } catch (error) {
       console.error('❌ Certificate Generation Failed:');
       console.error('  Error:', error.message);
       console.error('  Stack:', error.stack);
+
+      // Write error to a file so we can read it
+      try {
+        await fs.writeFile('certificate_error.log', `Error: ${error.message}\nStack: ${error.stack}\nTime: ${new Date().toISOString()}\n\n`);
+      } catch (e) {
+        console.error('Failed to write error log:', e);
+      }
+
       throw error;
     }
   }
@@ -193,16 +203,15 @@ class CertificateGenerator {
    */
   async generateBatch(certificatesData) {
     const results = [];
-    
     for (const certData of certificatesData) {
       try {
         const result = await this.generateCertificate(certData);
         results.push({ ...certData, ...result, status: 'SUCCESS' });
       } catch (error) {
-        results.push({ 
-          ...certData, 
-          status: 'FAILED', 
-          error: error.message 
+        results.push({
+          ...certData,
+          status: 'FAILED',
+          error: error.message
         });
       }
     }
@@ -228,16 +237,16 @@ class CertificateGenerator {
    * Format date helper
    */
   formatDate(date) {
-    if (!date) return new Date().toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    if (!date) return new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    
-    return new Date(date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   }
 }

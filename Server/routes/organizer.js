@@ -2728,7 +2728,7 @@ router.delete('/sessions/:sessionId', async (req, res) => {
 
 // @desc    Approve/reject a session update from speaker
 // @route   PUT /api/organizer/sessions/:sessionId/updates/:updateIndex
-router.put('/sessions/:sessionId/updates/:updateIndex', async (req, res) => {
+router.put('/sessions/:sessionId/updates/:updateIndex', verifyToken, isOrganizer, async (req, res) => {
   try {
     const { status } = req.body; // 'approved' or 'rejected'
 
@@ -2981,6 +2981,448 @@ router.get('/logs', async (req, res) => {
       success: false,
       message: 'Error fetching logs',
       error: error.message,
+    });
+  }
+});
+
+// ============================================================================
+// RETROACTIVE CHANGE & AUDIT TRAIL ENGINE
+// ============================================================================
+
+// @desc    Invalidate attendance record (with reason)
+// @route   POST /api/organizer/attendance/:attendanceId/invalidate
+router.post('/attendance/:attendanceId/invalidate', async (req, res) => {
+  try {
+    const { attendanceId } = req.params;
+    const { reason, organizerId } = req.body;
+
+    console.log('🔄 [Attendance Invalidation] Starting invalidation for:', attendanceId);
+
+    // Validate reason
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reason is required and must be at least 10 characters'
+      });
+    }
+
+    // Find attendance record
+    const attendance = await Attendance.findById(attendanceId)
+      .populate('participant', 'name email')
+      .populate('event', 'title');
+
+    if (!attendance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Attendance record not found'
+      });
+    }
+
+    if (!attendance.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Attendance record is already invalidated'
+      });
+    }
+
+    // Get organizer info
+    const organizer = organizerId ? await User.findById(organizerId) : null;
+
+    // Store old state for audit
+    const oldState = {
+      isValid: attendance.isValid,
+      status: attendance.status,
+      scannedAt: attendance.scannedAt
+    };
+
+    // Update attendance record (soft delete)
+    attendance.isValid = false;
+    attendance.invalidatedAt = Date.now();
+    attendance.invalidatedBy = organizerId;
+    attendance.invalidationReason = reason.trim();
+    attendance.version += 1;
+
+    await attendance.save();
+
+    console.log('✅ [Attendance Invalidation] Record invalidated successfully');
+
+    // Create audit log
+    await Log.create({
+      eventId: attendance.event._id,
+      eventName: attendance.event.title,
+      participantId: attendance.participant._id,
+      participantName: attendance.participant.name,
+      participantEmail: attendance.participant.email,
+      actionType: 'ATTENDANCE_INVALIDATED',
+      entityType: 'ATTENDANCE',
+      action: 'Attendance record invalidated',
+      details: `Attendance invalidated for ${attendance.participant.name}`,
+      actorType: organizer ? (organizer.role === 'ADMIN' ? 'ADMIN' : 'ORGANIZER') : 'SYSTEM',
+      actorId: organizer?._id,
+      actorName: organizer?.name || 'Organizer',
+      actorEmail: organizer?.email || '',
+      severity: 'WARNING',
+      reason: reason.trim(),
+      oldState,
+      newState: {
+        isValid: false,
+        invalidatedAt: attendance.invalidatedAt,
+        invalidationReason: attendance.invalidationReason
+      }
+    });
+
+    console.log('✅ [Attendance Invalidation] Audit log created');
+
+    res.json({
+      success: true,
+      message: 'Attendance record invalidated successfully',
+      data: attendance
+    });
+  } catch (error) {
+    console.error('❌ [Attendance Invalidation] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error invalidating attendance record',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Revoke certificate (with reason)
+// @route   POST /api/organizer/certificates/:certificateId/revoke
+router.post('/certificates/:certificateId/revoke', async (req, res) => {
+  try {
+    const { certificateId } = req.params;
+    const { reason, organizerId } = req.body;
+
+    console.log('🔄 [Certificate Revocation] Starting revocation for:', certificateId);
+
+    // Validate reason
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reason is required and must be at least 10 characters'
+      });
+    }
+
+    // Find certificate
+    const certificate = await Certificate.findById(certificateId)
+      .populate('participant', 'name email')
+      .populate('event', 'title');
+
+    if (!certificate) {
+      return res.status(404).json({
+        success: false,
+        message: 'Certificate not found'
+      });
+    }
+
+    if (!certificate.isValid || certificate.status === 'REVOKED') {
+      return res.status(400).json({
+        success: false,
+        message: 'Certificate is already revoked'
+      });
+    }
+
+    // Get organizer info
+    const organizer = organizerId ? await User.findById(organizerId) : null;
+
+    // Store old state for audit
+    const oldState = {
+      isValid: certificate.isValid,
+      status: certificate.status,
+      issuedAt: certificate.issuedAt
+    };
+
+    // Update certificate (revoke)
+    certificate.isValid = false;
+    certificate.status = 'REVOKED';
+    certificate.revokedAt = Date.now();
+    certificate.revokedBy = organizerId;
+    certificate.revocationReason = reason.trim();
+    certificate.version += 1;
+
+    await certificate.save();
+
+    // Update participant certificate status
+    await Participant.findByIdAndUpdate(certificate.participant._id, {
+      certificateStatus: 'PENDING'
+    });
+
+    console.log('✅ [Certificate Revocation] Certificate revoked successfully');
+
+    // Create audit log
+    await Log.create({
+      eventId: certificate.event._id,
+      eventName: certificate.event.title,
+      participantId: certificate.participant._id,
+      participantName: certificate.participant.name,
+      participantEmail: certificate.participant.email,
+      actionType: 'CERTIFICATE_REVOKED',
+      entityType: 'CERTIFICATE',
+      action: 'Certificate revoked',
+      details: `Certificate ${certificate.certificateId} revoked for ${certificate.participant.name}`,
+      actorType: organizer ? (organizer.role === 'ADMIN' ? 'ADMIN' : 'ORGANIZER') : 'SYSTEM',
+      actorId: organizer?._id,
+      actorName: organizer?.name || 'Organizer',
+      actorEmail: organizer?.email || '',
+      severity: 'CRITICAL',
+      reason: reason.trim(),
+      oldState,
+      newState: {
+        isValid: false,
+        status: 'REVOKED',
+        revokedAt: certificate.revokedAt,
+        revocationReason: certificate.revocationReason
+      }
+    });
+
+    console.log('✅ [Certificate Revocation] Audit log created');
+
+    res.json({
+      success: true,
+      message: 'Certificate revoked successfully',
+      data: certificate
+    });
+  } catch (error) {
+    console.error('❌ [Certificate Revocation] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error revoking certificate',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Invalidate participant record (with reason)
+// @route   POST /api/organizer/participants/:participantId/invalidate
+router.post('/participants/:participantId/invalidate', async (req, res) => {
+  try {
+    const { participantId } = req.params;
+    const { reason, organizerId } = req.body;
+
+    console.log('🔄 [Participant Invalidation] Starting invalidation for:', participantId);
+
+    // Validate reason
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reason is required and must be at least 10 characters'
+      });
+    }
+
+    // Find participant
+    const participant = await Participant.findById(participantId)
+      .populate('event', 'title');
+
+    if (!participant) {
+      return res.status(404).json({
+        success: false,
+        message: 'Participant not found'
+      });
+    }
+
+    if (!participant.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Participant is already invalidated'
+      });
+    }
+
+    // Get organizer info
+    const organizer = organizerId ? await User.findById(organizerId) : null;
+
+    // Store old state for audit
+    const oldState = {
+      isValid: participant.isValid,
+      registrationStatus: participant.registrationStatus,
+      attendanceStatus: participant.attendanceStatus,
+      certificateStatus: participant.certificateStatus
+    };
+
+    // Update participant (soft delete)
+    participant.isValid = false;
+    participant.invalidatedAt = Date.now();
+    participant.invalidatedBy = organizerId;
+    participant.invalidationReason = reason.trim();
+    participant.registrationStatus = 'CANCELLED';
+    participant.version += 1;
+
+    await participant.save();
+
+    console.log('✅ [Participant Invalidation] Participant invalidated successfully');
+
+    // Create audit log
+    await Log.create({
+      eventId: participant.event._id,
+      eventName: participant.event.title,
+      participantId: participant._id,
+      participantName: participant.name,
+      participantEmail: participant.email,
+      actionType: 'PARTICIPANT_INVALIDATED',
+      entityType: 'PARTICIPATION',
+      action: 'Participant record invalidated',
+      details: `Participant ${participant.name} invalidated`,
+      actorType: organizer ? (organizer.role === 'ADMIN' ? 'ADMIN' : 'ORGANIZER') : 'SYSTEM',
+      actorId: organizer?._id,
+      actorName: organizer?.name || 'Organizer',
+      actorEmail: organizer?.email || '',
+      severity: 'CRITICAL',
+      reason: reason.trim(),
+      oldState,
+      newState: {
+        isValid: false,
+        registrationStatus: 'CANCELLED',
+        invalidatedAt: participant.invalidatedAt,
+        invalidationReason: participant.invalidationReason
+      }
+    });
+
+    console.log('✅ [Participant Invalidation] Audit log created');
+
+    res.json({
+      success: true,
+      message: 'Participant invalidated successfully',
+      data: participant
+    });
+  } catch (error) {
+    console.error('❌ [Participant Invalidation] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error invalidating participant',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get audit trail for an entity
+// @route   GET /api/organizer/audit-trail/:entityType/:entityId
+router.get('/audit-trail/:entityType/:entityId', async (req, res) => {
+  try {
+    const { entityType, entityId } = req.params;
+
+    console.log(`🔍 [Audit Trail] Fetching for ${entityType}:`, entityId);
+
+    // Validate entity type
+    const validTypes = ['attendance', 'certificate', 'participant'];
+    if (!validTypes.includes(entityType.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid entity type. Must be: attendance, certificate, or participant'
+      });
+    }
+
+    // Get the entity based on type
+    let entity;
+    let Model;
+    let logEntityType;
+
+    switch (entityType.toLowerCase()) {
+      case 'attendance':
+        Model = Attendance;
+        logEntityType = 'ATTENDANCE';
+        break;
+      case 'certificate':
+        Model = Certificate;
+        logEntityType = 'CERTIFICATE';
+        break;
+      case 'participant':
+        Model = Participant;
+        logEntityType = 'PARTICIPATION';
+        break;
+    }
+
+    // Get current entity with appropriate population based on type
+    if (entityType.toLowerCase() === 'participant') {
+      // Participants don't have a 'participant' field, they ARE the participant
+      entity = await Model.findById(entityId)
+        .populate('event', 'title');
+    } else {
+      // Attendance and Certificate have both event and participant references
+      entity = await Model.findById(entityId)
+        .populate('event', 'title')
+        .populate('participant', 'name email');
+    }
+
+    if (!entity) {
+      return res.status(404).json({
+        success: false,
+        message: `${entityType} not found`
+      });
+    }
+
+    // Get all versions (follow previousVersion chain)
+    const versions = [entity];
+    let currentVersion = entity;
+    while (currentVersion.previousVersion) {
+      let prevVersion;
+      if (entityType.toLowerCase() === 'participant') {
+        prevVersion = await Model.findById(currentVersion.previousVersion)
+          .populate('event', 'title');
+      } else {
+        prevVersion = await Model.findById(currentVersion.previousVersion)
+          .populate('event', 'title')
+          .populate('participant', 'name email');
+      }
+      if (prevVersion) {
+        versions.push(prevVersion);
+        currentVersion = prevVersion;
+      } else {
+        break;
+      }
+    }
+
+    // Get all related logs - different query based on entity type
+    let logs;
+    if (entityType.toLowerCase() === 'participant') {
+      // For participants, search by participantId
+      console.log(`🔍 [Audit Trail] Searching for participant logs:`, {
+        participantId: entityId,
+        entityType: logEntityType
+      });
+      logs = await Log.find({
+        participantId: entityId,
+        entityType: logEntityType
+      })
+        .sort({ createdAt: -1 });
+    } else {
+      // For attendance/certificate, search by participant or event
+      console.log(`🔍 [Audit Trail] Searching for ${entityType} logs:`, {
+        participantId: entity.participant?._id,
+        eventId: entity.event?._id,
+        entityType: logEntityType
+      });
+      logs = await Log.find({
+        $or: [
+          { participantId: entity.participant?._id, entityType: logEntityType },
+          { eventId: entity.event?._id, entityType: logEntityType }
+        ]
+      })
+        .sort({ createdAt: -1 });
+    }
+
+    console.log(`✅ [Audit Trail] Found ${versions.length} versions and ${logs.length} logs`);
+
+    res.json({
+      success: true,
+      data: {
+        current: entity,
+        versions: versions.reverse(), // Oldest first
+        logs,
+        totalVersions: versions.length
+      }
+    });
+  } catch (error) {
+    console.error('❌ [Audit Trail] Error:', error);
+    console.error('❌ [Audit Trail] Error message:', error.message);
+    console.error('❌ [Audit Trail] Error stack:', error.stack);
+    console.error('❌ [Audit Trail] Entity Type:', req.params.entityType);
+    console.error('❌ [Audit Trail] Entity ID:', req.params.entityId);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching audit trail',
+      error: error.message,
+      details: error.stack
     });
   }
 });

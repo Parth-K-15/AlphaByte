@@ -41,6 +41,7 @@ const logSchema = new mongoose.Schema(
         'PARTICIPANT_ADDED',
         'PARTICIPANT_UPDATED',
         'PARTICIPANT_REMOVED',
+        'PARTICIPANT_INVALIDATED',
         'ATTENDANCE_RECORDED',
         'ATTENDANCE_MANUAL',
         'ATTENDANCE_INVALIDATED',

@@ -17,6 +17,7 @@ import authRoutes from './routes/auth.js';
 import reportsRoutes from './routes/reports.js';
 import logsRoutes from './routes/logs.js';
 import transcriptRoutes from './routes/transcript.js';
+import chatbotRoutes from './routes/chatbot.js';
 
 // Import email service
 import { testEmailConnection } from './utils/emailService.js';
@@ -82,6 +83,7 @@ app.use('/api/organizer', organizerRoutes);
 app.use('/api/speaker', speakerRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/participant', participantProfileRoutes); // Must be before participantRoutes
 app.use('/api/participant', participantRoutes);
 app.use('/api/transcript', transcriptRoutes);

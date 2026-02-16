@@ -13,6 +13,8 @@ import {
   Filter,
   UserPlus,
   Activity,
+  ShieldAlert,
+  History,
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
@@ -24,6 +26,8 @@ import {
   getAssignedEvents,
   getParticipants,
 } from "../../services/organizerApi";
+import InvalidateAttendanceModal from "../../components/organizer/InvalidateAttendanceModal";
+import AuditTrailViewer from "../../components/organizer/AuditTrailViewer";
 
 // Custom QR Code Component using qrcode library
 const QRCodeCanvas = ({ value, size = 240 }) => {
@@ -73,6 +77,11 @@ const AttendanceQR = () => {
   const [participants, setParticipants] = useState([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const intervalRef = useRef(null);
+
+  // Retroactive Change & Audit Trail states
+  const [showInvalidateModal, setShowInvalidateModal] = useState(false);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState(null);
 
   useEffect(() => {
     fetchEvents();
@@ -790,6 +799,32 @@ const AttendanceQR = () => {
           )}
         </div>
       </div>
+
+      {/* Retroactive Change & Audit Trail Modals */}
+      <InvalidateAttendanceModal
+        isOpen={showInvalidateModal}
+        onClose={() => {
+          setShowInvalidateModal(false);
+          setSelectedAttendance(null);
+        }}
+        attendance={selectedAttendance}
+        onSuccess={() => {
+          fetchAttendanceLogs();
+          fetchLiveCount();
+          fetchParticipants();
+        }}
+      />
+
+      <AuditTrailViewer
+        isOpen={showAuditTrail}
+        onClose={() => {
+          setShowAuditTrail(false);
+          setSelectedAttendance(null);
+        }}
+        entityType="attendance"
+        entityId={selectedAttendance?._id}
+        eventId={selectedEvent}
+      />
     </div>
   );
 };

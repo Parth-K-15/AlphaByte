@@ -54,6 +54,8 @@ import {
   Calendar,
   Transcript,
 } from "./pages/participant";
+import AIParticipationTest from './pages/ai-intelligence-test/AIParticipationTest';
+import ChatbotTest from './pages/chatbot-test/ChatbotTest';
 import {
   Dashboard as SpeakerDashboard,
   Sessions as SpeakerSessions,
@@ -150,6 +152,9 @@ function App() {
 
               {/* Analytics & Reports */}
               <Route path="reports" element={<Reports />} />
+
+              {/* AI Participation Intelligence (Test/Demo) */}
+              <Route path="ai-test" element={<AIParticipationTest />} />
 
               {/* System Logs */}
               <Route path="logs" element={<Logs />} />
@@ -251,6 +256,9 @@ function App() {
 
               {/* Transcript */}
               <Route path="transcript" element={<Transcript />} />
+
+              {/* AI Chatbot Test */}
+              <Route path="chatbot-test" element={<ChatbotTest />} />
             </Route>
 
             {/* Speaker Routes - Protected */}

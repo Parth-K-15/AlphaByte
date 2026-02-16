@@ -173,6 +173,15 @@ const EventDetails = () => {
               </div>
             )}
 
+            {event.rulebook && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                  📋 Event Rulebook
+                </h3>
+                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{event.rulebook}</pre>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Date & Time */}
               <div className="flex items-start gap-3">
