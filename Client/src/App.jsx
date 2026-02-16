@@ -65,6 +65,8 @@ import {
 } from "./pages/participant";
 import AIParticipationTest from './pages/ai-intelligence-test/AIParticipationTest';
 import ChatbotTest from './pages/chatbot-test/ChatbotTest';
+import CertificateVerify from './pages/verify/CertificateVerify';
+import QRScannerVerify from './pages/verify/QRScannerVerify';
 import {
   Dashboard as SpeakerDashboard,
   Sessions as SpeakerSessions,
@@ -89,6 +91,10 @@ function App() {
                 </PublicRoute>
               }
             />
+
+            {/* Public Certificate Verification Route */}
+            <Route path="/verify" element={<QRScannerVerify />} />
+            <Route path="/verify/:verificationId" element={<CertificateVerify />} />
 
             {/* Auth Routes - Public */}
             <Route
@@ -186,6 +192,10 @@ function App() {
               {/* System Logs */}
               <Route path="logs" element={<Logs />} />
 
+              {/* Verify Certificate */}
+              <Route path="verify" element={<QRScannerVerify />} />
+              <Route path="verify/:verificationId" element={<CertificateVerify />} />
+
               {/* Settings */}
               <Route path="settings" element={<Settings />} />
             </Route>
@@ -258,6 +268,9 @@ function App() {
                 path="events/:eventId/finance/amendment"
                 element={<BudgetAmendment />}
               />
+              {/* Verify Certificate */}
+              <Route path="verify" element={<QRScannerVerify />} />
+              <Route path="verify/:verificationId" element={<CertificateVerify />} />
             </Route>
 
             {/* Participant Routes - Protected */}

@@ -9,224 +9,316 @@
       size: A4 landscape;
       margin: 0;
     }
-    
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
-      font-family: 'Times New Roman', serif;
-      background: linear-gradient(135deg, #f5e6d3 0%, #d4c5a9 100%);
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #faf6ef;
       width: 297mm;
       height: 210mm;
       position: relative;
       overflow: hidden;
     }
-    
+
     .certificate-container {
       width: 100%;
       height: 100%;
-      background-image: 
-        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23d4a574" opacity="0.1" width="100" height="100"/></svg>');
-      background-size: 50px 50px;
+      background:
+        radial-gradient(ellipse at 20% 80%, rgba(184, 134, 11, 0.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(184, 134, 11, 0.04) 0%, transparent 50%),
+        linear-gradient(180deg, #fdf8f0 0%, #f7f0e3 40%, #f2ebdb 100%);
       padding: 40px 60px;
       position: relative;
     }
-    
-    /* Decorative border */
+
+    /* Outer ornamental border */
     .border-frame {
       position: absolute;
-      top: 30px;
-      left: 50px;
-      right: 50px;
-      bottom: 30px;
+      top: 24px;
+      left: 44px;
+      right: 44px;
+      bottom: 24px;
       border: 3px solid #b8860b;
-      box-shadow: inset 0 0 0 1px #d4a574;
+      box-shadow:
+        inset 0 0 0 2px #f7f0e3,
+        inset 0 0 0 3px rgba(184, 134, 11, 0.35),
+        0 0 0 1px rgba(184, 134, 11, 0.15);
     }
-    
+
     .inner-border {
       position: absolute;
-      top: 45px;
-      left: 65px;
-      right: 65px;
-      bottom: 45px;
-      border: 1px solid #b8860b;
+      top: 38px;
+      left: 58px;
+      right: 58px;
+      bottom: 38px;
+      border: 1px solid rgba(184, 134, 11, 0.4);
     }
-    
+
     /* Header section */
     .header {
       text-align: center;
       position: relative;
       z-index: 10;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
-    
+
     .college-name {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: bold;
-      color: #2c3e50;
+      color: #3a2f20;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .department-name {
+      font-size: 13px;
+      color: #6b5c47;
+      letter-spacing: 1px;
       margin-bottom: 2px;
     }
-    
-    .department-name {
-      font-size: 14px;
-      color: #34495e;
-      margin-bottom: 1px;
-    }
-    
+
     .association {
-      font-size: 12px;
-      color: #555;
-      margin-bottom: 15px;
+      font-size: 11px;
+      color: #8a7a63;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
     }
-    
+
+    .header-ornament {
+      display: block;
+      width: 180px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #b8860b, transparent);
+      margin: 8px auto 12px;
+    }
+
     .event-logo {
-      font-size: 48px;
+      font-size: 44px;
       font-weight: bold;
       color: #b8860b;
-      font-family: 'Brush Script MT', cursive;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-      margin: 15px 0;
-      letter-spacing: 2px;
+      font-family: 'Georgia', serif;
+      font-style: italic;
+      text-shadow: 1px 1px 2px rgba(184, 134, 11, 0.2);
+      margin: 8px 0;
+      letter-spacing: 3px;
     }
-    
+
     /* Main content */
     .certificate-title {
-      font-size: 38px;
+      font-size: 36px;
       font-weight: bold;
       text-align: center;
-      color: #2c3e50;
-      letter-spacing: 4px;
-      margin: 25px 0 15px 0;
+      color: #3a2f20;
+      letter-spacing: 6px;
+      margin: 18px 0 10px 0;
       font-family: 'Georgia', serif;
+      text-transform: uppercase;
     }
-    
+
+    .title-underline {
+      display: block;
+      width: 260px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #b8860b 30%, #b8860b 70%, transparent);
+      margin: 0 auto 12px;
+    }
+
     .certify-text {
       text-align: center;
       font-size: 14px;
-      color: #555;
-      margin-bottom: 10px;
+      color: #7a6b56;
+      margin-bottom: 6px;
+      font-style: italic;
+      letter-spacing: 0.5px;
     }
-    
+
     .participant-name {
       text-align: center;
-      font-size: 52px;
-      font-family: 'Brush Script MT', cursive;
-      color: #1a1a1a;
-      margin: 20px 0;
+      font-size: 48px;
+      font-family: 'Georgia', serif;
+      font-style: italic;
+      color: #2a2015;
+      margin: 14px 0;
       font-weight: normal;
       border-bottom: 2px solid #b8860b;
       display: inline-block;
-      padding: 0 40px 5px 40px;
+      padding: 0 50px 8px 50px;
       position: relative;
       left: 50%;
       transform: translateX(-50%);
+      letter-spacing: 1px;
     }
-    
+
     .description {
       text-align: center;
-      font-size: 15px;
-      color: #2c3e50;
-      line-height: 1.6;
-      max-width: 800px;
-      margin: 25px auto;
+      font-size: 14px;
+      color: #4a3f32;
+      line-height: 1.75;
+      max-width: 740px;
+      margin: 18px auto;
       padding: 0 20px;
     }
-    
+
     .event-details {
       text-align: center;
       font-size: 14px;
-      color: #555;
-      margin-top: 15px;
+      color: #6b5c47;
+      margin-top: 10px;
     }
-    
+
     /* Signatures section */
     .signatures {
       display: flex;
       justify-content: space-around;
-      margin-top: 40px;
-      padding: 0 80px;
+      margin-top: 30px;
+      padding: 0 70px;
       position: relative;
       z-index: 10;
     }
-    
+
     .signature-block {
       text-align: center;
-      width: 200px;
+      width: 190px;
     }
-    
+
     .signature-line {
-      border-top: 2px solid #333;
-      margin-bottom: 5px;
-      padding-top: 30px;
+      border-top: 1.5px solid #4a3f32;
+      margin-bottom: 6px;
+      padding-top: 28px;
     }
-    
+
     .signature-name {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: bold;
-      color: #2c3e50;
+      color: #3a2f20;
+      letter-spacing: 0.5px;
     }
-    
+
     .signature-title {
-      font-size: 11px;
-      color: #555;
+      font-size: 10px;
+      color: #7a6b56;
+      margin-top: 2px;
     }
-    
-    /* Decorative elements */
+
+    /* Decorative corner ornaments */
     .corner-decoration {
       position: absolute;
-      width: 80px;
-      height: 80px;
-      opacity: 0.3;
+      width: 70px;
+      height: 70px;
     }
-    
+
     .top-left {
-      top: 20px;
-      left: 20px;
+      top: 14px;
+      left: 14px;
       border-top: 4px solid #b8860b;
       border-left: 4px solid #b8860b;
+      opacity: 0.55;
     }
-    
+
     .top-right {
-      top: 20px;
-      right: 20px;
+      top: 14px;
+      right: 14px;
       border-top: 4px solid #b8860b;
       border-right: 4px solid #b8860b;
+      opacity: 0.55;
     }
-    
+
     .bottom-left {
-      bottom: 20px;
-      left: 20px;
+      bottom: 14px;
+      left: 14px;
       border-bottom: 4px solid #b8860b;
       border-left: 4px solid #b8860b;
+      opacity: 0.55;
     }
-    
+
     .bottom-right {
-      bottom: 20px;
-      right: 20px;
+      bottom: 14px;
+      right: 14px;
       border-bottom: 4px solid #b8860b;
       border-right: 4px solid #b8860b;
+      opacity: 0.55;
     }
-    
+
+    /* Gold seal */
     .seal {
       position: absolute;
-      bottom: 140px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80px;
-      height: 80px;
+      bottom: 120px;
+      left: 80px;
+      width: 85px;
+      height: 85px;
       border-radius: 50%;
-      background: radial-gradient(circle, #ffd700 0%, #b8860b 100%);
+      background: radial-gradient(circle at 35% 35%, #ffe066 0%, #d4a017 40%, #b8860b 70%, #946b08 100%);
       border: 3px solid #b8860b;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-size: 9px;
       color: #fff;
       font-weight: bold;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      box-shadow:
+        0 2px 8px rgba(184, 134, 11, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3);
+      z-index: 20;
+    }
+
+    .seal::before {
+      content: '';
+      position: absolute;
+      width: 75px;
+      height: 75px;
+      border-radius: 50%;
+      border: 1.5px dashed rgba(255, 255, 255, 0.4);
+    }
+
+    .qr-section {
+      position: absolute;
+      bottom: 40px;
+      right: 65px;
+      text-align: center;
+      z-index: 20;
+    }
+
+    .qr-section img {
+      width: 82px;
+      height: 82px;
+      border: 2px solid #b8860b;
+      border-radius: 6px;
+      padding: 4px;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(184, 134, 11, 0.2);
+    }
+
+    .qr-section .qr-label {
+      font-size: 7px;
+      color: #8a7a63;
+      margin-top: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-family: 'Arial', sans-serif;
+    }
+
+    /* Watermark */
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 120px;
+      font-weight: bold;
+      color: rgba(184, 134, 11, 0.03);
+      letter-spacing: 20px;
+      text-transform: uppercase;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 1;
     }
   </style>
 </head>
@@ -239,30 +331,39 @@
     <div class="corner-decoration top-right"></div>
     <div class="corner-decoration bottom-left"></div>
     <div class="corner-decoration bottom-right"></div>
-    
+    <div class="watermark">CERTIFICATE</div>
+
     <!-- Header -->
     <div class="header">
       <div class="college-name">{{organizationName}}</div>
       <div class="department-name">{{departmentName}}</div>
       <div class="association">{{associationText}}</div>
+      <span class="header-ornament"></span>
       <div class="event-logo">{{eventName}}</div>
     </div>
-    
+
     <!-- Certificate content -->
     <div class="certificate-title">CERTIFICATE OF APPRECIATION</div>
+    <span class="title-underline"></span>
     <div class="certify-text">This is to certify that</div>
     <div class="participant-name">{{participantName}}</div>
-    
+
     <div class="description">
       has successfully participated and secured a {{achievement}} in "{{competitionName}}",
       held as a part of {{eventName}}, organized by {{organizerName}},<br>
       {{organizationName}}<br>
       on {{eventDate}}.
     </div>
-    
+
     <!-- Seal -->
     <div class="seal">VERIFIED</div>
-    
+
+    <!-- QR Code -->
+    <div class="qr-section">
+      <img src="{{qrCodeDataUri}}" alt="QR Verify" />
+      <div class="qr-label">Scan to Verify</div>
+    </div>
+
     <!-- Signatures -->
     <div class="signatures">
       <div class="signature-block">

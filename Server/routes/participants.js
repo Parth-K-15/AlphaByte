@@ -1207,6 +1207,10 @@ router.get("/certificates", async (req, res) => {
         };
       });
 
+    
+    // Calculate total attended events (WITH or WITHOUT certificates)
+    const totalAttendedEvents = allEvents.filter(e => e.hasAttendance).length;
+    
     res.json({
       success: true,
       data: {
@@ -1215,10 +1219,10 @@ router.get("/certificates", async (req, res) => {
         allEvents,
         stats: {
           total: certificates.length,
-          attended: attendedEvents.length,
-          registered: allEvents.length,
-        },
-      },
+          attended: totalAttendedEvents,
+          registered: allEvents.length
+        }
+      }
     });
   } catch (error) {
     console.error("Error fetching certificates:", error);

@@ -9,201 +9,278 @@
       size: A4 landscape;
       margin: 0;
     }
-    
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
-      font-family: 'Helvetica', 'Arial', sans-serif;
+      font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
       background: #ffffff;
       width: 297mm;
       height: 210mm;
       position: relative;
     }
-    
+
     .certificate-container {
       width: 100%;
       height: 100%;
-      background: white;
-      padding: 80px 100px;
+      background: #fff;
+      padding: 70px 90px;
       position: relative;
     }
-    
-    /* Simple border */
+
+    /* Clean outer border */
     .border-frame {
       position: absolute;
-      top: 50px;
-      left: 70px;
-      right: 70px;
-      bottom: 50px;
-      border: 2px solid #000;
+      top: 40px;
+      left: 60px;
+      right: 60px;
+      bottom: 40px;
+      border: 1.5px solid #1a1a1a;
     }
-    
+
+    /* Subtle inner offset line */
+    .border-inner {
+      position: absolute;
+      top: 46px;
+      left: 66px;
+      right: 66px;
+      bottom: 46px;
+      border: 0.5px solid rgba(0, 0, 0, 0.12);
+    }
+
     /* Header */
     .header {
       text-align: center;
-      margin-bottom: 60px;
+      margin-bottom: 40px;
       position: relative;
       z-index: 10;
     }
-    
+
     .organization-name {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
-      color: #000;
-      margin-bottom: 8px;
+      color: #1a1a1a;
       text-transform: uppercase;
-      letter-spacing: 3px;
+      letter-spacing: 5px;
     }
-    
+
     .department-name {
-      font-size: 12px;
-      color: #666;
+      font-size: 11px;
+      color: #888;
       font-weight: 400;
+      letter-spacing: 2px;
+      margin-top: 6px;
     }
-    
+
     .horizontal-line {
-      width: 100px;
-      height: 1px;
-      background: #000;
-      margin: 30px auto;
+      width: 60px;
+      height: 2px;
+      background: #1a1a1a;
+      margin: 28px auto;
     }
-    
+
     /* Content */
     .content {
       text-align: center;
       position: relative;
       z-index: 10;
     }
-    
+
     .certificate-title {
+      font-size: 44px;
+      font-weight: 200;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+      letter-spacing: 10px;
+      text-transform: uppercase;
+    }
+
+    .certificate-subtitle {
+      font-size: 13px;
+      font-weight: 300;
+      color: #aaa;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+
+    .presented-to {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-weight: 400;
+    }
+
+    .participant-name {
       font-size: 48px;
       font-weight: 300;
-      color: #000;
-      margin-bottom: 50px;
-      letter-spacing: 8px;
-      text-transform: uppercase;
+      color: #1a1a1a;
+      margin: 16px 0;
+      letter-spacing: 2px;
+      border-bottom: 1.5px solid #1a1a1a;
+      display: inline-block;
+      padding-bottom: 8px;
     }
-    
-    .presented-to {
+
+    .achievement {
+      font-size: 13px;
+      color: #1a1a1a;
+      margin: 20px 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 600;
+    }
+
+    .description {
       font-size: 13px;
       color: #666;
-      margin-bottom: 20px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 400;
-    }
-    
-    .participant-name {
-      font-size: 52px;
-      font-weight: 400;
-      color: #000;
-      margin: 30px 0;
-      letter-spacing: 2px;
-      border-bottom: 2px solid #000;
-      display: inline-block;
-      padding-bottom: 10px;
-    }
-    
-    .achievement {
-      font-size: 14px;
-      color: #000;
-      margin: 25px 0;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
-    
-    .description {
-      font-size: 14px;
-      color: #444;
-      line-height: 1.9;
-      max-width: 650px;
-      margin: 35px auto;
+      line-height: 2;
+      max-width: 600px;
+      margin: 24px auto;
       font-weight: 300;
     }
-    
+
     .event-name {
       font-weight: 600;
-      color: #000;
+      color: #1a1a1a;
     }
-    
+
     /* Signatures */
     .signatures {
       display: flex;
       justify-content: space-evenly;
-      margin-top: 70px;
-      padding: 0 120px;
+      margin-top: 50px;
+      padding: 0 100px;
     }
-    
+
     .signature-block {
       text-align: center;
       width: 160px;
     }
-    
+
     .signature-line {
-      border-top: 1px solid #000;
+      border-top: 1px solid #1a1a1a;
       margin-bottom: 8px;
-      padding-top: 40px;
+      padding-top: 36px;
     }
-    
+
     .signature-name {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      color: #000;
+      color: #1a1a1a;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
     }
-    
+
     .signature-title {
-      font-size: 10px;
-      color: #666;
+      font-size: 9px;
+      color: #999;
       margin-top: 4px;
       font-weight: 300;
+      letter-spacing: 0.5px;
     }
-    
+
     /* Date */
     .date-section {
       text-align: center;
-      margin-top: 50px;
+      margin-top: 36px;
     }
-    
+
     .date-label {
-      font-size: 11px;
-      color: #666;
+      font-size: 10px;
+      color: #aaa;
       text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .date-value {
+      font-size: 12px;
+      font-weight: 400;
+      color: #1a1a1a;
+      margin-top: 4px;
       letter-spacing: 1px;
     }
-    
-    .date-value {
-      font-size: 13px;
-      font-weight: 400;
-      color: #000;
-      margin-top: 5px;
-    }
-    
-    /* Minimal corner accents */
+
+    /* Corner accents */
     .corner-accent {
       position: absolute;
-      width: 40px;
-      height: 40px;
+      width: 30px;
+      height: 30px;
     }
-    
+
     .top-left-accent {
-      top: 60px;
-      left: 80px;
-      border-top: 3px solid #000;
-      border-left: 3px solid #000;
+      top: 50px;
+      left: 70px;
+      border-top: 2.5px solid #1a1a1a;
+      border-left: 2.5px solid #1a1a1a;
     }
-    
+
+    .top-right-accent {
+      top: 50px;
+      right: 70px;
+      border-top: 2.5px solid #1a1a1a;
+      border-right: 2.5px solid #1a1a1a;
+    }
+
+    .bottom-left-accent {
+      bottom: 50px;
+      left: 70px;
+      border-bottom: 2.5px solid #1a1a1a;
+      border-left: 2.5px solid #1a1a1a;
+    }
+
     .bottom-right-accent {
-      bottom: 60px;
-      right: 80px;
-      border-bottom: 3px solid #000;
-      border-right: 3px solid #000;
+      bottom: 50px;
+      right: 70px;
+      border-bottom: 2.5px solid #1a1a1a;
+      border-right: 2.5px solid #1a1a1a;
+    }
+
+    .qr-section {
+      position: absolute;
+      bottom: 56px;
+      right: 82px;
+      text-align: center;
+      z-index: 20;
+    }
+
+    .qr-section img {
+      width: 78px;
+      height: 78px;
+      border: 1px solid #1a1a1a;
+      padding: 4px;
+      background: #fff;
+    }
+
+    .qr-section .qr-label {
+      font-size: 7px;
+      color: #aaa;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 400;
+    }
+
+    /* Watermark */
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 140px;
+      font-weight: 100;
+      color: rgba(0, 0, 0, 0.015);
+      letter-spacing: 30px;
+      text-transform: uppercase;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 1;
     }
   </style>
 </head>
@@ -211,31 +288,42 @@
   <div class="certificate-container">
     <!-- Border -->
     <div class="border-frame"></div>
+    <div class="border-inner"></div>
     <div class="corner-accent top-left-accent"></div>
+    <div class="corner-accent top-right-accent"></div>
+    <div class="corner-accent bottom-left-accent"></div>
     <div class="corner-accent bottom-right-accent"></div>
-    
+    <div class="watermark">CERTIFIED</div>
+
+    <!-- QR Code -->
+    <div class="qr-section">
+      <img src="{{qrCodeDataUri}}" alt="QR Verify" />
+      <div class="qr-label">Scan to Verify</div>
+    </div>
+
     <!-- Header -->
     <div class="header">
       <div class="organization-name">{{organizationName}}</div>
       <div class="department-name">{{departmentName}}</div>
       <div class="horizontal-line"></div>
     </div>
-    
+
     <!-- Content -->
     <div class="content">
       <div class="certificate-title">Certificate</div>
+      <div class="certificate-subtitle">of Recognition</div>
       <div class="presented-to">Presented To</div>
-      
+
       <div class="participant-name">{{participantName}}</div>
-      
+
       <div class="achievement">{{achievement}}</div>
-      
+
       <div class="description">
         For successful participation in <span class="event-name">"{{competitionName}}"</span>,
         held as part of <span class="event-name">{{eventName}}</span>,
         organized by {{organizerName}}, {{organizationName}}.
       </div>
-      
+
       <!-- Signatures -->
       <div class="signatures">
         <div class="signature-block">
@@ -254,7 +342,7 @@
           <div class="signature-title">{{signature3Title}}</div>
         </div>
       </div>
-      
+
       <!-- Date -->
       <div class="date-section">
         <div class="date-label">Date</div>
