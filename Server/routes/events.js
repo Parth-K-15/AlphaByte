@@ -5,6 +5,8 @@ import Participant from '../models/Participant.js';
 import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
 import mongoose from 'mongoose';
+import { verifyToken, authorizeRoles } from '../middleware/auth.js';
+import { logEvent } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -119,7 +121,7 @@ router.get('/:id', async (req, res) => {
 
 // @desc    Create new event (Admin)
 // @route   POST /api/events
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const {
       title,
@@ -177,7 +179,7 @@ router.post('/', async (req, res) => {
       bannerImage,
       tags: tags || [],
       teamLead,
-      createdBy,
+      createdBy: req.user._id, // Use authenticated user
       teamMembers: [],
       participants: []
     });
@@ -185,6 +187,9 @@ router.post('/', async (req, res) => {
     const populatedEvent = await Event.findById(event._id)
       .populate('teamLead', 'name email')
       .populate('createdBy', 'name email');
+
+    // Log event creation
+    await logEvent('Event Created', req.user, populatedEvent, `Created new event: ${title}`, 'success');
 
     res.status(201).json({
       success: true,
@@ -203,7 +208,7 @@ router.post('/', async (req, res) => {
 
 // @desc    Update event (Admin)
 // @route   PUT /api/events/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -236,6 +241,9 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    // Log event update
+    await logEvent('Event Updated', req.user, event, `Updated event: ${event.title}`, 'info');
+
     res.json({
       success: true,
       message: 'Event updated successfully',
@@ -253,7 +261,7 @@ router.put('/:id', async (req, res) => {
 
 // @desc    Delete event (Admin)
 // @route   DELETE /api/events/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -272,6 +280,9 @@ router.delete('/:id', async (req, res) => {
         message: 'Event not found'
       });
     }
+
+    // Log event deletion
+    await logEvent('Event Deleted', req.user, event, `Deleted event: ${event.title}`, 'warning');
 
     // Clean up related data
     await Participant.deleteMany({ event: id });
@@ -478,7 +489,7 @@ router.delete('/:id/team-leads/:userId', async (req, res) => {
 
 // @desc    Update event lifecycle status
 // @route   PUT /api/events/:id/lifecycle
-router.put('/:id/lifecycle', async (req, res) => {
+router.put('/:id/lifecycle', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -514,6 +525,9 @@ router.put('/:id/lifecycle', async (req, res) => {
     }
 
     const participantCount = await Participant.countDocuments({ event: event._id });
+
+    // Log lifecycle change
+    await logEvent('Event Lifecycle Updated', req.user, event, `Changed status to: ${status}`, 'info');
 
     res.json({
       success: true,

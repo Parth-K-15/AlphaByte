@@ -237,6 +237,24 @@ const SignUp = () => {
                 </div>
               </div>
 
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                    placeholder="Re-enter your password"
+                  />
+                </div>
+              </div>
+
               {/* Submit Button */}
               <button
                 type="submit"

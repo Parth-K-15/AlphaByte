@@ -12,10 +12,10 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { sendBulkEmails, testEmailConnection, sendCertificateEmail } from '../utils/emailService.js';
 import certificateGenerator from '../utils/certificateGenerator.js';
+import activeSessions from '../utils/sessionStore.js';
 
 const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
-const activeSessions = new Map();
 
 // Test email configuration endpoint
 router.get('/email/test', async (req, res) => {

@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Home, CalendarDays, ScanLine, ClipboardList, User } from 'lucide-react';
 
 const ParticipantLayout = () => {
   const navigate = useNavigate();
@@ -10,14 +11,45 @@ const ParticipantLayout = () => {
     navigate('/login');
   };
 
-  const navItems = [
-    { path: '/participant', label: 'Home', icon: '🏠', exact: true },
-    { path: '/participant/calendar', label: 'Calendar', icon: '📅' },
-    { path: '/participant/registrations', label: 'My Registrations', icon: '🎟️' },
-    { path: '/participant/history', label: 'History', icon: '📜' },
-    { path: '/participant/certificates', label: 'Certificates', icon: '🏆' },
-    { path: '/participant/profile', label: 'Profile', icon: '👤' },
+  const leftNav = [
+    { path: '/participant', label: 'Home', icon: Home, exact: true },
+    { path: '/participant/registrations', label: 'Events', icon: ClipboardList },
   ];
+
+  const rightNav = [
+    { path: '/participant/calendar', label: 'Calendar', icon: CalendarDays },
+    { path: '/participant/profile', label: 'Profile', icon: User },
+  ];
+
+  const NavItem = ({ item }) => (
+    <NavLink
+      to={item.path}
+      end={item.exact}
+      className={({ isActive }) =>
+        `relative flex flex-col items-center gap-0.5 py-2 px-3 transition-all duration-200 ${
+          isActive
+            ? 'text-cyan-600'
+            : 'text-gray-400 hover:text-gray-600'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <item.icon
+            size={22}
+            strokeWidth={isActive ? 2.5 : 1.8}
+            className={`transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}
+          />
+          <span className={`text-[10px] sm:text-xs leading-tight ${isActive ? 'font-bold' : 'font-medium'}`}>
+            {item.label}
+          </span>
+          {isActive && (
+            <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-5 h-[3px] bg-gradient-to-r from-cyan-500 to-indigo-600 rounded-full" />
+          )}
+        </>
+      )}
+    </NavLink>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 relative overflow-x-hidden">
@@ -71,40 +103,48 @@ const ParticipantLayout = () => {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
+      <main className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation - Mobile First */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-white/60 shadow-2xl z-[100]">
-        <div className="w-full max-w-7xl mx-auto">
-          <div className="flex justify-around items-center px-2">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.exact}
-                className={({ isActive }) =>
-                  `relative flex flex-col items-center py-2 sm:py-3 px-2 sm:px-3 text-[10px] sm:text-xs transition-all duration-300 min-w-0 ${
-                    isActive
-                      ? 'text-cyan-600 font-black'
-                      : 'text-gray-500 hover:text-gray-700 font-semibold'
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <span className={`text-lg sm:text-xl mb-0.5 sm:mb-1 transition-transform duration-300 ${
-                      isActive ? 'scale-110' : ''
-                    }`}>{item.icon}</span>
-                    <span className="hidden sm:inline truncate max-w-[80px] text-center">{item.label}</span>
-                    {isActive && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-gradient-to-r from-cyan-500 to-indigo-600 rounded-full"></div>
-                    )}
-                  </>
-                )}
-              </NavLink>
-            ))}
+      {/* Bottom Navigation with Floating QR Button */}
+      <nav className="fixed bottom-0 left-0 right-0 z-[100]">
+        <div className="w-full max-w-7xl mx-auto relative">
+          {/* Floating QR Scan Button */}
+          <div className="absolute left-1/2 -translate-x-1/2 -top-7 z-10">
+            <NavLink
+              to="/participant/scan"
+              className={({ isActive }) =>
+                `group relative flex items-center justify-center w-[62px] h-[62px] rounded-full shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl ${
+                  isActive
+                    ? 'bg-gradient-to-br from-cyan-500 to-indigo-600 shadow-cyan-500/40'
+                    : 'bg-gradient-to-br from-cyan-500 to-indigo-600 shadow-indigo-500/30'
+                }`
+              }
+            >
+              <ScanLine size={28} strokeWidth={2.2} className="text-white" />
+              {/* Pulse ring */}
+              <span className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 to-indigo-500 animate-ping opacity-20" />
+            </NavLink>
+            <span className="block text-center text-[10px] sm:text-xs font-bold text-gray-500 mt-1">Scan</span>
+          </div>
+
+          {/* Nav Bar */}
+          <div className="bg-white/95 backdrop-blur-xl border-t border-gray-200/60 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+            <div className="flex items-end justify-around px-2 h-[64px]">
+              {/* Left nav items */}
+              {leftNav.map((item) => (
+                <NavItem key={item.path} item={item} />
+              ))}
+
+              {/* Spacer for center button */}
+              <div className="w-[76px] flex-shrink-0" />
+
+              {/* Right nav items */}
+              {rightNav.map((item) => (
+                <NavItem key={item.path} item={item} />
+              ))}
+            </div>
           </div>
         </div>
       </nav>

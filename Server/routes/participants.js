@@ -7,6 +7,7 @@ import Certificate from '../models/Certificate.js';
 import CertificateRequest from '../models/CertificateRequest.js';
 import EventUpdate from '../models/EventUpdate.js';
 import User from '../models/User.js';
+import activeSessions from '../utils/sessionStore.js';
 
 const router = express.Router();
 
@@ -366,19 +367,57 @@ router.delete('/registration/:eventId', async (req, res) => {
 // POST /api/participant/attendance/scan - Scan QR to mark attendance
 router.post('/attendance/scan', async (req, res) => {
   try {
-    const { eventId, email, qrCode } = req.body;
+    const { eventId, email, qrCode, sessionId } = req.body;
     
     if (!eventId || !email) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Event ID and email are required' 
+        message: 'Event ID and email are required',
+        code: 'MISSING_FIELDS'
       });
     }
     
     if (!isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return res.status(400).json({ success: false, message: 'Invalid event ID', code: 'INVALID_EVENT' });
+    }
+
+    // Validate QR session if sessionId provided (from dynamic QR)
+    if (sessionId) {
+      const session = activeSessions.get(sessionId);
+      if (!session) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid or expired QR code. Please ask the organizer to generate a new QR code.',
+          code: 'INVALID_SESSION'
+        });
+      }
+      if (Date.now() > session.expiresAt) {
+        activeSessions.delete(sessionId);
+        return res.status(400).json({ 
+          success: false, 
+          message: 'QR code has expired. Please ask the organizer to refresh the QR code.',
+          code: 'SESSION_EXPIRED'
+        });
+      }
+      if (session.eventId !== eventId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'QR code does not match the event.',
+          code: 'EVENT_MISMATCH'
+        });
+      }
     }
     
+    // Verify event exists and is active
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Event not found',
+        code: 'EVENT_NOT_FOUND'
+      });
+    }
+
     // Find the participant
     const participant = await Participant.findOne({ 
       event: eventId, 
@@ -388,7 +427,7 @@ router.post('/attendance/scan', async (req, res) => {
     if (!participant) {
       return res.status(404).json({ 
         success: false, 
-        message: 'You are not registered for this event',
+        message: 'You are not registered for this event. Please register first.',
         code: 'NOT_REGISTERED'
       });
     }
@@ -411,18 +450,28 @@ router.post('/attendance/scan', async (req, res) => {
     if (existingAttendance) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Attendance already marked',
+        message: 'Your attendance is already marked for this event!',
         code: 'ALREADY_MARKED',
         scannedAt: existingAttendance.scannedAt
       });
     }
     
+    // Determine who marked attendance
+    let markedById = participant._id;
+    if (sessionId) {
+      const session = activeSessions.get(sessionId);
+      if (session && isValidObjectId(session.organizerId)) {
+        markedById = session.organizerId;
+      }
+    }
+
     // Mark attendance
     const attendance = new Attendance({
       event: eventId,
       participant: participant._id,
       scannedAt: new Date(),
-      markedBy: participant._id, // Self-marked via QR scan
+      markedBy: markedById,
+      sessionId: sessionId || 'self-scan',
       status: 'PRESENT'
     });
     
@@ -437,10 +486,11 @@ router.post('/attendance/scan', async (req, res) => {
     
     res.json({
       success: true,
-      message: 'Attendance marked successfully!',
+      message: `Attendance marked successfully for ${event.title}!`,
       code: 'SUCCESS',
       data: {
-        participantName: participant.fullName,
+        participantName: participant.fullName || participant.name,
+        eventTitle: event.title,
         eventId,
         scannedAt: attendance.scannedAt
       }

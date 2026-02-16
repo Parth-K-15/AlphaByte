@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import ParticipantAuth from '../models/ParticipantAuth.js';
+import { logAuth } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -80,6 +81,9 @@ router.post('/signup', async (req, res) => {
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
+
+    // Log the signup
+    await logAuth('Participant Signup', participant, `New participant account created: ${participant.name}`, 'success');
 
     res.status(201).json({
       success: true,
@@ -201,6 +205,9 @@ router.post('/login', async (req, res) => {
         break;
     }
 
+    // Log the login
+    await logAuth('User Login', user, `${role} logged in successfully`, 'success');
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -231,7 +238,31 @@ router.post('/login', async (req, res) => {
 
 // @desc    Logout (frontend clears token)
 // @route   POST /api/auth/logout
-router.post('/logout', (req, res) => {
+router.post('/logout', async (req, res) => {
+  try {
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, JWT_SECRET);
+      
+      // Get user for logging
+      let user;
+      if (decoded.isParticipant) {
+        user = await ParticipantAuth.findById(decoded.id).select('-password');
+      } else {
+        user = await User.findById(decoded.id).select('-password');
+      }
+      
+      if (user) {
+        await logAuth('User Logout', user, `${decoded.role || 'PARTICIPANT'} logged out`, 'info');
+      }
+    }
+  } catch (error) {
+    // Don't block logout if logging fails
+    console.error('Logout log error:', error.message);
+  }
+  
   res.json({
     success: true,
     message: 'Logged out successfully',

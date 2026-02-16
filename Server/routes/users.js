@@ -1,5 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
+import { verifyToken, authorizeRoles } from '../middleware/auth.js';
+import { logUser } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -71,7 +73,7 @@ router.get('/:id', async (req, res) => {
 
 // @desc    Toggle user active status
 // @route   PUT /api/users/:id/toggle-status
-router.put('/:id/toggle-status', async (req, res) => {
+router.put('/:id/toggle-status', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
 
@@ -84,6 +86,10 @@ router.put('/:id/toggle-status', async (req, res) => {
 
     user.isActive = !user.isActive;
     await user.save();
+
+    // Log status toggle
+    const statusAction = user.isActive ? 'activated' : 'deactivated';
+    await logUser(`User ${statusAction}`, req.user, user, `User account ${statusAction}`, 'info');
 
     res.json({
       success: true,

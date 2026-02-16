@@ -1,5 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
+import { verifyToken, authorizeRoles } from '../middleware/auth.js';
+import { logAccess } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -60,7 +62,7 @@ router.get('/suspended', async (req, res) => {
 });
 
 // POST /api/access-control/restrict - Restrict a user
-router.post('/restrict', async (req, res) => {
+router.post('/restrict', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const { userId, reason } = req.body;
     
@@ -83,6 +85,9 @@ router.post('/restrict', async (req, res) => {
     user.restrictionReason = reason;
     user.restrictedAt = new Date();
     await user.save();
+
+    // Log restriction
+    await logAccess('User Restricted', req.user, `Restricted ${user.email}: ${reason}`, 'warning');
     
     res.json({ 
       success: true, 
@@ -100,7 +105,7 @@ router.post('/restrict', async (req, res) => {
 });
 
 // POST /api/access-control/suspend - Suspend a user
-router.post('/suspend', async (req, res) => {
+router.post('/suspend', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const { userId, reason } = req.body;
     
@@ -123,6 +128,9 @@ router.post('/suspend', async (req, res) => {
     user.suspensionReason = reason;
     user.suspendedAt = new Date();
     await user.save();
+
+    // Log suspension
+    await logAccess('User Suspended', req.user, `Suspended ${user.email}: ${reason}`, 'warning');
     
     res.json({ 
       success: true, 
@@ -140,7 +148,7 @@ router.post('/suspend', async (req, res) => {
 });
 
 // DELETE /api/access-control/restrict/:userId - Unrestrict a user
-router.delete('/restrict/:userId', async (req, res) => {
+router.delete('/restrict/:userId', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const { userId } = req.params;
     
@@ -156,6 +164,9 @@ router.delete('/restrict/:userId', async (req, res) => {
     user.restrictionReason = undefined;
     user.restrictedAt = undefined;
     await user.save();
+
+    // Log unrestriction
+    await logAccess('User Unrestricted', req.user, `Unrestricted ${user.email}`, 'success');
     
     res.json({ 
       success: true, 
@@ -173,7 +184,7 @@ router.delete('/restrict/:userId', async (req, res) => {
 });
 
 // DELETE /api/access-control/suspend/:userId - Unsuspend a user
-router.delete('/suspend/:userId', async (req, res) => {
+router.delete('/suspend/:userId', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
   try {
     const { userId } = req.params;
     
@@ -189,6 +200,9 @@ router.delete('/suspend/:userId', async (req, res) => {
     user.suspensionReason = undefined;
     user.suspendedAt = undefined;
     await user.save();
+
+    // Log unsuspension
+    await logAccess('User Unsuspended', req.user, `Unsuspended ${user.email}`, 'success');
     
     res.json({ 
       success: true, 

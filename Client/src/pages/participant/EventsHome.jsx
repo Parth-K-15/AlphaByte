@@ -16,7 +16,6 @@ import {
   Filter,
   BookOpen,
   Zap,
-  CheckCircle,
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000/api';
@@ -29,16 +28,120 @@ const EventsHome = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [userProfile, setUserProfile] = useState(null);
+  const [myRegistrations, setMyRegistrations] = useState([]);
+  const [eventDates, setEventDates] = useState([]);
   const [userStats, setUserStats] = useState({
-    eventsAttended: 24,
-    certificatesEarned: 18,
+    eventsAttended: 0,
+    certificatesEarned: 0,
     learningGoal: 30,
-    attendanceScore: 92,
+    attendanceScore: 0,
+    currentMonthEvents: 0,
+    learningStreak: 0,
   });
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     fetchEvents();
   }, [search, statusFilter, typeFilter]);
+
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user profile
+      const profileResponse = await fetch(`${API_BASE}/participant/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const profileData = await profileResponse.json();
+      
+      if (profileData.success) {
+        setUserProfile(profileData.data);
+        
+        // Fetch user's registered events
+        if (profileData.data.email) {
+          const registrationsResponse = await fetch(
+            `${API_BASE}/participant/my-events?email=${encodeURIComponent(profileData.data.email)}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          const registrationsData = await registrationsResponse.json();
+          
+          if (registrationsData.success) {
+            setMyRegistrations(registrationsData.data);
+            
+            // Calculate stats from registrations
+            const confirmedRegistrations = registrationsData.data.filter(
+              reg => reg.registrationStatus === 'CONFIRMED'
+            );
+            
+            const certificatesCount = registrationsData.data.filter(
+              reg => reg.certificate && reg.certificate.status === 'ISSUED'
+            ).length;
+            
+            const currentDate = new Date();
+            const currentMonthRegs = registrationsData.data.filter(reg => {
+              if (!reg.event?.startDate) return false;
+              const eventDate = new Date(reg.event.startDate);
+              return eventDate.getMonth() === currentDate.getMonth() && 
+                     eventDate.getFullYear() === currentDate.getFullYear();
+            }).length;
+            
+            // Calculate attendance score (confirmed / total * 100)
+            const attendanceScore = registrationsData.data.length > 0
+              ? Math.round((confirmedRegistrations.length / registrationsData.data.length) * 100)
+              : 0;
+            
+            // Extract event dates for calendar
+            const dates = registrationsData.data
+              .filter(reg => reg.event?.startDate)
+              .map(reg => {
+                const date = new Date(reg.event.startDate);
+                return date.getDate();
+              });
+            setEventDates(dates);
+            
+            // Calculate learning streak (simplified - days with events in past 30 days)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const recentEvents = registrationsData.data.filter(reg => {
+              if (!reg.event?.startDate) return false;
+              const eventDate = new Date(reg.event.startDate);
+              return eventDate >= thirtyDaysAgo && eventDate <= currentDate;
+            });
+            const learningStreak = recentEvents.length;
+            
+            setUserStats({
+              eventsAttended: confirmedRegistrations.length,
+              certificatesEarned: certificatesCount,
+              learningGoal: 30,
+              attendanceScore,
+              currentMonthEvents: currentMonthRegs,
+              learningStreak,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -56,27 +159,6 @@ const EventsHome = () => {
       }
     } catch (error) {
       console.error('Error fetching events:', error);
-      // Set mock data for demonstration
-      setEvents([
-        {
-          _id: '1',
-          title: 'Tech Conference 2024',
-          status: 'upcoming',
-          type: 'Online',
-          startDate: '2024-03-15',
-          registrationFee: 0,
-          spotsLeft: 50,
-        },
-        {
-          _id: '2',
-          title: 'Professional Development Workshop',
-          status: 'ongoing',
-          type: 'Offline',
-          startDate: '2024-03-10',
-          registrationFee: 500,
-          spotsLeft: 15,
-        },
-      ]);
     } finally {
       setLoading(false);
     }
@@ -210,7 +292,7 @@ const EventsHome = () => {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-3 h-1 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full"></div>
-                  <span className="text-xs text-gray-600">This month</span>
+                  <span className="text-xs text-gray-600">This mo{userStats.currentMonthEvents}th</span>
                 </div>
                 <div className="text-lg font-bold text-gray-800">8</div>
               </div>
@@ -243,8 +325,8 @@ const EventsHome = () => {
             </div>
             
             <div className="grid grid-cols-7 gap-1 mb-2">
-              {dayNames.map(day => (
-                <div key={day} className="text-center text-xs text-gray-400 p-2">{day}</div>
+              {dayNames.map((day, index) => (
+                <div key={`day-${index}`} className="text-center text-xs text-gray-400 p-2">{day}</div>
               ))}
             </div>
             
@@ -257,7 +339,9 @@ const EventsHome = () => {
                 const isToday = today.getDate() === day && 
                                today.getMonth() === currentMonth.getMonth() && 
                                today.getFullYear() === currentMonth.getFullYear();
-                const hasEvent = [8, 15, 22, 28].includes(day);
+                const hasEvent = currentMonth.getMonth() === new Date().getMonth() && 
+                                currentMonth.getFullYear() === new Date().getFullYear() &&
+                                eventDates.includes(day);
                 
                 return (
                   <button
@@ -335,70 +419,73 @@ const EventsHome = () => {
         <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-medium text-gray-800">My Learning Activity</h3>
-            <button className="text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center gap-1">
+            <Link to="/participant/registrations" className="text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center gap-1">
               View All <Plus size={14} />
-            </button>
+            </Link>
           </div>
           
           <div className="space-y-4">
-            {[
-              {
-                name: 'Web Development Bootcamp',
-                instructor: 'Sarah Wilson',
-                progress: '8/10',
-                completion: 80,
-                avatar: '💻',
-                color: 'from-blue-500 to-cyan-500'
-              },
-              {
-                name: 'Data Science Workshop',
-                instructor: 'Michael Chen',
-                progress: '6/8',
-                completion: 75,
-                avatar: '📊',
-                color: 'from-green-500 to-emerald-500'
-              },
-              {
-                name: 'UI/UX Design Masterclass',
-                instructor: 'Lisa Anderson',
-                progress: '4/6',
-                completion: 67,
-                avatar: '🎨',
-                color: 'from-purple-500 to-pink-500'
-              },
-              {
-                name: 'Machine Learning Basics',
-                instructor: 'David Kumar',
-                progress: '3/5',
-                completion: 60,
-                avatar: '🤖',
-                color: 'from-orange-500 to-red-500'
-              },
-            ].map((course, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="text-xl">{course.avatar}</div>
-                  <div>
-                    <div className="font-medium text-gray-800 text-sm">{course.name}</div>
-                    <div className="text-xs text-gray-500">Instructor: {course.instructor}</div>
-                  </div>
+            {myRegistrations.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-2">
+                  <BookOpen className="w-12 h-12 mx-auto" />
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500 mb-1">Completed: {course.progress}</div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full bg-gradient-to-r ${course.color} rounded-full`}
-                        style={{ width: `${course.completion}%` }}
-                      />
-                    </div>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <Star size={16} />
-                    </button>
-                  </div>
-                </div>
+                <p className="text-gray-600 text-sm">No registered events yet</p>
+                <p className="text-gray-400 text-xs mt-1">Browse events and start your learning journey!</p>
               </div>
-            ))}
+            ) : (
+              myRegistrations.slice(0, 4).map((registration, index) => {
+                const colors = [
+                  'from-blue-500 to-cyan-500',
+                  'from-green-500 to-emerald-500',
+                  'from-purple-500 to-pink-500',
+                  'from-orange-500 to-red-500'
+                ];
+                const icons = ['💻', '📊', '🎨', '🤖', '🎯', '📚', '🚀', '⚡'];
+                
+                // Calculate progress based on event status
+                const event = registration.event;
+                const completion = event?.status === 'completed' ? 100 
+                  : event?.status === 'ongoing' ? 50 
+                  : registration.registrationStatus === 'CONFIRMED' ? 25 : 10;
+                
+                return (
+                  <Link
+                    key={registration._id}
+                    to={`/participant/event/${registration.event?._id}`}
+                    className="flex items-center justify-between p-4 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-xl">{icons[index % icons.length]}</div>
+                      <div>
+                        <div className="font-medium text-gray-800 text-sm">
+                          {registration.event?.title || 'Event'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Status: {registration.registrationStatus}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500 mb-1">
+                        {registration.certificate ? 'Certificate Issued' : 'In Progress'}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full bg-gradient-to-r ${colors[index % colors.length]} rounded-full`}
+                            style={{ width: `${completion}%` }}
+                          />
+                        </div>
+                        {registration.certificate && (
+                          <Award size={16} className="text-yellow-500" />
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -415,18 +502,39 @@ const EventsHome = () => {
           </div>
           
           <div className="space-y-6">
-            {events.slice(0, 3).map((event, index) => {
-              // Different gradient backgrounds for variety
-              const gradients = [
-                'from-cyan-400 via-blue-500 to-purple-600',
-                'from-pink-400 via-purple-500 to-indigo-600', 
-                'from-orange-400 via-red-500 to-pink-600'
-              ];
-              
-              const eventDate = event.startDate ? new Date(event.startDate) : null;
-              const daysLeft = eventDate ? Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
-              
-              return (
+            {events.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-3">
+                  <Calendar className="w-16 h-16 mx-auto" />
+                </div>
+                <h4 className="text-gray-700 font-medium mb-2">No Events Available</h4>
+                <p className="text-gray-500 text-sm mb-4">
+                  There are currently no upcoming events. Check back soon!
+                </p>
+                <Link 
+                  to="/participant/calendar" 
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  <Calendar size={16} />
+                  View Calendar
+                </Link>
+              </div>
+            ) : (
+              events.map((event, index) => {
+                // Different gradient backgrounds for variety
+                const gradients = [
+                  'from-cyan-400 via-blue-500 to-purple-600',
+                  'from-pink-400 via-purple-500 to-indigo-600', 
+                  'from-orange-400 via-red-500 to-pink-600',
+                  'from-green-400 via-teal-500 to-blue-600',
+                  'from-yellow-400 via-orange-500 to-red-600',
+                  'from-indigo-400 via-purple-500 to-pink-600'
+                ];
+                
+                const eventDate = event.startDate ? new Date(event.startDate) : null;
+                const daysLeft = eventDate ? Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                
+                return (
                 <Link
                   key={event._id}
                   to={`/participant/event/${event._id}`}
@@ -499,42 +607,24 @@ const EventsHome = () => {
                   </div>
                 </Link>
               );
-            })}
+            })
+            )}
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Learning Streak */}
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-          <h3 className="font-medium text-gray-800 mb-6">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { name: 'Scan QR', icon: CheckCircle, color: 'from-blue-500 to-cyan-500', path: '/participant/qr-scanner' },
-              { name: 'My Events', icon: Calendar, color: 'from-purple-500 to-pink-500', path: '/participant/registrations' },
-              { name: 'Certificates', icon: Award, color: 'from-green-500 to-emerald-500', path: '/participant/certificates' },
-              { name: 'Profile', icon: Users, color: 'from-orange-500 to-red-500', path: '/participant/profile' },
-            ].map((action, index) => (
-              <Link
-                key={index}
-                to={action.path}
-                className="flex flex-col items-center gap-3 p-4 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-all duration-300 hover:scale-105 group"
-              >
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${action.color} text-white group-hover:shadow-lg transition-all`}>
-                  <action.icon size={20} />
-                </div>
-                <span className="text-xs font-medium text-gray-700">{action.name}</span>
-              </Link>
-            ))}
-          </div>
-          
-          <div className="mt-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+          <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-100">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-medium text-gray-800">Learning Streak</h4>
-                <p className="text-xs text-gray-600 mt-1">Keep up the great work!</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {userStats.learningStreak > 0 ? 'Keep up the great work!' : 'Start your journey!'}
+                </p>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-blue-600">12</div>
-                <div className="text-xs text-gray-500">days</div>
+                <div className="text-xl font-bold text-blue-600">{userStats.learningStreak}</div>
+                <div className="text-xs text-gray-500">events</div>
               </div>
             </div>
           </div>
