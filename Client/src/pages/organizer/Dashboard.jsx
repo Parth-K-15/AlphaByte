@@ -281,11 +281,11 @@ const Dashboard = () => {
                 />
               </div>
               <Link
-                to="/organizer/events/create"
+                to="/organizer/events"
                 className="bg-[#191A23] text-[#B9FF66] px-4 py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:bg-[#2A2B33] transition-all duration-300 flex items-center gap-2"
               >
                 <Plus size={16} />
-                Create Event
+                Manage Events
               </Link>
             </div>
           </div>
@@ -615,11 +615,11 @@ const Dashboard = () => {
                       Create your first event to get started!
                     </p>
                     <Link
-                      to="/organizer/events/create"
+                      to="/organizer/events"
                       className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[#B9FF66] text-[#191A23] rounded-lg hover:bg-[#A8EE55] transition-colors text-sm font-semibold"
                     >
                       <Plus size={16} />
-                      Create Event
+                      Manage Events
                     </Link>
                   </div>
                 )}

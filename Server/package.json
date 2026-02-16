@@ -29,6 +29,7 @@
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.13",
     "puppeteer": "^24.37.3",
-    "redis": "^5.10.0"
+    "redis": "^5.10.0",
+    "tesseract.js": "^7.0.0"
   }
 }
