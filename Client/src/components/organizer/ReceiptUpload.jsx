@@ -4,7 +4,7 @@ import { processReceipt, validateExtractedData, suggestCategory } from "../../se
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
-const ReceiptUpload = ({ onUpload, onOCRComplete = null, existingReceipt = null, disabled = false, enableOCR = false }) => {
+const ReceiptUpload = ({ onUpload, onOCRComplete = null, onOCRStart = null, existingReceipt = null, disabled = false, enableOCR = false }) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(existingReceipt);
   const [dragActive, setDragActive] = useState(false);
@@ -98,13 +98,16 @@ const ReceiptUpload = ({ onUpload, onOCRComplete = null, existingReceipt = null,
           // If OCR is enabled and file is an image, process it
           if (enableOCR && file.type.startsWith('image/')) {
             setOcrProcessing(true);
+            if (onOCRStart) onOCRStart();
             try {
               const result = await processReceipt(previewUrl);
               
               if (result.success) {
                 setOcrResult(result);
                 const validation = validateExtractedData(result.parsedData);
-                const suggestedCat = suggestCategory(result.parsedData);
+                // Pass raw text hint for better category detection
+                const dataWithHint = { ...result.parsedData, rawTextHint: result.rawText || '' };
+                const suggestedCat = suggestCategory(dataWithHint);
                 
                 // Notify parent with OCR data
                 if (onOCRComplete) {
@@ -182,6 +185,7 @@ const ReceiptUpload = ({ onUpload, onOCRComplete = null, existingReceipt = null,
     if (!preview || !preview.url || !enableOCR) return;
     
     setOcrProcessing(true);
+    if (onOCRStart) onOCRStart();
     setError("");
     
     try {
@@ -190,7 +194,9 @@ const ReceiptUpload = ({ onUpload, onOCRComplete = null, existingReceipt = null,
       if (result.success) {
         setOcrResult(result);
         const validation = validateExtractedData(result.parsedData);
-        const suggestedCat = suggestCategory(result.parsedData);
+        // Pass raw text hint for better category detection
+        const dataWithHint = { ...result.parsedData, rawTextHint: result.rawText || '' };
+        const suggestedCat = suggestCategory(dataWithHint);
         
         // Notify parent with OCR data
         if (onOCRComplete) {

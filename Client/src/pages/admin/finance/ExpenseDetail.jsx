@@ -56,7 +56,7 @@ const ExpenseDetail = () => {
       await financeService.updateExpenseStatus(expenseId, {
         status,
         adminNotes,
-        adminId: user.userId,
+        adminId: user?.id || user?.userId || user?._id,
       });
       alert(`Expense ${status.toLowerCase()} successfully`);
       fetchExpenseDetail();
@@ -73,6 +73,8 @@ const ExpenseDetail = () => {
         return "bg-yellow-100 text-yellow-800";
       case "APPROVED":
         return "bg-green-100 text-green-800";
+      case "CHANGES_REQUESTED":
+        return "bg-purple-100 text-purple-800";
       case "REJECTED":
         return "bg-red-100 text-red-800";
       case "REIMBURSED":
@@ -240,6 +242,38 @@ const ExpenseDetail = () => {
                   </div>
                 </div>
 
+                {/* Reimbursement Payout Details */}
+                <div className="flex items-start">
+                  <div className="w-32 text-gray-500 font-medium">UPI ID:</div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">
+                      {expense.incurredBy?.upiId || "Not provided"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start">
+                  <div className="w-32 text-gray-500 font-medium">Payout QR:</div>
+                  <div className="flex-1">
+                    {expense.incurredBy?.payoutQrUrl ? (
+                      <a
+                        href={expense.incurredBy.payoutQrUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block"
+                      >
+                        <img
+                          src={expense.incurredBy.payoutQrUrl}
+                          alt="Payout QR"
+                          className="w-24 h-24 rounded-lg border border-gray-200 object-cover hover:border-blue-400 transition-colors"
+                        />
+                      </a>
+                    ) : (
+                      <p className="text-sm text-gray-500">Not uploaded</p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Date */}
                 <div className="flex items-start">
                   <div className="w-32 text-gray-500 font-medium flex items-center space-x-2">
@@ -315,6 +349,14 @@ const ExpenseDetail = () => {
                   >
                     <CheckCircle2 className="w-5 h-5" />
                     <span>Approve</span>
+                  </button>
+                  <button
+                    onClick={() => handleStatusUpdate("CHANGES_REQUESTED")}
+                    disabled={actionLoading || !adminNotes}
+                    className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50"
+                  >
+                    <AlertCircle className="w-5 h-5" />
+                    <span>Request Changes</span>
                   </button>
                   <button
                     onClick={() => handleStatusUpdate("REJECTED")}

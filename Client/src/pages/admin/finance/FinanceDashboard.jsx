@@ -528,21 +528,23 @@ const FinanceDashboard = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
 
-            {/* Amendments Tab */}
-            {activeTab === "amendments" && (
-              <div className="p-6">
-                {amendments.length === 0 ? (
-                  <div className="text-center py-12">
-                    <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No pending amendments</p>
-                  </div>
-                ) : (
+        {/* Amendments Tab */}
+        {activeTab === "amendments" && (
+          <div className="p-6">
+            {amendments.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertCircle className="h-12 w-12 text-gray-400 dark:text-zinc-600 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-zinc-400">No pending amendments</p>
+              </div>
+            ) : (
                   <div className="space-y-4">
-                    {amendments.map((item) => (
+                    {amendments.map((item, index) => (
                       <div
-                        key={item.amendment._id}
-                        className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                        key={item.amendment?._id || `amendment-${index}`}
+                        className="bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/5 rounded-lg p-6 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -552,40 +554,40 @@ const FinanceDashboard = () => {
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="text-lg font-semibold text-gray-900">
+                                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                                     {item.event?.title || "Unknown Event"}
                                   </h3>
-                                  <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-medium rounded-full">
                                     Amendment Pending
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-6 text-sm text-gray-600 mb-3">
+                                <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-zinc-400 mb-3">
                                   <div className="flex items-center gap-1">
                                     <Calendar className="h-4 w-4" />
-                                    {new Date(item.event?.eventDate).toLocaleDateString()}
+                                    {item.event?.eventDate ? new Date(item.event.eventDate).toLocaleDateString() : 'N/A'}
                                   </div>
                                   <div>
                                     Requested by: {item.amendment.requestedBy?.name || "Unknown"}
                                   </div>
                                   <div>
-                                    {new Date(item.amendment.requestedAt).toLocaleDateString()}
+                                    {item.amendment.createdAt ? new Date(item.amendment.createdAt).toLocaleDateString() : 'N/A'}
                                   </div>
                                 </div>
                                 {item.amendment.reason && (
-                                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                                  <p className="text-sm text-gray-700 dark:text-zinc-300 bg-gray-50 dark:bg-white/5 p-3 rounded-lg">
                                     <strong>Reason:</strong> {item.amendment.reason}
                                   </p>
                                 )}
                                 <div className="mt-3 flex items-center gap-4 text-sm">
                                   <div>
-                                    <span className="text-gray-600">Categories:</span>{" "}
-                                    <span className="font-medium text-gray-900">
+                                    <span className="text-gray-600 dark:text-zinc-400">Categories:</span>{" "}
+                                    <span className="font-medium text-gray-900 dark:text-white">
                                       {item.amendment.requestedCategories?.length || 0}
                                     </span>
                                   </div>
                                   <div>
-                                    <span className="text-gray-600">Total Requested:</span>{" "}
-                                    <span className="font-bold text-green-600">
+                                    <span className="text-gray-600 dark:text-zinc-400">Total Requested:</span>{" "}
+                                    <span className="font-bold text-green-600 dark:text-green-400">
                                       ₹{item.amendment.requestedCategories?.reduce((sum, cat) => sum + cat.requestedAmount, 0).toLocaleString() || 0}
                                     </span>
                                   </div>
@@ -597,7 +599,7 @@ const FinanceDashboard = () => {
                           {/* Review Button */}
                           <button
                             onClick={() =>
-                              navigate(`/admin/finance/amendments/${item.budgetId}/${item.amendment._id}`)
+                              navigate(`/admin/finance/amendments/${item.event?._id}/${item.amendment._id}`)
                             }
                             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
                           >
@@ -611,8 +613,6 @@ const FinanceDashboard = () => {
                 )}
               </div>
             )}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -10,11 +10,13 @@ import {
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
+import { useAuth } from "../../../context/AuthContext";
 import { financeService } from "../../../services/financeService";
 
 const AmendmentReview = () => {
   const { eventId, amendmentId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [budget, setBudget] = useState(null);
@@ -32,13 +34,14 @@ const AmendmentReview = () => {
     try {
       setLoading(true);
       const response = await financeService.getBudget(eventId);
-      
-      if (response.success) {
-        setBudget(response.data);
-        setEvent(response.data.event);
+      const budgetData = response?.data;
+
+      if (response.success && budgetData) {
+        setBudget(budgetData);
+        setEvent(budgetData.event || null);
         
         // Find the specific amendment
-        const specificAmendment = response.data.amendments?.find(
+        const specificAmendment = budgetData.amendments?.find(
           (a) => a._id === amendmentId
         );
         
@@ -52,6 +55,10 @@ const AmendmentReview = () => {
           });
           setAllocations(initialAllocations);
         }
+      } else {
+        setBudget(null);
+        setEvent(null);
+        setAmendment(null);
       }
     } catch (error) {
       console.error("Error fetching amendment:", error);
@@ -93,6 +100,7 @@ const AmendmentReview = () => {
         status: "APPROVED",
         adminNotes: adminNotes.trim(),
         allocations: allocationArray,
+        adminId: user?._id || user?.id || user?.userId,
       });
 
       alert("Amendment approved successfully!");
@@ -120,6 +128,7 @@ const AmendmentReview = () => {
       await financeService.reviewAmendment(eventId, amendmentId, {
         status: "REJECTED",
         adminNotes: adminNotes.trim(),
+        adminId: user?._id || user?.id || user?.userId,
       });
 
       alert("Amendment rejected");
@@ -202,7 +211,9 @@ const AmendmentReview = () => {
             <div>
               <p className="text-sm text-gray-600">Event Date</p>
               <p className="font-semibold text-gray-900">
-                {new Date(event.eventDate).toLocaleDateString()}
+                {event?.eventDate
+                  ? new Date(event.eventDate).toLocaleDateString()
+                  : "N/A"}
               </p>
             </div>
           </div>
@@ -220,7 +231,9 @@ const AmendmentReview = () => {
             <div>
               <p className="text-sm text-gray-600">Requested On</p>
               <p className="font-semibold text-gray-900">
-                {new Date(amendment.requestedAt).toLocaleDateString()}
+                {amendment?.requestedAt || amendment?.createdAt
+                  ? new Date(amendment.requestedAt || amendment.createdAt).toLocaleDateString()
+                  : "N/A"}
               </p>
             </div>
           </div>

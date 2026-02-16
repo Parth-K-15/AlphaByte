@@ -12,6 +12,8 @@ import {
   X,
   Loader2,
   BookOpen,
+  ImagePlus,
+  Trash2,
 } from 'lucide-react';
 import { eventsApi, teamsApi } from '../../services/api';
 
@@ -22,6 +24,8 @@ const CreateEvent = () => {
   const [loading, setLoading] = useState(false);
   const [fetchingEvent, setFetchingEvent] = useState(isEditMode);
   const [teamLeads, setTeamLeads] = useState([]);
+  const [bannerFile, setBannerFile] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -66,6 +70,9 @@ const CreateEvent = () => {
               tags: event.tags ? event.tags.join(', ') : '',
               rulebook: event.rulebook || '',
             });
+            if (event.bannerImage) {
+              setBannerPreview(event.bannerImage);
+            }
           }
         } catch (error) {
           console.error('Error fetching event:', error);
@@ -99,6 +106,23 @@ const CreateEvent = () => {
     }));
   };
 
+  const handleBannerChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Banner image must be under 5MB');
+        return;
+      }
+      setBannerFile(file);
+      setBannerPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeBanner = () => {
+    setBannerFile(null);
+    setBannerPreview('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -120,13 +144,20 @@ const CreateEvent = () => {
         rulebook: formData.rulebook,
       };
       
+      let eventId = id;
       if (isEditMode) {
         await eventsApi.update(id, eventData);
-        alert('Event updated successfully!');
       } else {
-        await eventsApi.create(eventData);
-        alert('Event created successfully!');
+        const result = await eventsApi.create(eventData);
+        eventId = result.data?._id;
       }
+
+      // Upload banner if a file was selected
+      if (bannerFile && eventId) {
+        await eventsApi.uploadBanner(eventId, bannerFile);
+      }
+
+      alert(isEditMode ? 'Event updated successfully!' : 'Event created successfully!');
       navigate('/admin/events');
     } catch (error) {
       console.error('Error saving event:', error);
@@ -166,6 +197,43 @@ const CreateEvent = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Banner Image */}
+        <div className="card">
+          <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <ImagePlus size={20} className="text-primary-600" />
+            Event Banner
+          </h2>
+
+          {bannerPreview ? (
+            <div className="relative rounded-xl overflow-hidden border border-gray-200">
+              <img
+                src={bannerPreview}
+                alt="Banner preview"
+                className="w-full h-48 object-cover"
+              />
+              <button
+                type="button"
+                onClick={removeBanner}
+                className="absolute top-3 right-3 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors shadow-lg"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-primary-500 hover:bg-primary-50 transition-colors">
+              <ImagePlus size={32} className="text-gray-400 mb-2" />
+              <span className="text-sm font-medium text-gray-600">Click to upload banner image</span>
+              <span className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB &bull; Recommended: 1200x630</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleBannerChange}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+
         {/* Event Info Section */}
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">

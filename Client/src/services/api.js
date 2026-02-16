@@ -82,6 +82,19 @@ export const eventsApi = {
     fetchApi(`/events/${id}/permissions`, { method: 'PUT', body: permissions }),
   updateTeamMemberPermissions: (id, userId, permissions) =>
     fetchApi(`/events/${id}/team-members/${userId}/permissions`, { method: 'PUT', body: { permissions } }),
+  uploadBanner: async (id, file) => {
+    const formData = new FormData();
+    formData.append('banner', file);
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_BASE_URL}/events/${id}/banner`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Banner upload failed');
+    return data;
+  },
 };
 
 // Teams API

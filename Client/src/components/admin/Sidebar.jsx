@@ -81,6 +81,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       key: 'finance',
       children: [
         { title: 'Budgets', path: '/admin/finance/budgets', badge: null },
+        { title: 'Reimbursements', path: '/admin/finance/reimbursements', badge: null },
         { title: 'Reports', path: '/admin/finance/reports', badge: null },
       ],
     },

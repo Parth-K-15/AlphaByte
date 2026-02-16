@@ -30,6 +30,7 @@ import {
   FinanceDashboard as AdminFinanceDashboard,
   BudgetApproval,
   ExpenseDetail,
+  Reimbursements,
   FinancialReports,
   AmendmentReview,
 } from "./pages/admin";
@@ -51,6 +52,7 @@ import {
   BudgetRequest,
   ExpenseLog,
   BudgetAmendment,
+  PayoutDetails,
 } from "./pages/organizer";
 import {
   EventsHome,
@@ -185,6 +187,10 @@ function App() {
                 element={<FinancialReports />}
               />
               <Route
+                path="finance/reimbursements"
+                element={<Reimbursements />}
+              />
+              <Route
                 path="finance/amendments/:eventId/:amendmentId"
                 element={<AmendmentReview />}
               />
@@ -268,6 +274,7 @@ function App() {
                 path="events/:eventId/finance/amendment"
                 element={<BudgetAmendment />}
               />
+              <Route path="profile/payout" element={<PayoutDetails />} />
               {/* Verify Certificate */}
               <Route path="verify" element={<QRScannerVerify />} />
               <Route path="verify/:verificationId" element={<CertificateVerify />} />

@@ -455,10 +455,31 @@ router.put("/profile", async (req, res) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    const { name, email, phone, avatar } = req.body;
+    const { name, email, phone, avatar, upiId, payoutQrUrl } = req.body;
 
-    // Validate required fields
-    if (!name || !email) {
+    // Load current user to support partial updates
+    let currentUser;
+    if (decoded.isParticipant) {
+      currentUser = await ParticipantAuth.findById(decoded.id).select("-password");
+    } else if (decoded.isSpeaker) {
+      currentUser = await SpeakerAuth.findById(decoded.id).select("-password");
+    } else {
+      currentUser = await User.findById(decoded.id).select("-password");
+    }
+
+    if (!currentUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const nextName = (typeof name === "string" ? name : currentUser.name)?.trim();
+    const nextEmail = (
+      typeof email === "string" ? email.toLowerCase() : currentUser.email
+    )?.trim();
+
+    if (!nextName || !nextEmail) {
       return res.status(400).json({
         success: false,
         message: "Name and email are required",
@@ -467,7 +488,7 @@ router.put("/profile", async (req, res) => {
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(nextEmail)) {
       return res.status(400).json({
         success: false,
         message: "Please provide a valid email address",
@@ -478,17 +499,17 @@ router.put("/profile", async (req, res) => {
     let existingUser;
     if (decoded.isParticipant) {
       existingUser = await ParticipantAuth.findOne({
-        email: email.toLowerCase(),
+        email: nextEmail,
         _id: { $ne: decoded.id },
       });
     } else if (decoded.isSpeaker) {
       existingUser = await SpeakerAuth.findOne({
-        email: email.toLowerCase(),
+        email: nextEmail,
         _id: { $ne: decoded.id }
       });
     } else {
       existingUser = await User.findOne({
-        email: email.toLowerCase(),
+        email: nextEmail,
         _id: { $ne: decoded.id },
       });
     }
@@ -503,14 +524,24 @@ router.put("/profile", async (req, res) => {
     // Update user in appropriate collection
     let updatedUser;
     const updateData = {
-      name,
-      email: email.toLowerCase(),
-      phone: phone || "",
+      name: nextName,
+      email: nextEmail,
+      phone: phone ?? currentUser.phone ?? "",
     };
 
     // Add avatar if provided
     if (avatar) {
       updateData.avatar = avatar;
+    }
+
+    // Payout details are applicable for internal User collection (admin/team lead/staff)
+    if (!decoded.isParticipant && !decoded.isSpeaker) {
+      if (typeof upiId === "string") {
+        updateData.upiId = upiId.trim();
+      }
+      if (typeof payoutQrUrl === "string") {
+        updateData.payoutQrUrl = payoutQrUrl;
+      }
     }
 
     if (decoded.isParticipant) {

@@ -760,7 +760,7 @@ const EventsHome = () => {
                     className="block group"
                   >
                     <div
-                      className={`rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] ${
+                      className={`rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] ${
                         variant === "dark"
                           ? "bg-dark text-white"
                           : variant === "lime"
@@ -768,6 +768,17 @@ const EventsHome = () => {
                             : "bg-light-300 dark:bg-white/5 text-dark dark:text-white"
                       }`}
                     >
+                      {/* Banner Image */}
+                      {event.bannerImage && (
+                        <div className="w-full h-36 overflow-hidden">
+                          <img
+                            src={event.bannerImage}
+                            alt={event.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="p-5">
                       {/* Status Badge */}
                       <div className="flex items-center justify-between mb-3">
                         <span
@@ -829,6 +840,7 @@ const EventsHome = () => {
                             className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
                           />
                         </div>
+                      </div>
                       </div>
                     </div>
                   </Link>

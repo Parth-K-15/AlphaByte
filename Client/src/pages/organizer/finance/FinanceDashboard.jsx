@@ -52,6 +52,7 @@ const FinanceDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [anomalies, setAnomalies] = useState(null);
   const [burnRate, setBurnRate] = useState(null);
+  const isEventStaff = user?.role === "EVENT_STAFF";
   useEffect(() => {
     fetchFinanceData();
   }, [eventId]);
@@ -99,6 +100,9 @@ const FinanceDashboard = () => {
   const totalSpent = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   const totalAllocated = budget?.totalAllocatedAmount || 0;
   const remaining = totalAllocated - totalSpent;
+  const changeRequestedExpenses = expenses.filter(
+    (e) => e.status === "CHANGES_REQUESTED"
+  );
   const utilization =
     totalAllocated > 0 ? Math.round((totalSpent / totalAllocated) * 100) : 0;
 
@@ -108,6 +112,8 @@ const FinanceDashboard = () => {
       PENDING:
         "bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400",
       REJECTED: "bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400",
+      CHANGES_REQUESTED:
+        "bg-purple-100 text-purple-800 dark:bg-purple-500/10 dark:text-purple-400",
       REIMBURSED:
         "bg-blue-100 text-blue-800 dark:bg-blue-500/10 dark:text-blue-400",
       REQUESTED:
@@ -160,7 +166,7 @@ const FinanceDashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          {!budget && (
+          {!budget && !isEventStaff && (
             <Link
               to={`/organizer/events/${eventId}/finance/request`}
               className="flex items-center gap-2 px-5 py-2.5 border-2 border-gray-300 dark:border-white/10 text-[#191A23] dark:text-zinc-300 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-white/5 hover:border-[#191A23] dark:hover:border-white/30 transition-all"
@@ -199,6 +205,25 @@ const FinanceDashboard = () => {
         <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">
           <AlertCircle size={20} className="text-red-600" />
           <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {changeRequestedExpenses.length > 0 && (
+        <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={18} className="text-purple-700 dark:text-purple-400" />
+            <p className="text-sm font-semibold text-purple-800 dark:text-purple-300">
+              {changeRequestedExpenses.length} expense
+              {changeRequestedExpenses.length > 1 ? "s" : ""} need
+              {changeRequestedExpenses.length > 1 ? "" : "s"} changes from admin.
+            </p>
+          </div>
+          <Link
+            to={`/organizer/events/${eventId}/finance/expense`}
+            className="text-sm font-semibold text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-200"
+          >
+            Open Expense Form
+          </Link>
         </div>
       )}
 
@@ -450,15 +475,15 @@ const FinanceDashboard = () => {
             
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={
-                budget?.categoryAllocations?.map(alloc => {
+                budget?.categories?.map(cat => {
                   const spent = expenses
-                    .filter(e => e.category === alloc.category)
+                    .filter(e => e.category === cat.name)
                     .reduce((sum, e) => sum + e.amount, 0);
                   return {
-                    category: alloc.category,
-                    allocated: alloc.amount,
+                    category: cat.name,
+                    allocated: cat.allocatedAmount || 0,
                     spent: spent,
-                    emoji: categoryEmojis[alloc.category] || '📝'
+                    emoji: categoryEmojis[cat.name] || '📝'
                   };
                 }) || []
               }>
@@ -466,9 +491,11 @@ const FinanceDashboard = () => {
                 <XAxis 
                   dataKey="category" 
                   tick={{ fill: '#666', fontSize: 12 }}
-                  tickFormatter={(value, index) => {
-                    const item = budget?.categoryAllocations?.[index];
-                    return item ? `${categoryEmojis[value] || '📝'} ${value}` : value;
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  tickFormatter={(value) => {
+                    return `${categoryEmojis[value] || '📝'} ${value}`;
                   }}
                 />
                 <YAxis tick={{ fill: '#666', fontSize: 12 }} />
@@ -838,6 +865,12 @@ const FinanceDashboard = () => {
                               Type: {expense.type.replace(/_/g, " ")}
                             </span>
                           )}
+                          {expense.status === "CHANGES_REQUESTED" &&
+                            expense.adminNotes && (
+                              <div className="mt-2 text-xs text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 p-2 rounded-lg">
+                                Admin note: {expense.adminNotes}
+                              </div>
+                            )}
                         </div>
                       </div>
                     ))}
@@ -937,6 +970,12 @@ const FinanceDashboard = () => {
                           {anomalyCheck.message}
                         </div>
                       )}
+                      {expense.status === "CHANGES_REQUESTED" &&
+                        expense.adminNotes && (
+                          <div className="text-[11px] text-purple-700 dark:text-purple-300 mt-1 font-medium">
+                            Admin note: {expense.adminNotes}
+                          </div>
+                        )}
                     </div>
                   </div>
                   <div className="text-right">

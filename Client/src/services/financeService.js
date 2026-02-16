@@ -63,6 +63,12 @@ const financeService = {
       body: data,
     }),
 
+  resubmitExpense: (expenseId, data) =>
+    fetchFinanceApi(`/finance/expense/${expenseId}/resubmit`, {
+      method: "PUT",
+      body: data,
+    }),
+
   bulkUpdateExpenses: (data) =>
     fetchFinanceApi("/finance/expenses/bulk-update", {
       method: "PUT",
@@ -83,6 +89,9 @@ const financeService = {
     }),
 
   getPendingAmendments: () => fetchFinanceApi("/finance/amendments/pending"),
+
+  getPendingReimbursementsByUser: () =>
+    fetchFinanceApi("/finance/reimbursements/pending-by-user"),
 
   // Financial Reports
   getEventWiseReport: (filters = {}) => {

@@ -23,7 +23,8 @@ const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 const getEventsContext = async () => {
   try {
     const events = await Event.find({ status: { $in: ['upcoming', 'ongoing', 'completed'] } })
-      .select('title description location venue startDate endDate time category type status registrationFee maxParticipants registrationDeadline tags rulebook')
+      .select('title description location venue startDate endDate time category type status registrationFee maxParticipants registrationDeadline tags rulebook teamLead')
+      .populate('teamLead', 'name email phone')
       .lean();
 
     const participantCounts = await Promise.all(
@@ -51,6 +52,7 @@ const getEventsContext = async () => {
           `Registered Participants: ${participantCounts[i]}`,
           event.registrationDeadline ? `Registration Deadline: ${new Date(event.registrationDeadline).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}` : '',
           event.tags?.length ? `Tags: ${event.tags.join(', ')}` : '',
+          event.teamLead ? `Event Lead: ${event.teamLead.name}${event.teamLead.email ? ` (Email: ${event.teamLead.email})` : ''}${event.teamLead.phone ? ` (Phone: ${event.teamLead.phone})` : ''}` : '',
           event.rulebook ? `\nRulebook:\n${event.rulebook}` : '',
         ].filter(Boolean).join('\n'),
       };

@@ -2,9 +2,12 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import ParticipantSidebar from "../components/participant/Sidebar";
 import ParticipantHeader from "../components/participant/Header";
+import ChatWidget from "../components/ChatWidget";
+import { MessageCircle, X } from "lucide-react";
 
 const ParticipantLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-purple-50/30 to-pink-50/40 dark:from-[#0f0f14] dark:via-[#12121c] dark:to-[#161622] relative overflow-hidden transition-colors duration-300">
@@ -34,6 +37,22 @@ const ParticipantLayout = () => {
           </div>
         </main>
       </div>
+
+      {/* AI Chatbot Widget */}
+      <ChatWidget isOpen={chatOpen} />
+
+      {/* Floating Chat Toggle Button */}
+      <button
+        onClick={() => setChatOpen(!chatOpen)}
+        className={`fixed bottom-24 right-6 z-[60] p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 ${
+          chatOpen
+            ? "bg-red-500 hover:bg-red-600 text-white"
+            : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl"
+        }`}
+        title={chatOpen ? "Close chat" : "Chat with Planix AI"}
+      >
+        {chatOpen ? <X size={24} /> : <MessageCircle size={24} />}
+      </button>
     </div>
   );
 };

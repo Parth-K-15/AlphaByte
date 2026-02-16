@@ -68,12 +68,6 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       icon: LayoutDashboard,
       path: "/organizer",
     },
-    
-    {
-      title: "Finance",
-      icon: Banknote,
-      path: "/organizer/events",
-    },
     {
       title: "Events",
       icon: Calendar,
@@ -123,6 +117,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       title: "Role History",
       icon: Clock,
       path: "/organizer/role-history",
+    },
+    {
+      title: "Payout Details",
+      icon: Banknote,
+      path: "/organizer/profile/payout",
     },
     ...(canManageSpeakers ? [{
       title: "Speakers",

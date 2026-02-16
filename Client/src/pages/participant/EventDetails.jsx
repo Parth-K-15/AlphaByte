@@ -11,6 +11,9 @@ import {
   CheckCircle,
   X,
   ArrowUpRight,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 const API_BASE = "http://localhost:5000/api";
@@ -35,6 +38,7 @@ const EventDetails = () => {
     branch: "",
   });
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [rulebookExpanded, setRulebookExpanded] = useState(false);
 
   useEffect(() => {
     fetchUserProfile();
@@ -490,6 +494,44 @@ const EventDetails = () => {
           )}
         </div>
       </div>
+
+      {/* Rulebook / Guidelines */}
+      {event.rulebook && (
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-6 border border-light-400/50 dark:border-white/5">
+          <button
+            onClick={() => setRulebookExpanded(!rulebookExpanded)}
+            className="w-full flex items-center justify-between group"
+          >
+            <h3 className="font-bold text-lg text-dark dark:text-white flex items-center gap-2">
+              <div className="p-2 bg-dark rounded-xl text-lime">
+                <BookOpen size={18} />
+              </div>
+              Event Rulebook & Guidelines
+            </h3>
+            <div className="p-2 rounded-xl bg-light-300 dark:bg-white/5 group-hover:bg-light-400 dark:group-hover:bg-white/10 transition-colors">
+              {rulebookExpanded ? (
+                <ChevronUp size={18} className="text-dark-300 dark:text-zinc-400" />
+              ) : (
+                <ChevronDown size={18} className="text-dark-300 dark:text-zinc-400" />
+              )}
+            </div>
+          </button>
+
+          {!rulebookExpanded && (
+            <p className="text-dark-200 dark:text-zinc-500 text-sm mt-3">
+              Click to view the complete rulebook, guidelines, scoring criteria, and timeline for this event.
+            </p>
+          )}
+
+          {rulebookExpanded && (
+            <div className="mt-4 pt-4 border-t border-light-400/50 dark:border-white/10">
+              <pre className="text-dark-300 dark:text-zinc-400 whitespace-pre-wrap leading-relaxed text-sm font-sans">
+                {event.rulebook}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Event Timeline */}
       <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-6 border border-light-400/50 dark:border-white/5">

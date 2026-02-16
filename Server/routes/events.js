@@ -1,4 +1,6 @@
 import express from 'express';
+import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
 import Event from '../models/Event.js';
 import User from '../models/User.js';
 import Participant from '../models/Participant.js';
@@ -10,6 +12,27 @@ import { invalidateEventCache, invalidateDashboardCache, invalidateMultiple } fr
 import { CachePatterns } from '../utils/cacheKeys.js';
 
 const router = express.Router();
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Configure multer for banner image uploads
+const bannerStorage = multer.memoryStorage();
+const bannerUpload = multer({
+  storage: bannerStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  },
+});
 
 // Helper to validate MongoDB ObjectId
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
@@ -312,6 +335,57 @@ router.put('/:id', async (req, res) => {
       message: 'Error updating event',
       error: error.message
     });
+  }
+});
+
+// @desc    Upload banner image for event
+// @route   POST /api/events/:id/banner
+router.post('/:id/banner', bannerUpload.single('banner'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID format' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No image file provided' });
+    }
+
+    const event = await Event.findById(id);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    // Upload to Cloudinary
+    const uploadResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'planix/event-banners',
+          resource_type: 'image',
+          transformation: [{ width: 1200, height: 630, crop: 'fill', quality: 'auto' }],
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    event.bannerImage = uploadResult.secure_url;
+    await event.save();
+
+    await invalidateEventCache(id);
+
+    res.json({
+      success: true,
+      message: 'Banner image uploaded successfully',
+      data: { bannerImage: uploadResult.secure_url },
+    });
+  } catch (error) {
+    console.error('Error uploading banner:', error);
+    res.status(500).json({ success: false, message: 'Error uploading banner', error: error.message });
   }
 });
 

@@ -16,5 +16,6 @@ export { default as Logs } from './Logs';
 export { default as FinanceDashboard } from './finance/FinanceDashboard';
 export { default as BudgetApproval } from './finance/BudgetApproval';
 export { default as ExpenseDetail } from './finance/ExpenseDetail';
+export { default as Reimbursements } from './finance/Reimbursements';
 export { default as FinancialReports } from './finance/FinancialReports';
 export { default as AmendmentReview } from './finance/AmendmentReview';

@@ -128,7 +128,8 @@ const SignUp = () => {
               <div className="space-y-2 text-xs">
                 <div className="bg-white/70 rounded-lg p-2">
                   <span className="font-semibold text-gray-700">Participant:</span>
-                  <div className="text-gray-600 mt-1">participant@alphabyte.com / part123</div>
+                  <div className="text-gray-600 mt-1">parthkathane15@gmail.com / 12345678</div>
+                  <div className="text-gray-600 mt-1">kosada.bhat23@pccoepune.org / 12345678</div>
                 </div>
               </div>
             </div>
