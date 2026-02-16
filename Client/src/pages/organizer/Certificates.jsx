@@ -736,10 +736,32 @@ const Certificates = () => {
 
                 {/* Generate Button */}
                 <div className="flex justify-center pt-4">
+                  {/* Certificate Status Warning */}
+                  {selectedEvent && events.find(e => e._id === selectedEvent)?.enableCertificates === false && (
+                    <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-start gap-3">
+                      <AlertCircle size={20} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                          Certificates Not Enabled
+                        </h4>
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                          Certificate generation is disabled for this event. Please contact the admin to enable certificates in the event settings.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     onClick={handleGenerateCertificates}
-                    disabled={generating}
-                    className="group flex items-center gap-3 px-10 py-4 bg-[#191A23] text-[#B9FF66] rounded-2xl hover:shadow-2xl hover:scale-105 transition-all font-bold disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg"
+                    disabled={generating || (selectedEvent && events.find(e => e._id === selectedEvent)?.enableCertificates === false)}
+                    className="group flex items-center gap-3 px-10 py-4 bg-[#191A23] text-[#B9FF66] rounded-2xl hover:shadow-2xl hover:scale-105 transition-all font-bold disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg disabled:cursor-not-allowed"
+                    title={
+                      selectedEvent && events.find(e => e._id === selectedEvent)?.enableCertificates === false
+                        ? 'Certificates are not enabled for this event'
+                        : generating
+                          ? 'Generating certificates...'
+                          : 'Generate certificates for all participants who attended'
+                    }
                   >
                     {generating ? (
                       <RefreshCw
@@ -944,8 +966,8 @@ const Certificates = () => {
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 <span className={`font-medium ${cert.status === 'REVOKED' || !cert.isValid
-                                    ? 'line-through text-red-500 dark:text-red-400'
-                                    : 'text-gray-800 dark:text-white'
+                                  ? 'line-through text-red-500 dark:text-red-400'
+                                  : 'text-gray-800 dark:text-white'
                                   }`}>
                                   {cert.participant?.name}
                                 </span>

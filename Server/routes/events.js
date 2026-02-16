@@ -141,7 +141,9 @@ router.post('/', async (req, res) => {
       bannerImage,
       tags,
       teamLead,
-      createdBy
+      createdBy,
+      enableCertificates,
+      certificateTemplate
     } = req.body;
 
     // Validate required fields
@@ -180,7 +182,9 @@ router.post('/', async (req, res) => {
       teamLead,
       createdBy,
       teamMembers: [],
-      participants: []
+      participants: [],
+      enableCertificates: enableCertificates || false,
+      certificateTemplate: certificateTemplate || 'default'
     });
 
     const populatedEvent = await Event.findById(event._id)
