@@ -88,6 +88,47 @@ class CertificateGenerator {
     console.log('  - Certificate ID:', certificateId);
 
     try {
+      // Generate standardized certificate title and main body text based on achievement
+      let certificateTitle;
+      let mainBodyText;
+      let achievementBadge;
+      
+      if (achievement === 'Participation') {
+        certificateTitle = 'CERTIFICATE OF PARTICIPATION';
+        achievementBadge = 'PARTICIPATION';
+        mainBodyText = `This is to certify that <span class="participant-name">${participantName}</span> has actively participated in the <span class="event-name">${eventName}</span>, conducted on ${this.formatDate(eventDate)}.<br><br>The event was organized by the ${departmentName}, ${organizationName}.<br><br>We appreciate the enthusiasm, commitment, and sincere effort demonstrated during the course of the event.`;
+      } else if (achievement === 'Winner' || achievement === 'First Place') {
+        certificateTitle = 'CERTIFICATE OF ACHIEVEMENT';
+        achievementBadge = 'FIRST PLACE';
+        mainBodyText = `This is to certify that <span class="participant-name">${participantName}</span> has secured <span class="achievement-highlight">FIRST PLACE</span> in the <span class="event-name">${eventName}</span>, held on ${this.formatDate(eventDate)}.<br><br>The event was organized by the ${departmentName}, ${organizationName}.<br><br>This achievement reflects exceptional performance, innovation, and dedication demonstrated throughout the event.`;
+      } else if (achievement === 'Second Place') {
+        certificateTitle = 'CERTIFICATE OF ACHIEVEMENT';
+        achievementBadge = 'SECOND PLACE';
+        mainBodyText = `This is to certify that <span class="participant-name">${participantName}</span> has secured <span class="achievement-highlight">SECOND PLACE</span> in the <span class="event-name">${eventName}</span>, conducted on ${this.formatDate(eventDate)}.<br><br>The event was organized by the ${departmentName}, ${organizationName}.<br><br>This accomplishment recognizes commendable effort, technical proficiency, and consistent performance.`;
+      } else if (achievement === 'Third Place') {
+        certificateTitle = 'CERTIFICATE OF ACHIEVEMENT';
+        achievementBadge = 'THIRD PLACE';
+        mainBodyText = `This is to certify that <span class="participant-name">${participantName}</span> has secured <span class="achievement-highlight">THIRD PLACE</span> in the <span class="event-name">${eventName}</span>, conducted on ${this.formatDate(eventDate)}.<br><br>The event was organized by the ${departmentName}, ${organizationName}.<br><br>This achievement acknowledges noteworthy participation and dedication throughout the event.`;
+      } else {
+        certificateTitle = 'CERTIFICATE OF ACHIEVEMENT';
+        achievementBadge = achievement.toUpperCase();
+        mainBodyText = `This is to certify that <span class="participant-name">${participantName}</span> has achieved <span class="achievement-highlight">${achievement}</span> in the <span class="event-name">${eventName}</span>, conducted on ${this.formatDate(eventDate)}.<br><br>The event was organized by the ${departmentName}, ${organizationName}.`;
+      }
+
+      // For backward compatibility - keep achievementDescription
+      let achievementDescription;
+      if (achievement === 'Participation') {
+        achievementDescription = 'successfully participated';
+      } else if (achievement === 'Winner' || achievement === 'First Place') {
+        achievementDescription = 'secured First Place';
+      } else if (achievement === 'Second Place') {
+        achievementDescription = 'secured Second Place';
+      } else if (achievement === 'Third Place') {
+        achievementDescription = 'secured Third Place';
+      } else {
+        achievementDescription = `achieved ${achievement}`;
+      }
+
       // Prepare template data
       const templateData = {
         participantName,
@@ -97,8 +138,11 @@ class CertificateGenerator {
         departmentName,
         associationText,
         competitionName,
-        achievement,
+        achievement: achievementBadge,
+        achievementDescription,
         organizerName,
+        certificateTitle,
+        mainBodyText,
         signature1Name,
         signature1Title,
         signature2Name,

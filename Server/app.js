@@ -79,6 +79,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Serve static files (for certificates)
 app.use("/certificates", express.static("public/certificates"));
+app.use("/previews", express.static("public/previews"));
 
 // Connect to MongoDB
 const connectDB = async () => {

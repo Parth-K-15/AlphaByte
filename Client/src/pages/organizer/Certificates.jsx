@@ -553,16 +553,28 @@ const Certificates = () => {
   const templates = [
     {
       id: "default",
-      name: "Default Certificate",
-      preview: "/templates/default.png",
+      name: "Golden Border Classic",
+      preview: `/previews/default_preview.jpg`,
+      description: "Triple golden border with elegant formal design"
     },
     {
       id: "professional",
-      name: "Professional",
-      preview: "/templates/professional.png",
+      name: "Professional Blue",
+      preview: `/previews/professional_preview.jpg`,
+      description: "Corporate blue theme with geometric accents"
     },
-    { id: "modern", name: "Modern Design", preview: "/templates/modern.png" },
-    { id: "minimal", name: "Minimal", preview: "/templates/minimal.png" },
+    { 
+      id: "modern", 
+      name: "Modern Gradient", 
+      preview: `/previews/modern_preview.jpg`,
+      description: "Stylish purple gradient with contemporary design"
+    },
+    { 
+      id: "minimal", 
+      name: "Minimal Black & White", 
+      preview: `/previews/minimal_preview.jpg`,
+      description: "Clean minimalist design with double border"
+    },
   ];
 
   const displayEvents = events;
@@ -795,150 +807,46 @@ const Certificates = () => {
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {templates.map((template) => (
-                      <div key={template.id} className="relative">
-                        <button
-                          onClick={() =>
-                            setGenerateOptions({
-                              ...generateOptions,
-                              template: template.id,
-                            })
-                          }
-                          className={`w-full group relative p-5 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${generateOptions.template === template.id
-                            ? "border-[#191A23] bg-[#B9FF66]/10 shadow-lg"
-                            : "border-gray-200 dark:border-white/10 hover:border-[#B9FF66] bg-white dark:bg-white/[0.03]"
-                            }`}
-                        >
-                        {/* Template Preview */}
-                        <div className="h-32 rounded-xl mb-4 overflow-hidden group-hover:scale-105 transition-transform shadow-sm">
-                          {template.id === "default" && (
-                            <svg viewBox="0 0 200 140" className="w-full h-full">
-                              {/* Beige gradient background */}
-                              <defs>
-                                <linearGradient id="defaultBg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#faf8f5"/>
-                                  <stop offset="100%" stopColor="#f5f0e8"/>
-                                </linearGradient>
-                              </defs>
-                              <rect width="200" height="140" fill="url(#defaultBg)"/>
-                              {/* Brown curved decorations */}
-                              <circle cx="-10" cy="-10" r="40" fill="#8b6f47" opacity="0.15"/>
-                              <circle cx="210" cy="150" r="40" fill="#a68a5f" opacity="0.15"/>
-                              {/* Brown border frame */}
-                              <rect x="8" y="8" width="184" height="124" fill="none" stroke="#8b6f47" strokeWidth="1.5"/>
-                              {/* Title */}
-                              <text x="100" y="32" textAnchor="middle" fontFamily="Arial" fontSize="15" fontWeight="bold" fill="#3e2723" letterSpacing="2">CERTIFICATE</text>
-                              <text x="100" y="46" textAnchor="middle" fontFamily="Arial" fontSize="8" fontWeight="600" fill="#6d4c41" letterSpacing="1.5">OF ACHIEVEMENT</text>
-                              {/* Divider line */}
-                              <rect x="75" y="52" width="50" height="1.5" fill="#8b6f47"/>
-                              {/* Name placeholder */}
-                              <rect x="50" y="72" width="100" height="2" fill="#5d4037"/>
-                              {/* Seal - Brown gradient */}
-                              <circle cx="100" cy="92" r="10" fill="#8b6f47"/>
-                              <circle cx="100" cy="92" r="8" fill="none" stroke="white" strokeWidth="1"/>
-                              {/* Signature lines */}
-                              <line x1="35" y1="118" x2="75" y2="118" stroke="#333" strokeWidth="1"/>
-                              <line x1="125" y1="118" x2="165" y2="118" stroke="#333" strokeWidth="1"/>
-                            </svg>
-                          )}
-                          {template.id === "professional" && (
-                            <svg viewBox="0 0 200 140" className="w-full h-full">
-                              {/* Light gray gradient background */}
-                              <defs>
-                                <linearGradient id="profBg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#f8f9fa"/>
-                                  <stop offset="100%" stopColor="white"/>
-                                </linearGradient>
-                              </defs>
-                              <rect width="200" height="140" fill="url(#profBg)"/>
-                              {/* Dark header bar */}
-                              <rect x="10" y="10" width="180" height="20" fill="#2c3e50"/>
-                              <rect x="10" y="30" width="180" height="2" fill="#3498db"/>
-                              {/* Corner accents - Gray squares */}
-                              <rect x="10" y="35" width="20" height="20" fill="none" stroke="#ecf0f1" strokeWidth="2"/>
-                              <rect x="12" y="37" width="16" height="16" fill="#34495e" opacity="0.3"/>
-                              <rect x="170" y="35" width="20" height="20" fill="none" stroke="#ecf0f1" strokeWidth="2"/>
-                              <rect x="172" y="37" width="16" height="16" fill="#34495e" opacity="0.3"/>
-                              {/* Organization name on header */}
-                              <text x="100" y="23" textAnchor="middle" fontFamily="Arial" fontSize="8" fontWeight="bold" fill="white" letterSpacing="1">YOUR ORGANIZATION</text>
-                              {/* Title */}
-                              <text x="100" y="50" textAnchor="middle" fontFamily="Arial" fontSize="14" fontWeight="bold" fill="#2c3e50" letterSpacing="2">CERTIFICATE</text>
-                              {/* Name underline */}
-                              <rect x="50" y="75" width="100" height="2" fill="#2c3e50"/>
-                              {/* Date badge */}
-                              <rect x="145" y="100" width="30" height="12" fill="#ecf0f1" stroke="#34495e" strokeWidth="1"/>
-                              {/* Signatures */}
-                              <line x1="35" y1="118" x2="75" y2="118" stroke="#2c3e50" strokeWidth="1"/>
-                              <line x1="125" y1="118" x2="165" y2="118" stroke="#2c3e50" strokeWidth="1"/>
-                            </svg>
-                          )}
-                          {template.id === "modern" && (
-                            <svg viewBox="0 0 200 140" className="w-full h-full">
-                              {/* Vibrant gradient background */}
-                              <defs>
-                                <linearGradient id="modernBg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#667eea"/>
-                                  <stop offset="50%" stopColor="#764ba2"/>
-                                  <stop offset="100%" stopColor="#f093fb"/>
-                                </linearGradient>
-                                <linearGradient id="modernAccent" x1="0%" y1="0%" x2="100%" y2="0%">
-                                  <stop offset="0%" stopColor="#4facfe"/>
-                                  <stop offset="50%" stopColor="#fa709a"/>
-                                  <stop offset="100%" stopColor="#fee140"/>
-                                </linearGradient>
-                              </defs>
-                              <rect width="200" height="140" fill="url(#modernBg)"/>
-                              {/* Floating colorful shapes */}
-                              <circle cx="30" cy="40" r="18" fill="#4facfe" opacity="0.4"/>
-                              <circle cx="170" cy="100" r="22" fill="#fa709a" opacity="0.35"/>
-                              <ellipse cx="185" cy="25" rx="20" ry="15" fill="#fee140" opacity="0.3"/>
-                              {/* White inner card */}
-                              <rect x="30" y="20" width="140" height="100" fill="white" rx="8" opacity="0.95"/>
-                              {/* Title */}
-                              <text x="100" y="45" textAnchor="middle" fontFamily="Arial" fontSize="13" fontWeight="bold" fill="#667eea" letterSpacing="2.5">CERTIFICATE</text>
-                              <text x="100" y="55" textAnchor="middle" fontFamily="Arial" fontSize="7" fontWeight="600" fill="#764ba2" letterSpacing="1.5">OF ACHIEVEMENT</text>
-                              {/* Rainbow accent line */}
-                              <rect x="70" y="60" width="60" height="1.5" fill="url(#modernAccent)"/>
-                              {/* Name underline */}
-                              <rect x="55" y="75" width="90" height="2" fill="#f093fb"/>
-                              {/* Signatures */}
-                              <line x1="50" y1="105" x2="80" y2="105" stroke="#764ba2" strokeWidth="1"/>
-                              <line x1="120" y1="105" x2="150" y2="105" stroke="#764ba2" strokeWidth="1"/>
-                            </svg>
-                          )}
-                          {template.id === "minimal" && (
-                            <svg viewBox="0 0 200 140" className="w-full h-full">
-                              {/* White background */}
-                              <rect width="200" height="140" fill="white"/>
-                              {/* Double black border */}
-                              <rect x="10" y="10" width="180" height="120" fill="none" stroke="black" strokeWidth="2.5"/>
-                              <rect x="14" y="14" width="172" height="112" fill="none" stroke="black" strokeWidth="1"/>
-                              {/* Corner accents - Black */}
-                              <path d="M10,10 L22,10 M10,10 L10,22" stroke="black" strokeWidth="2" fill="none"/>
-                              <path d="M190,10 L178,10 M190,10 L190,22" stroke="black" strokeWidth="2" fill="none"/>
-                              <path d="M10,130 L22,130 M10,130 L10,118" stroke="black" strokeWidth="2" fill="none"/>
-                              <path d="M190,130 L178,130 M190,130 L190,118" stroke="black" strokeWidth="2" fill="none"/>
-                              {/* Title */}
-                              <text x="100" y="38" textAnchor="middle" fontFamily="Helvetica" fontSize="13" fontWeight="300" fill="black" letterSpacing="3">CERTIFICATE</text>
-                              {/* Simple black badge */}
-                              <rect x="70" y="45" width="60" height="11" fill="black"/>
-                              {/* Name underline */}
-                              <rect x="60" y="72" width="80" height="2" fill="black"/>
-                              {/* Simple decorative line */}
-                              <line x1="75" y1="82" x2="125" y2="82" stroke="black" strokeWidth="0.8"/>
-                              {/* Event info boxes */}
-                              <rect x="55" y="95" width="35" height="10" fill="none" stroke="#666" strokeWidth="0.5"/>
-                              <rect x="110" y="95" width="35" height="10" fill="none" stroke="#666" strokeWidth="0.5"/>
-                              {/* Signatures */}
-                              <line x1="40" y1="120" x2="75" y2="120" stroke="black" strokeWidth="1"/>
-                              <line x1="125" y1="120" x2="160" y2="120" stroke="black" strokeWidth="1"/>
-                            </svg>
-                          )}
+                      <button
+                        key={template.id}
+                        onClick={() =>
+                          setGenerateOptions({
+                            ...generateOptions,
+                            template: template.id,
+                          })
+                        }
+                        className={`relative p-6 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${generateOptions.template === template.id
+                          ? "border-[#191A23] bg-[#B9FF66]/10 shadow-lg"
+                          : "border-gray-200 dark:border-white/10 hover:border-[#B9FF66] bg-white dark:bg-white/[0.03]"
+                          }`}
+                      >
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <p className="text-base font-black text-gray-900 dark:text-white">
+                              {template.name}
+                            </p>
+                            {template.description && (
+                              <p className="text-xs text-gray-600 dark:text-zinc-400 line-clamp-2">
+                                {template.description}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewTemplate(template.id);
+                              setShowPreview(true);
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-white/5 hover:bg-[#191A23] hover:text-[#B9FF66] rounded-lg transition-all duration-200 text-sm font-semibold"
+                          >
+                            <Eye size={16} strokeWidth={2.5} />
+                            Preview
+                          </button>
                         </div>
-                        <p className="text-sm font-black text-gray-900 dark:text-white">
-                          {template.name}
-                        </p>
+                        
                         {generateOptions.template === template.id && (
-                          <div className="absolute top-2 right-2 w-6 h-6 bg-[#191A23] rounded-full flex items-center justify-center">
+                          <div className="absolute top-3 right-3 w-6 h-6 bg-[#191A23] rounded-full flex items-center justify-center">
                             <CheckCircle
                               size={14}
                               className="text-[#B9FF66]"
@@ -947,19 +855,6 @@ const Certificates = () => {
                           </div>
                         )}
                       </button>
-                      {/* Preview Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewTemplate(template.id);
-                          setShowPreview(true);
-                        }}
-                        className="absolute bottom-3 right-3 p-2 bg-[#191A23] hover:bg-[#B9FF66] text-white hover:text-[#191A23] rounded-lg transition-all duration-200 shadow-lg z-10"
-                        title="Preview Template"
-                      >
-                        <Eye size={16} strokeWidth={2.5} />
-                      </button>
-                    </div>
                     ))}
                   </div>
                 </div>
@@ -1519,261 +1414,18 @@ const Certificates = () => {
 
             {/* Modal Body - Certificate Preview */}
             <div className="p-8 overflow-y-auto max-h-[calc(90vh-100px)]">
-              <div className="bg-gray-100 dark:bg-black/20 p-4 rounded-xl">
-                <div className="bg-white shadow-2xl mx-auto" style={{ aspectRatio: '297/210', maxWidth: '100%' }}>
-                  {previewTemplate === 'default' && (
-                    <div className="w-full h-full relative" style={{ background: 'linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%)' }}>
-                      {/* Brown curved decorative elements */}
-                      <div className="absolute top-0 left-0 w-48 h-48 rounded-full" style={{ background: 'radial-gradient(circle, #8b6f47 0%, #a68a5f 50%, transparent 70%)', opacity: 0.15, transform: 'translate(-40%, -40%)' }}></div>
-                      <div className="absolute bottom-0 right-0 w-48 h-48 rounded-full" style={{ background: 'radial-gradient(circle, #a68a5f 0%, #c4a876 50%, transparent 70%)', opacity: 0.15, transform: 'translate(40%, 40%)' }}></div>
-                      
-                      {/* Border frame */}
-                      <div className="absolute inset-8 border-2 border-[#8b6f47]"></div>
-                      
-                      {/* Content */}
-                      <div className="relative h-full flex flex-col items-center justify-center p-12 text-center">
-                        <div className="space-y-1 mb-6">
-                          <p className="text-lg font-bold text-[#3e2723]">Your Organization Name</p>
-                          <p className="text-sm text-[#5d4037]">Department Name</p>
-                        </div>
-                        
-                        <h1 className="text-4xl font-bold text-[#6d4c41] tracking-[6px] mb-2">
-                          CERTIFICATE
-                        </h1>
-                        <p className="text-base text-[#8b6f47] tracking-[3px] mb-8 font-semibold">OF ACHIEVEMENT</p>
-                        
-                        <div className="w-32 h-[2px] bg-[#8b6f47] mx-auto mb-6"></div>
-                        
-                        <p className="text-sm text-[#5d4037] mb-4">This certificate is proudly presented to</p>
-                        
-                        <div className="my-6">
-                          <p className="text-5xl font-bold text-[#3e2723] px-8" style={{ fontFamily: '"Brush Script MT", cursive' }}>
-                            John Doe
-                          </p>
-                        </div>
-                        
-                        <p className="text-sm text-[#3e2723] max-w-xl leading-relaxed mb-8">
-                          For outstanding performance in "Competition Name", held as part of Event Name 2026, organized on February 16, 2026.
-                        </p>
-                        
-                        {/* Center seal */}
-                        <div className="w-16 h-16 rounded-full border-4 border-[#8b6f47] flex items-center justify-center shadow-lg mb-8" style={{ background: 'linear-gradient(135deg, #8b6f47 0%, #a68a5f 100%)' }}>
-                          <div className="w-12 h-12 rounded-full border-2 border-white flex items-center justify-center">
-                            <span className="text-white text-[10px] font-bold">VERIFIED</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-around w-full max-w-2xl mt-8">
-                          <div className="text-center">
-                            <div className="border-t border-gray-800 pt-2 w-32">
-                              <p className="text-xs font-bold text-[#3e2723]">Signature 1</p>
-                              <p className="text-[10px] text-[#5d4037]">Title 1</p>
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="border-t border-gray-800 pt-2 w-32">
-                              <p className="text-xs font-bold text-[#3e2723]">Signature 2</p>
-                              <p className="text-[10px] text-[#5d4037]">Title 2</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {previewTemplate === 'professional' && (
-                    <div className="w-full h-full relative" style={{ background: 'linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%)' }}>
-                      {/* Border frame with shadow */}
-                      <div className="absolute top-8 left-8 right-8 bottom-8 border-2 border-[#2c3e50] bg-white shadow-xl"></div>
-                      
-                      {/* Professional corner accents */}
-                      <div className="absolute top-8 left-8 w-24 h-24 border-t-[6px] border-l-[6px] border-[#34495e]">
-                        <div className="absolute top-0 left-0 w-12 h-12 bg-[#ecf0f1]" style={{ marginTop: '-6px', marginLeft: '-6px' }}></div>
-                      </div>
-                      <div className="absolute top-8 right-8 w-24 h-24 border-t-[6px] border-r-[6px] border-[#34495e]">
-                        <div className="absolute top-0 right-0 w-12 h-12 bg-[#ecf0f1]" style={{ marginTop: '-6px', marginRight: '-6px' }}></div>
-                      </div>
-                      
-                      {/* Top header bar */}
-                      <div className="absolute top-8 left-8 right-8 h-20" style={{ background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)', borderBottom: '4px solid #3498db' }}>
-                        <div className="h-full flex flex-col items-center justify-center">
-                          <p className="text-white text-base font-bold tracking-[3px]">YOUR ORGANIZATION</p>
-                          <p className="text-[#ecf0f1] text-xs mt-1">Department Name</p>
-                        </div>
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="relative h-full flex flex-col items-center justify-center p-16 text-center pt-28">
-                        <h1 className="text-4xl font-bold text-[#2c3e50] tracking-[6px] mb-2">CERTIFICATE</h1>
-                        <p className="text-base text-[#3498db] tracking-[3px] mb-10 font-semibold">OF ACHIEVEMENT</p>
-                        
-                        <p className="text-sm text-gray-600 italic mb-6">This is proudly presented to</p>
-                        
-                        <div className="mb-8">
-                          <p className="text-5xl font-bold text-[#2c3e50] border-b-2 border-[#3498db] pb-3 px-8 inline-block">
-                            John Doe
-                          </p>
-                        </div>
-                        
-                        <p className="text-sm text-[#2c3e50] max-w-xl leading-relaxed mb-6">
-                          For exceptional performance in "Competition Name", held as part of Event Name, organized by Your Organization.
-                        </p>
-                        
-                        {/* Date badge */}
-                        <div className="absolute bottom-16 right-20 bg-[#ecf0f1] border-2 border-[#34495e] px-4 py-2 text-center shadow-md">
-                          <p className="text-[10px] text-[#7f8c8d] uppercase tracking-wider">Date</p>
-                          <p className="text-xs font-bold text-[#2c3e50]">Feb 16, 2026</p>
-                        </div>
-                        
-                        <div className="flex justify-around w-full max-w-2xl mt-12">
-                          <div className="text-center">
-                            <div className="border-t border-gray-800 pt-2 w-32">
-                              <p className="text-xs font-bold text-[#2c3e50]">Signature 1</p>
-                              <p className="text-[10px] text-gray-600">Title 1</p>
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="border-t border-gray-800 pt-2 w-32">
-                              <p className="text-xs font-bold text-[#2c3e50]">Signature 2</p>
-                              <p className="text-[10px] text-gray-600">Title 2</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {previewTemplate === 'modern' && (
-                    <div className="w-full h-full relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)' }}>
-                      {/* Floating geometric shapes */}
-                      <div className="absolute left-16 top-24 w-40 h-40 opacity-20" style={{ 
-                        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                        borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
-                        transform: 'rotate(-20deg)'
-                      }}></div>
-                      <div className="absolute right-16 bottom-24 w-48 h-48 opacity-20" style={{ 
-                        background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                        borderRadius: '50% 50% 30% 70% / 60% 40% 60% 40%',
-                        transform: 'rotate(15deg)'
-                      }}></div>
-                      
-                      {/* Inner white card */}
-                      <div className="absolute top-16 left-40 right-40 bottom-16 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl">
-                        {/* Colorful accent line */}
-                        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 w-40 h-1 rounded-full" style={{ background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 25%, #f093fb 50%, #f5576c 75%, #fa709a 100%)' }}></div>
-                        
-                        {/* Content */}
-                        <div className="h-full flex flex-col items-center justify-center p-16 text-center pt-20">
-                          <div className="mb-6">
-                            <p className="text-lg font-bold tracking-[3px]" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>YOUR ORGANIZATION</p>
-                            <p className="text-sm text-[#666] mt-1">Department Name</p>
-                          </div>
-                          
-                          <h1 className="text-5xl font-bold tracking-[8px] mb-2" style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>CERTIFICATE</h1>
-                          <p className="text-base tracking-[3px] mb-10 font-semibold" style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>OF ACHIEVEMENT</p>
-                          
-                          <p className="text-sm text-gray-600 italic mb-6">This certificate is presented to</p>
-                          
-                          <div className="mb-8 relative">
-                            <p className="text-5xl font-bold inline-block pb-3" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                              John Doe
-                            </p>
-                            <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)' }}></div>
-                          </div>
-                          
-                          <p className="text-sm text-[#2c3e50] max-w-lg leading-relaxed mb-6">
-                            For outstanding achievement in "Competition Name", held as part of Event Name, organized by Your Organization.
-                          </p>
-                          
-                          <div className="flex justify-around w-full max-w-xl mt-8">
-                            <div className="text-center">
-                              <div className="border-t border-gray-800 pt-2 w-28">
-                                <p className="text-xs font-bold text-[#2c3e50]">Signature 1</p>
-                                <p className="text-[10px] text-gray-600">Title 1</p>
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="border-t border-gray-800 pt-2 w-28">
-                                <p className="text-xs font-bold text-[#2c3e50]">Signature 2</p>
-                                <p className="text-[10px] text-gray-600">Title 2</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {previewTemplate === 'minimal' && (
-                    <div className="w-full h-full relative bg-white p-16">
-                      {/* Double border frame - Black */}
-                      <div className="absolute top-10 left-10 right-10 bottom-10 border-[3px] border-black"></div>
-                      <div className="absolute inset-[52px] border border-black"></div>
-                      
-                      {/* Corner accents - Black */}
-                      <div className="absolute top-12 left-12 w-8 h-8 border-t-2 border-l-2 border-black"></div>
-                      <div className="absolute top-12 right-12 w-8 h-8 border-t-2 border-r-2 border-black"></div>
-                      <div className="absolute bottom-12 left-12 w-8 h-8 border-b-2 border-l-2 border-black"></div>
-                      <div className="absolute bottom-12 right-12 w-8 h-8 border-b-2 border-r-2 border-black"></div>
-                      
-                      {/* Content */}
-                      <div className="relative h-full flex flex-col items-center justify-center text-center pt-8">
-                        <div className="mb-8">
-                          <p className="text-lg font-semibold text-black tracking-[3px]">YOUR ORGANIZATION</p>
-                          <p className="text-sm text-[#666] mt-1">Department Name</p>
-                        </div>
-                        
-                        <h1 className="text-5xl font-light text-black tracking-[10px] mb-6">CERTIFICATE</h1>
-                        
-                        {/* Title badge - Black rectangle */}
-                        <div className="w-40 h-12 mb-8 flex items-center justify-center bg-black">
-                          <span className="text-white text-xs font-bold tracking-[2px]">ACHIEVEMENT</span>
-                        </div>
-                        
-                        <p className="text-sm text-[#666] tracking-[2px] mb-6">Proudly Presented To</p>
-                        
-                        <div className="mb-8">
-                          <p className="text-4xl font-bold text-black border-b-2 border-black pb-2 px-8 inline-block">
-                            John Doe
-                          </p>
-                        </div>
-                        
-                        <div className="w-48 h-[1px] bg-black mx-auto my-6"></div>
-                        
-                        <p className="text-sm text-[#333] max-w-xl leading-relaxed mb-6">
-                          For remarkable performance in "Competition Name", held as part of Event Name, organized by Your Organization.
-                        </p>
-                        
-                        {/* Event info */}
-                        <div className="flex gap-12 mt-6 mb-10">
-                          <div className="text-center">
-                            <p className="text-[10px] text-[#666] tracking-wider">DATE</p>
-                            <p className="text-sm font-semibold text-black">Feb 16, 2026</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-[10px] text-[#666] tracking-wider">EVENT</p>
-                            <p className="text-sm font-semibold text-black">Event Name</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex justify-around w-full max-w-2xl mt-8">
-                          <div className="text-center">
-                            <div className="border-t border-black pt-2 w-32">
-                              <p className="text-xs font-bold text-black">Signature 1</p>
-                              <p className="text-[10px] text-[#666]">Title 1</p>
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="border-t border-black pt-2 w-32">
-                              <p className="text-xs font-bold text-black">Signature 2</p>
-                              <p className="text-[10px] text-[#666]">Title 2</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div className="bg-gray-100 dark:bg-black/20 p-8 rounded-xl flex items-center justify-center">
+                <img 
+                  src={templates.find(t => t.id === previewTemplate)?.preview}
+                  alt={templates.find(t => t.id === previewTemplate)?.name}
+                  className="max-w-full h-auto shadow-2xl rounded-lg"
+                  style={{ maxHeight: 'calc(90vh - 300px)' }}
+                />
+              </div>
+              <div className="mt-6 text-center">
+                <p className="text-gray-600 dark:text-zinc-400 text-sm">
+                  {templates.find(t => t.id === previewTemplate)?.description}
+                </p>
               </div>
             </div>
           </div>

@@ -20,491 +20,242 @@
     }
     
     body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: #ffffff;
-      position: relative;
+      font-family: 'Helvetica Neue', 'Arial', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .certificate-container {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      width: 3308px;
+      height: 2280px;
+      background: #ffffff;
       position: relative;
+      box-shadow: 0 50px 150px rgba(0, 0, 0, 0.3);
       overflow: hidden;
     }
     
-    /* Floating geometric shapes */
-    .wave-decoration {
+    /* Gradient accent corner */
+    .gradient-accent {
       position: absolute;
-      z-index: 1;
-      opacity: 0.2;
-    }
-    
-    .left-wave {
-      left: 200px;
-      top: 300px;
-      width: 500px;
-      height: 500px;
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-      transform: rotate(-20deg);
-    }
-    
-    .left-wave::before {
-      content: '';
-      position: absolute;
-      left: 100px;
-      top: 100px;
-      width: 300px;
-      height: 300px;
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
-      opacity: 0.6;
-    }
-    
-    .right-wave {
-      right: 200px;
-      bottom: 300px;
-      width: 600px;
-      height: 600px;
-      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-      border-radius: 50% 50% 30% 70% / 60% 40% 60% 40%;
-      transform: rotate(15deg);
-    }
-    
-    .right-wave::before {
-      content: '';
-      position: absolute;
-      right: 120px;
-      bottom: 120px;
-      width: 400px;
-      height: 400px;
-      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-      border-radius: 40% 60% 60% 40% / 60% 30% 70% 40%;
-      opacity: 0.5;
-    }
-    
-    /* Inner white card */
-    .border-frame {
-      position: absolute;
-      top: 200px;
-      left: 500px;
-      right: 500px;
-      bottom: 200px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-      border-radius: 40px;
-      box-shadow: 0 30px 90px rgba(0,0,0,0.3);
-      z-index: 2;
-    }
-    
-    /* Header */
-    .header {
-      text-align: center;
-      padding-top: 250px;
-      position: relative;
-      z-index: 10;
-      margin-bottom: 60px;
-    }
-    
-    .organization-name {
-      font-size: 58px;
-      font-weight: bold;
+      top: 0;
+      right: 0;
+      width: 800px;
+      height: 800px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 20px;
-      text-transform: uppercase;
-      letter-spacing: 8px;
+      clip-path: polygon(100% 0, 100% 100%, 0 0);
+      opacity: 0.15;
     }
     
-    .department-name {
-      font-size: 42px;
-      color: #666;
-      margin-bottom: 15px;
-    }
-    
-    /* Content */
-    .content {
-      padding: 0 700px;
-      text-align: center;
-      position: relative;
-      z-index: 10;
-    }
-    
-    .certificate-title {
-      font-size: 130px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 40px;
-      letter-spacing: 15px;
-      text-transform: uppercase;
-    }
-    
-    .subtitle {
-      font-size: 48px;
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 100px;
-      text-transform: uppercase;
-      letter-spacing: 6px;
-      font-weight: 600;
-    }
-    
-    .presented-text {
-      font-size: 44px;
-      color: #555;
-      margin-bottom: 50px;
-      font-style: italic;
-    }
-    
-    .participant-name {
-      font-size: 120px;
-      font-weight: bold;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin: 70px 0;
-      position: relative;
-      display: inline-block;
-      padding-bottom: 25px;
-      text-transform: capitalize;
-    }
-    
-    .participant-name::after {
-      content: '';
+    /* Bottom left accent */
+    .bottom-accent {
       position: absolute;
       bottom: 0;
       left: 0;
-      right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    }
-    
-    .description {
-      font-size: 42px;
-      color: #2c3e50;
-      line-height: 1.9;
-      margin: 90px auto 80px auto;
-      max-width: 2000px;
-    }
-    
-    /* Date section on right */
-    .date-section {
-      position: absolute;
-      right: 700px;
-      bottom: 450px;
-      text-align: right;
-      z-index: 10;
-    }
-    
-    .date-label {
-      font-size: 36px;
-      color: #666;
-      margin-bottom: 10px;
-    }
-    
-    .date-value {
-      font-size: 44px;
-      font-weight: bold;
-      color: #1a3a6b;
-    }
-    
-    /* Signatures */
-    .signatures {
-      position: absolute;
-      bottom: 200px;
-      left: 700px;
-      right: 700px;
-      display: flex;
-      justify-content: space-between;
-      z-index: 10;
-    }
-    
-    .signature-block {
-      text-align: center;
-      width: 450px;
-    }
-    
-    .signature-line {
-      border-top: 4px solid #333;
-      margin-bottom: 20px;
-      padding-top: 70px;
-    }
-    
-    .signature-name {
-      font-size: 38px;
-      font-weight: bold;
-      color: #2c3e50;
-      margin-bottom: 10px;
-    }
-    
-    .signature-title {
-      font-size: 32px;
-      color: #666;
-    }
-    
-    /* Colorful accent line */
-    .gold-accent {
-      position: absolute;
-      top: 250px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 500px;
-      height: 8px;
-      background: linear-gradient(90deg, #4facfe 0%, #00f2fe 25%, #f093fb 50%, #f5576c 75%, #fa709a 100%);
-      border-radius: 10px;
-      z-index: 10;
-    }
-  </style>
-</head>
-<body>
-  <div class="certificate-container">
-    <!-- Curved wave decorations -->
-    <div class="wave-decoration left-wave"></div>
-    <div class="wave-decoration right-wave"></div>
-    
-    <!-- Border frame -->
-    <div class="border-frame"></div>
-    
-    <!-- Gold accent line -->
-    <div class="gold-accent"></div>
-    
-    <!-- Header -->
-    <div class="header">
-      <div class="organization-name">{{organizationName}}</div>
-      <div class="department-name">{{departmentName}}</div>
-    </div>
-    
-    <!-- Content -->
-    <div class="content">
-      <div class="certificate-title">CERTIFICATE</div>
-      <div class="subtitle">OF {{achievement}}</div>
-      
-      <div class="presented-text">This certificate is presented to</div>
-      <div class="participant-name">{{participantName}}</div>
-      
-      <div class="description">
-        For outstanding achievement in "{{competitionName}}", 
-        held as part of {{eventName}}, organized by {{organizerName}}, {{organizationName}}.
-      </div>
-    </div>
-    
-    <!-- Date section -->
-    <div class="date-section">
-      <div class="date-label">Date:</div>
-      <div class="date-value">{{eventDate}}</div>
-    </div>
-    
-    <!-- Signatures -->
-    <div class="signatures">
-      <div class="signature-block">
-        <div class="signature-line"></div>
-        <div class="signature-name">{{signature1Name}}</div>
-        <div class="signature-title">{{signature1Title}}</div>
-      </div>
-      <div class="signature-block">
-        <div class="signature-line"></div>
-        <div class="signature-name">{{signature2Name}}</div>
-        <div class="signature-title">{{signature2Title}}</div>
-      </div>
-      <div class="signature-block">
-        <div class="signature-line"></div>
-        <div class="signature-name">{{signature3Name}}</div>
-        <div class="signature-title">{{signature3Title}}</div>
-      </div>
-      <div class="signature-block">
-        <div class="signature-line"></div>
-        <div class="signature-name">{{signature4Name}}</div>
-        <div class="signature-title">{{signature4Title}}</div>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-      margin-bottom: 75px;
-      text-transform: uppercase;
-      letter-spacing: 6px;
-    }
-    
-    .participant-name {
-      font-size: 168px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin: 75px 0;
-      letter-spacing: 3px;
-    }
-    
-    .divider {
       width: 600px;
-      height: 9px;
-      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-      margin: 60px auto;
-    }
-    
-    .description {
-      font-size: 45px;
-      color: #555;
-      line-height: 1.8;
-      max-width: 2100px;
-      margin: 90px auto;
-      font-weight: 300;
-    }
-    
-    .event-highlight {
-      font-weight: 600;
-      color: #764ba2;
-    }
-    
-    .achievement-box {
-      display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 36px 90px;
-      border-radius: 90px;
-      font-size: 42px;
-      font-weight: 600;
-      margin: 45px 0;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      box-shadow: 0 18px 60px rgba(102, 126, 234, 0.4);
-    }
-    
-    /* Signatures */
-    .signatures {
-      display: flex;
-      justify-content: center;
-      gap: 240px;
-      margin-top: 150px;
-      padding: 0 300px;
-    }
-    
-    .signature-block {
-      text-align: center;
-      width: 540px;
-    }
-    
-    .signature-line {
-      border-top: 6px solid #667eea;
-      margin-bottom: 30px;
-      padding-top: 105px;
-    }
-    
-    .signature-name {
-      font-size: 39px;
-      font-weight: 600;
-      color: #333;
-    }
-    
-    .signature-title {
-      font-size: 33px;
-      color: #999;
-      margin-top: 9px;
-    }
-    
-    /* Date badge */
-    .date-badge {
-      position: absolute;
-      top: 150px;
-      right: 240px;
-      background: white;
-      border: 6px solid #667eea;
-      border-radius: 24px;
-      padding: 36px 60px;
-      text-align: center;
-    }
-    
-    .date-label {
-      font-size: 30px;
-      color: #999;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-    }
-    
-    .date-value {
-      font-size: 39px;
-      font-weight: 600;
-      color: #667eea;
-      margin-top: 9px;
+      height: 600px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      clip-path: polygon(0 100%, 0 0, 100% 100%);
+      opacity: 0.1;
     }
     
     /* Decorative circles */
     .circle-decoration {
       position: absolute;
       border-radius: 50%;
-      opacity: 0.05;
+      opacity: 0.08;
     }
     
     .circle-1 {
-      width: 900px;
-      height: 900px;
+      width: 400px;
+      height: 400px;
       background: #667eea;
-      top: -300px;
-      right: -300px;
+      top: 100px;
+      left: -150px;
     }
     
     .circle-2 {
-      width: 600px;
-      height: 600px;
+      width: 300px;
+      height: 300px;
       background: #764ba2;
-      bottom: -150px;
-      left: 300px;
+      bottom: 150px;
+      right: -100px;
     }
     
-    .circle-3 {
-      width: 450px;
-      height: 450px;
-      background: #667eea;
-      top: 50%;
-      right: 150px;
+    /* Border accent */
+    .border-accent {
+      position: absolute;
+      top: 50px;
+      left: 50px;
+      right: 50px;
+      bottom: 50px;
+      border: 2px solid #667eea;
+      pointer-events: none;
+    }
+    
+    /* Content wrapper */
+    .content-wrapper {
+      position: relative;
+      z-index: 10;
+      padding: 120px 180px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Header */
+    .organization-name {
+      font-size: 46px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 10px;
+      text-align: center;
+    }
+    
+    .department-name {
+      font-size: 34px;
+      color: #8b9dc3;
+      font-weight: 400;
+      text-align: center;
+      margin-bottom: 100px;
+      letter-spacing: 2px;
+    }
+    
+    /* Certificate title */
+    .certificate-title {
+      font-size: 180px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 35px;
+      letter-spacing: 28px;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.1;
+    }
+    
+    /* Achievement badge */
+    .achievement-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      padding: 20px 65px;
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      margin: 0 auto 75px;
+      text-transform: uppercase;
+      text-align: center;
+      border-radius: 50px;
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Main body text */
+    .main-body-text {
+      font-size: 38px;
+      color: #4a5568;
+      line-height: 1.9;
+      margin: 0 auto 90px;
+      max-width: 2700px;
+      text-align: center;
+      font-family: 'Georgia', serif;
+    }
+    
+    .participant-name {
+      font-weight: 700;
+      color: #667eea;
+      font-size: 42px;
+    }
+    
+    .event-name {
+      font-weight: 700;
+      color: #2d3748;
+    }
+    
+    .achievement-highlight {
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 42px;
+    }
+    
+    /* Signatures */
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: auto;
+      gap: 70px;
+      padding: 0 80px;
+    }
+    
+    .signature-block {
+      flex: 1;
+      text-align: center;
+    }
+    
+    .signature-line {
+      width: 100%;
+      max-width: 380px;
+      height: 3px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      margin: 0 auto 20px;
+      border-radius: 2px;
+    }
+    
+    .signature-name {
+      font-size: 38px;
+      color: #2d3748;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .signature-role {
+      font-size: 30px;
+      color: #718096;
+      font-weight: 500;
+    }
+    
+    /* Issue date */
+    .issue-date {
+      text-align: center;
+      font-size: 32px;
+      color: #8b9dc3;
+      margin-top: 45px;
+      font-family: 'Georgia', serif;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
   <div class="certificate-container">
-    <!-- Background elements -->
-    <div class="bg-pattern"></div>
-    <div class="accent-bar"></div>
+    <!-- Decorative elements -->
+    <div class="gradient-accent"></div>
+    <div class="bottom-accent"></div>
     <div class="circle-decoration circle-1"></div>
     <div class="circle-decoration circle-2"></div>
-    <div class="circle-decoration circle-3"></div>
+    <div class="border-accent"></div>
     
-    <!-- Date Badge -->
-    <div class="date-badge">
-      <div class="date-label">Date</div>
-      <div class="date-value">{{eventDate}}</div>
-    </div>
-    
-    <!-- Header -->
-    <div class="header">
+    <div class="content-wrapper">
+      <!-- Header -->
       <div class="organization-name">{{organizationName}}</div>
       <div class="department-name">{{departmentName}}</div>
-    </div>
-    
-    <!-- Content -->
-    <div class="content">
-      <div class="certificate-title">Certificate</div>
-      <div class="subtitle">of Achievement</div>
-      <div class="divider"></div>
       
-      <div class="participant-name">{{participantName}}</div>
+      <!-- Certificate title -->
+      <div class="certificate-title">{{certificateTitle}}</div>
       
-      <div class="achievement-box">{{achievement}}</div>
+      <!-- Achievement badge -->
+      <div class="achievement-badge">{{achievement}}</div>
       
-      <div class="description">
-        Has successfully participated in <span class="event-highlight">"{{competitionName}}"</span>
-        as part of <strong>{{eventName}}</strong>, organized by {{organizerName}},
-        {{organizationName}}.
+      <!-- Main body text -->
+      <div class="main-body-text">
+        {{mainBodyText}}
       </div>
       
       <!-- Signatures -->
@@ -512,19 +263,27 @@
         <div class="signature-block">
           <div class="signature-line"></div>
           <div class="signature-name">{{signature1Name}}</div>
-          <div class="signature-title">{{signature1Title}}</div>
+          <div class="signature-role">{{signature1Title}}</div>
         </div>
         <div class="signature-block">
           <div class="signature-line"></div>
           <div class="signature-name">{{signature2Name}}</div>
-          <div class="signature-title">{{signature2Title}}</div>
+          <div class="signature-role">{{signature2Title}}</div>
         </div>
         <div class="signature-block">
           <div class="signature-line"></div>
           <div class="signature-name">{{signature3Name}}</div>
-          <div class="signature-title">{{signature3Title}}</div>
+          <div class="signature-role">{{signature3Title}}</div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div class="signature-name">{{signature4Name}}</div>
+          <div class="signature-role">{{signature4Title}}</div>
         </div>
       </div>
+      
+      <!-- Issue date -->
+      <div class="issue-date">Issued on: {{eventDate}}</div>
     </div>
   </div>
 </body>
