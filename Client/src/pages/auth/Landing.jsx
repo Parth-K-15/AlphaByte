@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   Users, Shield, Calendar, Zap, CheckCircle, BarChart3, 
   Award, Clock, TrendingUp, Star, ArrowRight, Sparkles,
-  Target, Globe, Lock, Smartphone, MapPin
+  Target, Globe, Lock, Smartphone, MapPin, Mic
 } from 'lucide-react';
 
 const Landing = () => {
@@ -450,7 +450,7 @@ const Landing = () => {
           </div>
 
           {/* Desktop Grid */}
-          <div className="hidden md:grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          <div className="hidden md:grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Admin Card */}
             <Link to="/admin-auth" className="group">
               <div className="relative bg-gradient-to-br from-indigo-50/80 to-purple-100/60 backdrop-blur-sm rounded-[2.5rem] p-10 hover:shadow-2xl transition-all duration-500 border border-white/60 h-full flex flex-col">
@@ -605,6 +605,85 @@ const Landing = () => {
                 <div className="flex justify-center pt-6">
                   <div className="w-16 h-16 bg-white border-2 border-gray-900 hover:bg-gray-900 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xl group">
                     <ArrowRight className="w-6 h-6 text-gray-900 group-hover:text-white transform group-hover:translate-x-1 transition-all" strokeWidth={2.5} />
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {/* Speaker Card */}
+            <Link to="/speaker-auth" className="group">
+              <div className="relative bg-gradient-to-br from-emerald-50/80 to-teal-100/60 backdrop-blur-sm rounded-[2.5rem] p-10 hover:shadow-2xl transition-all duration-500 border border-emerald-200/60 h-full flex flex-col">
+                <div className="flex-1">
+                  {/* Icon */}
+                  <div className="flex justify-center mb-6">
+                    <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center">
+                      <Mic className="w-8 h-8 text-white" strokeWidth={2} />
+                    </div>
+                  </div>
+                  
+                  {/* Title */}
+                  <h3 className="text-3xl font-light text-gray-900 text-center mb-3">
+                    Speaker
+                  </h3>
+                  
+                  {/* Subtitle */}
+                  <p className="text-center text-gray-600 text-sm mb-6">
+                    Session Presenter
+                  </p>
+                  
+                  {/* Description */}
+                  <p className="text-center text-gray-700 mb-8 leading-relaxed">
+                    Manage sessions, upload materials, post updates, and track audience analytics.
+                  </p>
+                  
+                  {/* Features */}
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        </div>
+                        <span className="text-gray-700 font-medium">Manage sessions</span>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        </div>
+                        <span className="text-gray-700 font-medium">Upload materials</span>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        </div>
+                        <span className="text-gray-700 font-medium">Post updates</span>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        </div>
+                        <span className="text-gray-700 font-medium">Track analytics</span>
+                      </div>
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* CTA Button */}
+                <div className="flex justify-center pt-6">
+                  <div className="w-16 h-16 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xl">
+                    <ArrowRight className="w-6 h-6 text-white transform group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
                   </div>
                 </div>
               </div>
@@ -776,12 +855,91 @@ const Landing = () => {
                   </div>
                 </div>
               </Link>
+
+              {/* Speaker Card Mobile */}
+              <Link to="/speaker-auth" className="group flex-shrink-0 w-[85vw] max-w-sm snap-center">
+                <div className="relative bg-gradient-to-br from-emerald-50/80 to-teal-100/60 backdrop-blur-sm rounded-[2.5rem] p-10 hover:shadow-2xl transition-all duration-500 border border-emerald-200/60 h-full flex flex-col">
+                  <div className="flex-1">
+                    {/* Icon */}
+                    <div className="flex justify-center mb-6">
+                      <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center">
+                        <Mic className="w-8 h-8 text-white" strokeWidth={2} />
+                      </div>
+                    </div>
+                    
+                    {/* Title */}
+                    <h3 className="text-3xl font-light text-gray-900 text-center mb-3">
+                      Speaker
+                    </h3>
+                    
+                    {/* Subtitle */}
+                    <p className="text-center text-gray-600 text-sm mb-6">
+                      Session Presenter
+                    </p>
+                    
+                    {/* Description */}
+                    <p className="text-center text-gray-700 mb-8 leading-relaxed">
+                      Manage sessions, upload materials, post updates, and track audience analytics.
+                    </p>
+                    
+                    {/* Features */}
+                    <div className="space-y-4 mb-8">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                          </div>
+                          <span className="text-gray-700 font-medium">Manage sessions</span>
+                        </div>
+                        <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                          </div>
+                          <span className="text-gray-700 font-medium">Upload materials</span>
+                        </div>
+                        <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                          </div>
+                          <span className="text-gray-700 font-medium">Post updates</span>
+                        </div>
+                        <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                          </div>
+                          <span className="text-gray-700 font-medium">Track analytics</span>
+                        </div>
+                        <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* CTA Button */}
+                  <div className="flex justify-center pt-6">
+                    <div className="w-16 h-16 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xl">
+                      <ArrowRight className="w-6 h-6 text-white transform group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
+                    </div>
+                  </div>
+                </div>
+              </Link>
             </div>
           </div>
 
           {/* Dots Indicator for Mobile */}
           <div className="md:hidden flex justify-center gap-2 -mt-4 mb-8">
-            {[0, 1].map((index) => (
+            {[0, 1, 2].map((index) => (
               <button
                 key={index}
                 onClick={() => scrollToRole(index)}
@@ -790,7 +948,7 @@ const Landing = () => {
                     ? 'bg-indigo-600 w-6' 
                     : 'bg-gray-300 hover:bg-gray-400'
                 }`}
-                aria-label={`Go to ${index === 0 ? 'Admin' : 'Participant'} option`}
+                aria-label={`Go to ${['Admin', 'Participant', 'Speaker'][index]} option`}
               />
             ))}
           </div>

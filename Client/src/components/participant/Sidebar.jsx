@@ -12,6 +12,7 @@ import {
   X,
   Sun,
   Moon,
+  FileText,
 } from "lucide-react";
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -34,6 +35,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     { title: "My Events", icon: Ticket, path: "/participant/registrations" },
     { title: "History", icon: History, path: "/participant/history" },
     { title: "Certificates", icon: Award, path: "/participant/certificates" },
+    { title: "Transcript", icon: FileText, path: "/participant/transcript" },
     { title: "Profile", icon: User, path: "/participant/profile" },
   ];
 

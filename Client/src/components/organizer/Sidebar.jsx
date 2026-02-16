@@ -15,6 +15,7 @@ import {
   X,
   Sun,
   Moon,
+  Mic,
 } from "lucide-react";
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -31,6 +32,8 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     if (location.pathname.includes("/communication"))
       menus.communication = true;
     if (location.pathname.includes("/certificates")) menus.certificates = true;
+    if (location.pathname.includes("/speakers") || location.pathname.includes("/sessions/assign"))
+      menus.speakers = true;
     return menus;
   };
 
@@ -99,6 +102,15 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       title: "Team Access",
       icon: UserCog,
       path: "/organizer/team",
+    },
+    {
+      title: "Speakers",
+      icon: Mic,
+      key: "speakers",
+      submenu: [
+        { title: "All Speakers", path: "/organizer/speakers" },
+        { title: "Assign Sessions", path: "/organizer/sessions/assign" },
+      ],
     },
   ];
 
