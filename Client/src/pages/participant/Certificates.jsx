@@ -25,7 +25,8 @@ const Certificates = () => {
       const data = await response.json();
 
       if (data.success) {
-        setCertificates(data.data || []);
+        // Backend returns { data: { certificates: [...], stats: {...}, ... } }
+        setCertificates(data.data?.certificates || []);
       }
     } catch (error) {
       console.error("Error fetching certificates:", error);
@@ -70,14 +71,14 @@ const Certificates = () => {
 
       {/* Certificates Grid */}
       {certificates.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow-card p-12 text-center border border-light-400/50">
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-12 text-center border border-light-400/50 dark:border-white/5">
           <div className="w-20 h-20 bg-lime rounded-3xl flex items-center justify-center mx-auto mb-4">
             <Award size={32} className="text-dark" />
           </div>
           <h3 className="text-xl font-bold text-dark mb-2">
             No Certificates Yet
           </h3>
-          <p className="text-dark-300 text-sm">
+          <p className="text-dark-300 dark:text-zinc-400 text-sm">
             Attend events to earn certificates!
           </p>
         </div>
@@ -90,23 +91,21 @@ const Certificates = () => {
             return (
               <div
                 key={cert._id}
-                className={`rounded-3xl p-6 transition-all hover:scale-[1.02] ${
-                  variant === "dark"
+                className={`rounded-3xl p-6 transition-all hover:scale-[1.02] ${variant === "dark"
                     ? "bg-dark text-white"
                     : variant === "lime"
                       ? "bg-lime text-dark"
-                      : "bg-white text-dark shadow-card border border-light-400/50"
-                }`}
+                      : "bg-white dark:bg-white/[0.03] text-dark dark:text-white shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5"
+                  }`}
               >
                 {/* Certificate Icon */}
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${
-                    variant === "dark"
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${variant === "dark"
                       ? "bg-lime/15"
                       : variant === "lime"
                         ? "bg-dark/10"
                         : "bg-lime/20"
-                  }`}
+                    }`}
                 >
                   <Award
                     size={24}
@@ -125,28 +124,26 @@ const Certificates = () => {
                 </h3>
 
                 <div
-                  className={`flex items-center gap-1 text-sm mb-4 ${
-                    variant === "dark"
+                  className={`flex items-center gap-1 text-sm mb-4 ${variant === "dark"
                       ? "text-dark-200"
                       : variant === "lime"
                         ? "text-dark/70"
                         : "text-dark-300"
-                  }`}
+                    }`}
                 >
                   <Calendar size={14} />
                   {formatDate(cert.issuedDate || cert.createdAt)}
                 </div>
 
                 <div
-                  className={`inline-flex px-3 py-1 rounded-full text-xs font-bold mb-4 ${
-                    cert.status === "ISSUED" || cert.status === "ACTIVE"
+                  className={`inline-flex px-3 py-1 rounded-full text-xs font-bold mb-4 ${cert.status === "ISSUED" || cert.status === "ACTIVE"
                       ? variant === "dark"
                         ? "bg-lime/15 text-lime"
                         : "bg-dark/10 text-dark"
                       : variant === "dark"
                         ? "bg-dark-400 text-dark-200"
                         : "bg-light-400 text-dark-300"
-                  }`}
+                    }`}
                 >
                   {cert.status || "ISSUED"}
                 </div>
@@ -159,26 +156,24 @@ const Certificates = () => {
                         href={cert.certificateUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold text-center flex items-center justify-center gap-1 transition-all hover:scale-105 ${
-                          variant === "dark"
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold text-center flex items-center justify-center gap-1 transition-all hover:scale-105 ${variant === "dark"
                             ? "bg-lime text-dark"
                             : variant === "lime"
                               ? "bg-dark text-lime"
                               : "bg-dark text-white"
-                        }`}
+                          }`}
                       >
                         <ExternalLink size={14} /> View
                       </a>
                       <a
                         href={cert.certificateUrl}
                         download
-                        className={`py-2.5 px-4 rounded-xl text-sm font-bold flex items-center gap-1 transition-all hover:scale-105 ${
-                          variant === "dark"
+                        className={`py-2.5 px-4 rounded-xl text-sm font-bold flex items-center gap-1 transition-all hover:scale-105 ${variant === "dark"
                             ? "bg-lime/10 text-lime border border-lime/20"
                             : variant === "lime"
                               ? "bg-dark/10 text-dark"
                               : "bg-lime/20 text-dark"
-                        }`}
+                          }`}
                       >
                         <Download size={14} />
                       </a>

@@ -28,7 +28,7 @@ import {
 const EventCard = ({ event }) => {
   const statusColors = {
     upcoming: "UPCOMING",
-    ongoing: "ONGOING", 
+    ongoing: "ONGOING",
     completed: "COMPLETED",
     draft: "DRAFT",
   };
@@ -36,17 +36,17 @@ const EventCard = ({ event }) => {
   const statusEmojis = {
     upcoming: "🔥",
     ongoing: "🚀",
-    completed: "✅", 
+    completed: "✅",
     draft: "📝",
   };
 
   // Modern clean backgrounds for cards
   const gradients = [
-    'from-[#B9FF66] via-[#A8EE55] to-[#B9FF66]',
-    'from-[#191A23] via-[#2A2B33] to-[#191A23]',
-    'from-gray-300 via-gray-400 to-gray-300',
-    'from-[#B9FF66]/80 via-[#A8EE55]/80 to-[#B9FF66]/80',
-    'from-[#191A23]/90 via-[#2A2B33]/90 to-[#191A23]/90'
+    "from-[#B9FF66] via-[#A8EE55] to-[#B9FF66]",
+    "from-[#191A23] via-[#2A2B33] to-[#191A23]",
+    "from-gray-300 via-gray-400 to-gray-300",
+    "from-[#B9FF66]/80 via-[#A8EE55]/80 to-[#B9FF66]/80",
+    "from-[#191A23]/90 via-[#2A2B33]/90 to-[#191A23]/90",
   ];
 
   const formatDate = (dateStr) => {
@@ -54,7 +54,7 @@ const EventCard = ({ event }) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("en-US", {
       month: "short",
-      day: "numeric", 
+      day: "numeric",
       year: "numeric",
     });
   };
@@ -69,12 +69,14 @@ const EventCard = ({ event }) => {
   };
 
   const daysLeft = calculateDaysLeft();
-  const gradientIndex = Math.abs((event.title || '').length) % gradients.length;
+  const gradientIndex = Math.abs((event.title || "").length) % gradients.length;
 
   return (
     <div className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
       {/* Background with Gradient */}
-      <div className={`h-64 bg-gradient-to-br ${gradients[gradientIndex]} relative`}>
+      <div
+        className={`h-64 bg-gradient-to-br ${gradients[gradientIndex]} relative`}
+      >
         {/* Overlay pattern for visual interest */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-8 left-8 w-24 h-24 bg-white/20 rounded-full blur-2xl"></div>
@@ -112,11 +114,11 @@ const EventCard = ({ event }) => {
               <span>{event.venue || "Online Event"} 🌐</span>
               {event.venue && event.venue !== "Online" && (
                 <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-md text-xs font-medium">
-                  {event.venue.includes('India') ? '🇮🇳' : '🌍'} +2 more
+                  {event.venue.includes("India") ? "🇮🇳" : "🌍"} +2 more
                 </span>
               )}
             </div>
-            
+
             <div className="flex items-center text-white/90 text-sm">
               <Calendar size={14} className="mr-2" />
               <span className="font-medium">{formatDate(event.date)}</span>
@@ -131,18 +133,24 @@ const EventCard = ({ event }) => {
               </div>
               <div>
                 <div className="font-medium">Lead Organizer</div>
-                <div className="text-white/70">{event.teamLead?.name || 'Event Team'}</div>
+                <div className="text-white/70">
+                  {event.teamLead?.name || "Event Team"}
+                </div>
               </div>
             </div>
 
             {/* Quick Stats */}
             <div className="flex items-center gap-4 text-white text-xs">
               <div className="text-center">
-                <div className="font-bold text-sm">{event.participantCount || 0}</div>
+                <div className="font-bold text-sm">
+                  {event.participantCount || 0}
+                </div>
                 <div className="text-white/70">Registered</div>
               </div>
               <div className="text-center">
-                <div className="font-bold text-sm">{event.attendanceCount || 0}</div>
+                <div className="font-bold text-sm">
+                  {event.attendanceCount || 0}
+                </div>
                 <div className="text-white/70">Attended</div>
               </div>
             </div>
@@ -151,13 +159,13 @@ const EventCard = ({ event }) => {
       </div>
 
       {/* Action Buttons */}
-      <div className="bg-white p-4">
+      <div className="bg-white dark:bg-white/[0.03] p-4">
         <div className="flex items-center gap-3">
           <Link
             to={`/organizer/events/${event._id || event.id}`}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 
-               border-2 border-gray-300 text-[#191A23] rounded-xl font-semibold text-sm
-               hover:bg-gray-50 hover:border-[#191A23] transition-all"
+               border-2 border-gray-300 dark:border-white/10 text-[#191A23] dark:text-zinc-300 rounded-xl font-semibold text-sm
+               hover:bg-gray-50 dark:hover:bg-white/5 hover:border-[#191A23] dark:hover:border-white/30 transition-all"
           >
             <Eye size={16} />
             View Details
@@ -182,9 +190,9 @@ const EventCard = ({ event }) => {
             event.onManageLifecycle?.(event);
           }}
           className="w-full flex items-center justify-center gap-2 mt-3
-             px-4 py-2.5 border-2 border-gray-300 text-[#191A23] 
+             px-4 py-2.5 border-2 border-gray-300 dark:border-white/10 text-[#191A23] dark:text-zinc-300
              rounded-xl font-semibold text-sm 
-             hover:bg-gray-50 hover:border-[#191A23] transition-all"
+             hover:bg-gray-50 dark:hover:bg-white/5 hover:border-[#191A23] dark:hover:border-white/30 transition-all"
         >
           <Settings size={16} />
           Manage Status
@@ -275,19 +283,19 @@ const MyEvents = () => {
       <div className="flex items-center justify-between">
         <div>
           <div className="inline-block">
-            <h1 className="text-4xl font-black text-gray-900 mb-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text">
+            <h1 className="text-4xl font-black text-gray-900 dark:text-white mb-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text">
               My Events
             </h1>
             <div className="h-1 w-20 bg-[#B9FF66] rounded-full"></div>
           </div>
-          <p className="text-gray-600 mt-3 text-lg font-semibold">
+          <p className="text-gray-600 dark:text-zinc-400 mt-3 text-lg font-semibold">
             Manage your assigned events
           </p>
         </div>
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60 shadow-lg">
+      <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-2xl p-6 border border-white/60 dark:border-white/5 shadow-lg dark:shadow-none">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           {/* Search */}
           <div className="relative flex-1 group">
@@ -301,7 +309,7 @@ const MyEvents = () => {
               placeholder="Search events..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B9FF66] focus:border-transparent text-sm font-semibold hover:border-[#B9FF66] transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B9FF66] focus:border-transparent text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 hover:border-[#B9FF66] transition-all shadow-sm dark:shadow-none"
             />
           </div>
 
@@ -314,7 +322,7 @@ const MyEvents = () => {
                 className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${
                   filter === f.key
                     ? "bg-[#191A23] text-[#B9FF66] shadow-lg shadow-[#191A23]/30 scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105"
+                    : "bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:scale-105"
                 }`}
               >
                 {f.label}
@@ -330,7 +338,7 @@ const MyEvents = () => {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 animate-pulse"
+              className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-2xl border border-white/60 dark:border-white/5 animate-pulse"
             >
               <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300" />
               <div className="p-6 space-y-3">
@@ -342,7 +350,7 @@ const MyEvents = () => {
           ))}
         </div>
       ) : filteredEvents.length === 0 ? (
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-16 text-center border border-white/60 shadow-lg">
+        <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-2xl p-16 text-center border border-white/60 dark:border-white/5 shadow-lg dark:shadow-none">
           <div className="p-4 bg-[#B9FF66]/10 rounded-2xl shadow-md inline-block mb-4">
             <Calendar
               size={56}
@@ -350,10 +358,10 @@ const MyEvents = () => {
               strokeWidth={2}
             />
           </div>
-          <h3 className="text-xl font-black text-gray-900 mb-2">
+          <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">
             No events found
           </h3>
-          <p className="text-gray-600 font-semibold">
+          <p className="text-gray-600 dark:text-zinc-400 font-semibold">
             {searchQuery
               ? "Try adjusting your search query"
               : "You don't have any events assigned yet."}
@@ -425,14 +433,16 @@ const MyEvents = () => {
       {/* Lifecycle Management Modal */}
       {showLifecycleModal && selectedEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#1a1a2a] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+            <div className="sticky top-0 bg-white dark:bg-[#1a1a2a] border-b border-gray-200 dark:border-white/5 p-6 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Event Status Management
                 </h2>
-                <p className="text-gray-500 mt-1">{selectedEvent.title}</p>
+                <p className="text-gray-500 dark:text-zinc-400 mt-1">
+                  {selectedEvent.title}
+                </p>
               </div>
               <button
                 onClick={() => setShowLifecycleModal(false)}
@@ -451,12 +461,12 @@ const MyEvents = () => {
                     <Circle size={20} className="text-[#191A23]" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
                       Current Status:{" "}
                       {selectedEvent.status?.charAt(0).toUpperCase() +
                         selectedEvent.status?.slice(1)}
                     </h3>
-                    <p className="text-gray-600 text-sm mt-1">
+                    <p className="text-gray-600 dark:text-zinc-400 text-sm mt-1">
                       Event is currently in {selectedEvent.status} status
                     </p>
                   </div>
@@ -465,7 +475,7 @@ const MyEvents = () => {
 
               {/* Lifecycle Timeline */}
               <div className="relative py-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
                   Lifecycle Stages
                 </h3>
 
@@ -556,7 +566,7 @@ const MyEvents = () => {
 
               {/* Status Change Options */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Change Event Status
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -601,8 +611,8 @@ const MyEvents = () => {
                         disabled={isCurrent || updating}
                         className={`p-4 rounded-xl border-2 transition-all text-left ${
                           isCurrent
-                            ? "border-[#191A23] bg-[#B9FF66]/10 shadow-sm"
-                            : "border-gray-200 hover:border-[#B9FF66] hover:bg-gray-50"
+                            ? "border-[#191A23] dark:border-lime bg-[#B9FF66]/10 dark:bg-lime/10 shadow-sm"
+                            : "border-gray-200 dark:border-white/10 hover:border-[#B9FF66] hover:bg-gray-50 dark:hover:bg-white/5"
                         } ${
                           isCurrent || updating
                             ? "cursor-not-allowed opacity-75"

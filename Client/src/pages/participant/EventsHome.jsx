@@ -53,15 +53,15 @@ const EventsHome = () => {
 
   const fetchUserData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) return;
 
       // Fetch user profile
       const profileResponse = await fetch(`${API_BASE}/participant/profile`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
       const profileData = await profileResponse.json();
 
@@ -74,10 +74,10 @@ const EventsHome = () => {
             `${API_BASE}/participant/my-events?email=${encodeURIComponent(profileData.data.email)}`,
             {
               headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            }
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            },
           );
           const registrationsData = await registrationsResponse.json();
 
@@ -86,44 +86,55 @@ const EventsHome = () => {
 
             // Calculate stats from registrations
             const confirmedRegistrations = registrationsData.data.filter(
-              reg => reg.registrationStatus === 'CONFIRMED'
+              (reg) => reg.registrationStatus === "CONFIRMED",
             );
 
             const certificatesCount = registrationsData.data.filter(
-              reg => reg.certificate && (reg.certificate.status === 'ISSUED' || reg.certificate.status === 'SENT' || reg.certificate.status === 'GENERATED')
+              (reg) =>
+                reg.certificate &&
+                (reg.certificate.status === "ISSUED" ||
+                  reg.certificate.status === "SENT" ||
+                  reg.certificate.status === "GENERATED"),
             ).length;
 
             const currentDate = new Date();
-            const currentMonthRegs = registrationsData.data.filter(reg => {
+            const currentMonthRegs = registrationsData.data.filter((reg) => {
               if (!reg.event?.startDate) return false;
               const eventDate = new Date(reg.event.startDate);
-              return eventDate.getMonth() === currentDate.getMonth() &&
-                     eventDate.getFullYear() === currentDate.getFullYear();
+              return (
+                eventDate.getMonth() === currentDate.getMonth() &&
+                eventDate.getFullYear() === currentDate.getFullYear()
+              );
             }).length;
 
             // Calculate attendance score
             const attendedCount = registrationsData.data.filter(
-              reg => reg.attendanceStatus === 'ATTENDED'
+              (reg) => reg.attendanceStatus === "ATTENDED",
             ).length;
-            const attendanceScore = registrationsData.data.length > 0
-              ? Math.round((attendedCount / registrationsData.data.length) * 100)
-              : 0;
+            const attendanceScore =
+              registrationsData.data.length > 0
+                ? Math.round(
+                    (attendedCount / registrationsData.data.length) * 100,
+                  )
+                : 0;
 
             // Extract event dates for calendar (current month)
             const dates = registrationsData.data
-              .filter(reg => {
+              .filter((reg) => {
                 if (!reg.event?.startDate) return false;
                 const d = new Date(reg.event.startDate);
-                return d.getMonth() === currentMonth.getMonth() &&
-                       d.getFullYear() === currentMonth.getFullYear();
+                return (
+                  d.getMonth() === currentMonth.getMonth() &&
+                  d.getFullYear() === currentMonth.getFullYear()
+                );
               })
-              .map(reg => new Date(reg.event.startDate).getDate());
+              .map((reg) => new Date(reg.event.startDate).getDate());
             setEventDates(dates);
 
             // Calculate learning streak (events in past 30 days)
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const recentEvents = registrationsData.data.filter(reg => {
+            const recentEvents = registrationsData.data.filter((reg) => {
               if (!reg.event?.startDate) return false;
               const eventDate = new Date(reg.event.startDate);
               return eventDate >= thirtyDaysAgo && eventDate <= currentDate;
@@ -142,7 +153,7 @@ const EventsHome = () => {
         }
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error("Error fetching user data:", error);
     }
   };
 
@@ -231,17 +242,17 @@ const EventsHome = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-dark mb-1">
-            Hi, {userProfile?.name || 'there'}! 👋
+          <h1 className="text-2xl md:text-3xl font-bold text-dark dark:text-white mb-1">
+            Hi, {userProfile?.name || "there"}! 👋
           </h1>
-          <p className="text-dark-300 text-sm md:text-base">
+          <p className="text-dark-300 dark:text-zinc-400 text-sm md:text-base">
             Let's take a look at your learning journey today
           </p>
         </div>
         <div className="flex items-center gap-3 mt-4 md:mt-0">
           <div className="relative">
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-200"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-200 dark:text-zinc-500"
               size={16}
             />
             <input
@@ -249,7 +260,7 @@ const EventsHome = () => {
               placeholder="Search for events"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 pr-4 py-2.5 bg-white border border-light-400 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-lime/50 focus:border-lime w-full md:w-64 text-dark placeholder:text-dark-200"
+              className="pl-10 pr-4 py-2.5 bg-white dark:bg-white/5 border border-light-400 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-lime/50 focus:border-lime w-full md:w-64 text-dark dark:text-white placeholder:text-dark-200 dark:placeholder:text-zinc-500"
             />
           </div>
           <button className="bg-dark text-lime px-4 py-2.5 rounded-xl text-sm font-bold hover:shadow-card-hover transition-all duration-300 flex items-center gap-2">
@@ -294,7 +305,7 @@ const EventsHome = () => {
                 ? "bg-dark text-white"
                 : stat.variant === "lime"
                   ? "bg-lime text-dark"
-                  : "bg-white text-dark border border-light-400/50 shadow-card"
+                  : "bg-white dark:bg-white/5 text-dark dark:text-white border border-light-400/50 dark:border-white/5 shadow-card dark:shadow-none"
             }`}
           >
             <div className="flex items-start justify-between mb-3">
@@ -429,7 +440,9 @@ const EventsHome = () => {
                   <div className="w-3 h-1 bg-lime/30 rounded-full"></div>
                   <span className="text-xs text-dark-200">This month</span>
                 </div>
-                <div className="text-lg font-bold text-white">{userStats.currentMonthEvents}</div>
+                <div className="text-lg font-bold text-white">
+                  {userStats.currentMonthEvents}
+                </div>
               </div>
             </div>
           </div>
@@ -440,20 +453,22 @@ const EventsHome = () => {
         </div>
 
         {/* Calendar Widget */}
-        <div className="bg-white rounded-3xl p-6 shadow-card border border-light-400/50">
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-dark font-bold">Your Event Days</h3>
+            <h3 className="text-dark dark:text-white font-bold">
+              Your Event Days
+            </h3>
           </div>
 
           <div className="mb-4">
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={previousMonth}
-                className="p-1.5 hover:bg-light-300 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-light-300 dark:hover:bg-white/5 rounded-lg transition-colors"
               >
-                <ChevronLeft size={16} className="text-dark" />
+                <ChevronLeft size={16} className="text-dark dark:text-white" />
               </button>
-              <h4 className="font-bold text-dark text-sm">
+              <h4 className="font-bold text-dark dark:text-white text-sm">
                 {monthNames[currentMonth.getMonth()]}{" "}
                 {currentMonth.getFullYear()}
               </h4>
@@ -461,7 +476,7 @@ const EventsHome = () => {
                 onClick={nextMonth}
                 className="p-1.5 hover:bg-light-300 rounded-lg transition-colors"
               >
-                <ChevronRight size={16} className="text-dark" />
+                <ChevronRight size={16} className="text-dark dark:text-white" />
               </button>
             </div>
 
@@ -469,7 +484,7 @@ const EventsHome = () => {
               {dayNames.map((day, i) => (
                 <div
                   key={i}
-                  className="text-center text-xs text-dark-200 p-1.5 font-medium"
+                  className="text-center text-xs text-dark-200 dark:text-zinc-500 p-1.5 font-medium"
                 >
                   {day}
                 </div>
@@ -505,7 +520,7 @@ const EventsHome = () => {
                         ? "bg-lime text-dark font-bold"
                         : hasEvent
                           ? "bg-dark text-white"
-                          : "text-dark-300 hover:bg-light-300"
+                          : "text-dark-300 dark:text-zinc-400 hover:bg-light-300 dark:hover:bg-white/5"
                     }`}
                   >
                     {day}
@@ -515,14 +530,18 @@ const EventsHome = () => {
             </div>
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-light-400">
+          <div className="space-y-2 pt-2 border-t border-light-400 dark:border-white/5">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-dark-300">Current day</span>
+              <span className="text-dark-300 dark:text-zinc-500">
+                Current day
+              </span>
               <span className="w-3 h-3 bg-lime rounded-full"></span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-dark-300">Event days</span>
-              <span className="w-3 h-3 bg-dark rounded-full"></span>
+              <span className="text-dark-300 dark:text-zinc-500">
+                Event days
+              </span>
+              <span className="w-3 h-3 bg-dark dark:bg-white rounded-full"></span>
             </div>
           </div>
         </div>
@@ -578,10 +597,15 @@ const EventsHome = () => {
         </div>
 
         {/* Recent Learning */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-card border border-light-400/50">
+        <div className="lg:col-span-2 bg-white dark:bg-white/[0.03] rounded-3xl p-6 shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-dark">My Learning Activity</h3>
-            <Link to="/participant/registrations" className="text-sm font-bold text-dark bg-light-300 hover:bg-light-400 px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors">
+            <h3 className="font-bold text-dark dark:text-white">
+              My Learning Activity
+            </h3>
+            <Link
+              to="/participant/registrations"
+              className="text-sm font-bold text-dark dark:text-white bg-light-300 dark:bg-white/5 hover:bg-light-400 dark:hover:bg-white/10 px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors"
+            >
               View All <ArrowUpRight size={14} />
             </Link>
           </div>
@@ -589,29 +613,43 @@ const EventsHome = () => {
           <div className="space-y-3">
             {myRegistrations.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-dark-200 mb-2">
+                <div className="text-dark-200 dark:text-zinc-600 mb-2">
                   <BookOpen className="w-12 h-12 mx-auto" />
                 </div>
-                <p className="text-dark-300 text-sm">No registered events yet</p>
-                <p className="text-dark-200 text-xs mt-1">Browse events and start your learning journey!</p>
+                <p className="text-dark-300 dark:text-zinc-400 text-sm">
+                  No registered events yet
+                </p>
+                <p className="text-dark-200 dark:text-zinc-500 text-xs mt-1">
+                  Browse events and start your learning journey!
+                </p>
               </div>
             ) : (
               myRegistrations.slice(0, 4).map((registration, index) => {
-                const icons = ['💻', '📊', '🎨', '🤖', '🎯', '📚', '🚀', '⚡'];
+                const icons = ["💻", "📊", "🎨", "🤖", "🎯", "📚", "🚀", "⚡"];
                 const variant = index % 2 === 0 ? "dark" : "lime";
 
                 // Calculate progress based on event/registration status
                 const event = registration.event;
-                const completion = event?.status === 'completed' ? 100
-                  : event?.status === 'ongoing' ? 50
-                  : registration.attendanceStatus === 'ATTENDED' ? 75
-                  : registration.registrationStatus === 'CONFIRMED' ? 25 : 10;
+                const completion =
+                  event?.status === "completed"
+                    ? 100
+                    : event?.status === "ongoing"
+                      ? 50
+                      : registration.attendanceStatus === "ATTENDED"
+                        ? 75
+                        : registration.registrationStatus === "CONFIRMED"
+                          ? 25
+                          : 10;
 
-                const progressLabel = registration.certificate ? 'Certificate Issued'
-                  : registration.attendanceStatus === 'ATTENDED' ? 'Attended'
-                  : event?.status === 'ongoing' ? 'In Progress'
-                  : registration.registrationStatus === 'CONFIRMED' ? 'Registered'
-                  : 'Pending';
+                const progressLabel = registration.certificate
+                  ? "Certificate Issued"
+                  : registration.attendanceStatus === "ATTENDED"
+                    ? "Attended"
+                    : event?.status === "ongoing"
+                      ? "In Progress"
+                      : registration.registrationStatus === "CONFIRMED"
+                        ? "Registered"
+                        : "Pending";
 
                 return (
                   <Link
@@ -633,7 +671,7 @@ const EventsHome = () => {
                       </div>
                       <div>
                         <div className="font-bold text-sm">
-                          {registration.event?.title || 'Event'}
+                          {registration.event?.title || "Event"}
                         </div>
                         <div
                           className={`text-xs ${variant === "dark" ? "text-dark-200" : "text-dark/60"}`}
@@ -677,9 +715,11 @@ const EventsHome = () => {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Events */}
-        <div className="bg-white rounded-3xl p-6 shadow-card border border-light-400/50">
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-dark">Upcoming Events</h3>
+            <h3 className="font-bold text-dark dark:text-white">
+              Upcoming Events
+            </h3>
             <Link
               to="/participant/calendar"
               className="text-sm font-bold text-dark bg-lime hover:bg-lime-400 px-3 py-1.5 rounded-xl transition-colors"
@@ -691,105 +731,109 @@ const EventsHome = () => {
           <div className="space-y-4">
             {events.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-dark-200 mb-2">
+                <div className="text-dark-200 dark:text-zinc-600 mb-2">
                   <Calendar className="w-12 h-12 mx-auto" />
                 </div>
-                <p className="text-dark-300 text-sm font-medium">No upcoming events</p>
-                <p className="text-dark-200 text-xs mt-1">Check back soon for new events!</p>
+                <p className="text-dark-300 dark:text-zinc-400 text-sm font-medium">
+                  No upcoming events
+                </p>
+                <p className="text-dark-200 dark:text-zinc-500 text-xs mt-1">
+                  Check back soon for new events!
+                </p>
               </div>
             ) : (
-            events.slice(0, 3).map((event, index) => {
-              const variants = ["dark", "lime", "white"];
-              const variant = variants[index % 3];
+              events.slice(0, 3).map((event, index) => {
+                const variants = ["dark", "lime", "white"];
+                const variant = variants[index % 3];
 
-              const eventDate = event.startDate
-                ? new Date(event.startDate)
-                : null;
-              const daysLeft = eventDate
-                ? Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24))
-                : null;
+                const eventDate = event.startDate
+                  ? new Date(event.startDate)
+                  : null;
+                const daysLeft = eventDate
+                  ? Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24))
+                  : null;
 
-              return (
-                <Link
-                  key={event._id}
-                  to={`/participant/event/${event._id}`}
-                  className="block group"
-                >
-                  <div
-                    className={`rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] ${
-                      variant === "dark"
-                        ? "bg-dark text-white"
-                        : variant === "lime"
-                          ? "bg-lime text-dark"
-                          : "bg-light-300 text-dark"
-                    }`}
+                return (
+                  <Link
+                    key={event._id}
+                    to={`/participant/event/${event._id}`}
+                    className="block group"
                   >
-                    {/* Status Badge */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                          variant === "dark"
+                    <div
+                      className={`rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] ${
+                        variant === "dark"
+                          ? "bg-dark text-white"
+                          : variant === "lime"
                             ? "bg-lime text-dark"
-                            : variant === "lime"
-                              ? "bg-dark text-white"
-                              : "bg-dark text-white"
-                        }`}
-                      >
-                        {event.status}
-                      </span>
-                      {daysLeft && daysLeft > 0 && (
+                            : "bg-light-300 dark:bg-white/5 text-dark dark:text-white"
+                      }`}
+                    >
+                      {/* Status Badge */}
+                      <div className="flex items-center justify-between mb-3">
                         <span
-                          className={`text-xs font-bold ${
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
                             variant === "dark"
-                              ? "text-dark-200"
+                              ? "bg-lime text-dark"
                               : variant === "lime"
-                                ? "text-dark/60"
-                                : "text-dark-300"
+                                ? "bg-dark text-white"
+                                : "bg-dark text-white"
                           }`}
                         >
-                          {daysLeft} days left
+                          {event.status}
                         </span>
-                      )}
-                    </div>
+                        {daysLeft && daysLeft > 0 && (
+                          <span
+                            className={`text-xs font-bold ${
+                              variant === "dark"
+                                ? "text-dark-200"
+                                : variant === "lime"
+                                  ? "text-dark/60"
+                                  : "text-dark-300"
+                            }`}
+                          >
+                            {daysLeft} days left
+                          </span>
+                        )}
+                      </div>
 
-                    <h3 className="font-bold text-lg mb-2 leading-tight">
-                      {event.title}
-                    </h3>
+                      <h3 className="font-bold text-lg mb-2 leading-tight">
+                        {event.title}
+                      </h3>
 
-                    {/* Details */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1.5">
-                          <MapPin size={14} />
-                          <span>{event.type || "Online"}</span>
+                      {/* Details */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="flex items-center gap-1.5">
+                            <MapPin size={14} />
+                            <span>{event.type || "Online"}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Calendar size={14} />
+                            <span>{formatDate(event.startDate)}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <Calendar size={14} />
-                          <span>{formatDate(event.startDate)}</span>
+                        <div
+                          className={`flex items-center gap-1 font-bold text-sm ${
+                            variant === "dark"
+                              ? "text-lime"
+                              : variant === "lime"
+                                ? "text-dark"
+                                : "text-dark"
+                          }`}
+                        >
+                          {event.registrationFee > 0
+                            ? `₹${event.registrationFee}`
+                            : "FREE"}
+                          <ArrowUpRight
+                            size={16}
+                            className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+                          />
                         </div>
                       </div>
-                      <div
-                        className={`flex items-center gap-1 font-bold text-sm ${
-                          variant === "dark"
-                            ? "text-lime"
-                            : variant === "lime"
-                              ? "text-dark"
-                              : "text-dark"
-                        }`}
-                      >
-                        {event.registrationFee > 0
-                          ? `₹${event.registrationFee}`
-                          : "FREE"}
-                        <ArrowUpRight
-                          size={16}
-                          className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
-                        />
-                      </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })
+                  </Link>
+                );
+              })
             )}
           </div>
         </div>
@@ -846,11 +890,15 @@ const EventsHome = () => {
                   Learning Streak
                 </h4>
                 <p className="text-xs text-dark-200 mt-1">
-                  {userStats.learningStreak > 0 ? 'Keep up the great work!' : 'Start your journey!'}
+                  {userStats.learningStreak > 0
+                    ? "Keep up the great work!"
+                    : "Start your journey!"}
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-black text-lime">{userStats.learningStreak}</div>
+                <div className="text-2xl font-black text-lime">
+                  {userStats.learningStreak}
+                </div>
                 <div className="text-xs text-dark-200">events</div>
               </div>
             </div>

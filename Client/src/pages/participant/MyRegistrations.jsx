@@ -354,14 +354,14 @@ const MyRegistrations = () => {
 
       {/* Registrations List */}
       {registrations.length === 0 ? (
-        <div className="bg-white rounded-3xl shadow-card p-12 text-center border border-light-400/50">
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-12 text-center border border-light-400/50 dark:border-white/5">
           <div className="w-20 h-20 bg-dark rounded-3xl flex items-center justify-center mx-auto mb-6">
             <span className="text-3xl">📭</span>
           </div>
-          <h3 className="text-2xl font-bold text-dark mb-2">
+          <h3 className="text-2xl font-bold text-dark dark:text-white mb-2">
             No Registrations Yet
           </h3>
-          <p className="text-dark-300 mb-6">
+          <p className="text-dark-300 dark:text-zinc-400 mb-6">
             You haven't registered for any events yet.
           </p>
           <Link
@@ -382,14 +382,16 @@ const MyRegistrations = () => {
                 className={`rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.01] ${
                   variant === "dark"
                     ? "bg-dark text-white"
-                    : "bg-white shadow-card border border-light-400/50"
+                    : "bg-white dark:bg-white/[0.03] shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5 text-dark dark:text-white"
                 }`}
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Event Image */}
                   <div
                     className={`w-full md:w-48 h-36 md:h-auto relative overflow-hidden ${
-                      variant === "dark" ? "bg-dark-500" : "bg-lime/20"
+                      variant === "dark"
+                        ? "bg-dark-500"
+                        : "bg-lime/20 dark:bg-lime/10"
                     }`}
                   >
                     {reg.event?.bannerImage ? (
@@ -413,7 +415,7 @@ const MyRegistrations = () => {
                           {reg.event?.title || "Event Deleted"}
                         </h3>
                         <p
-                          className={`text-sm flex items-center gap-3 ${variant === "dark" ? "text-dark-200" : "text-dark-300"}`}
+                          className={`text-sm flex items-center gap-3 ${variant === "dark" ? "text-dark-200" : "text-dark-300 dark:text-zinc-400"}`}
                         >
                           <span>📅 {formatDate(reg.event?.startDate)}</span>
                           {reg.event?.venue && (
@@ -514,7 +516,7 @@ const MyRegistrations = () => {
             setEmail("");
             setInputEmail("");
           }}
-          className="text-sm font-bold text-dark-300 hover:text-dark transition-colors"
+          className="text-sm font-bold text-dark-300 dark:text-zinc-400 hover:text-dark dark:hover:text-white transition-colors"
         >
           ← Use a different email
         </button>
@@ -523,13 +525,13 @@ const MyRegistrations = () => {
       {/* QR Scanner Modal */}
       {showScanModal && selectedEvent && (
         <div className="fixed inset-0 bg-dark/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 relative shadow-2xl">
+          <div className="bg-white dark:bg-[#1a1a2a] rounded-3xl max-w-lg w-full p-8 relative shadow-2xl">
             {/* Close Button */}
             <button
               onClick={handleCloseScanner}
-              className="absolute top-6 right-6 p-2 hover:bg-light-300 rounded-xl z-10 transition-all"
+              className="absolute top-6 right-6 p-2 hover:bg-light-300 dark:hover:bg-white/5 rounded-xl z-10 transition-all"
             >
-              <X size={20} className="text-dark-300" />
+              <X size={20} className="text-dark-300 dark:text-zinc-400" />
             </button>
 
             {/* Modal Content */}
@@ -538,10 +540,10 @@ const MyRegistrations = () => {
                 <div className="w-14 h-14 bg-dark rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Camera size={24} className="text-lime" />
                 </div>
-                <h3 className="text-xl font-bold text-dark mb-1">
+                <h3 className="text-xl font-bold text-dark dark:text-white mb-1">
                   {selectedEvent.title}
                 </h3>
-                <p className="text-dark-300 text-sm">
+                <p className="text-dark-300 dark:text-zinc-400 text-sm">
                   Scan the organizer's QR code
                 </p>
               </div>
@@ -610,8 +612,8 @@ const MyRegistrations = () => {
                   </div>
 
                   {/* Manual Entry */}
-                  <div className="border-t border-light-400 pt-5">
-                    <p className="text-sm text-dark-300 font-medium mb-3">
+                  <div className="border-t border-light-400 dark:border-white/5 pt-5">
+                    <p className="text-sm text-dark-300 dark:text-zinc-400 font-medium mb-3">
                       Or enter session ID manually:
                     </p>
                     <form

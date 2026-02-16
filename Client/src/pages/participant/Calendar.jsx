@@ -143,17 +143,17 @@ const Calendar = () => {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Calendar Grid */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-3xl shadow-card overflow-hidden border border-light-400/50">
+          <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none overflow-hidden border border-light-400/50 dark:border-white/5">
             {/* Calendar Header */}
-            <div className="p-5 border-b border-light-400 flex items-center justify-between">
+            <div className="p-5 border-b border-light-400 dark:border-white/5 flex items-center justify-between">
               <button
                 onClick={goToPreviousMonth}
-                className="p-2 hover:bg-light-300 rounded-xl transition-colors"
+                className="p-2 hover:bg-light-300 dark:hover:bg-white/5 rounded-xl transition-colors"
               >
-                <ChevronLeft size={20} className="text-dark" />
+                <ChevronLeft size={20} className="text-dark dark:text-white" />
               </button>
               <div className="text-center">
-                <h2 className="text-lg font-bold text-dark">
+                <h2 className="text-lg font-bold text-dark dark:text-white">
                   {monthNames[currentDate.getMonth()]}{" "}
                   {currentDate.getFullYear()}
                 </h2>
@@ -166,18 +166,18 @@ const Calendar = () => {
               </div>
               <button
                 onClick={goToNextMonth}
-                className="p-2 hover:bg-light-300 rounded-xl transition-colors"
+                className="p-2 hover:bg-light-300 dark:hover:bg-white/5 rounded-xl transition-colors"
               >
-                <ChevronRight size={20} className="text-dark" />
+                <ChevronRight size={20} className="text-dark dark:text-white" />
               </button>
             </div>
 
             {/* Day Names */}
-            <div className="grid grid-cols-7 border-b border-light-400">
+            <div className="grid grid-cols-7 border-b border-light-400 dark:border-white/5">
               {dayNames.map((day) => (
                 <div
                   key={day}
-                  className="p-2 text-center text-xs font-bold text-dark-200 uppercase tracking-wide"
+                  className="p-2 text-center text-xs font-bold text-dark-200 dark:text-zinc-500 uppercase tracking-wide"
                 >
                   {day}
                 </div>
@@ -194,7 +194,7 @@ const Calendar = () => {
                 {Array.from({ length: startingDay }, (_, i) => (
                   <div
                     key={`empty-${i}`}
-                    className="h-24 border-b border-r border-light-400/50 bg-light-300/50"
+                    className="h-24 border-b border-r border-light-400/50 dark:border-white/5 bg-light-300/50 dark:bg-white/[0.02]"
                   ></div>
                 ))}
 
@@ -208,12 +208,12 @@ const Calendar = () => {
                     <div
                       key={day}
                       onClick={() => setSelectedDate(day)}
-                      className={`h-24 border-b border-r border-light-400/50 p-1 cursor-pointer transition-all ${
+                      className={`h-24 border-b border-r border-light-400/50 dark:border-white/5 p-1 cursor-pointer transition-all ${
                         selectedDate === day
-                          ? "bg-lime/10"
+                          ? "bg-lime/10 dark:bg-lime/5"
                           : isToday(day)
-                            ? "bg-lime/5"
-                            : "hover:bg-light-300"
+                            ? "bg-lime/5 dark:bg-lime/[0.03]"
+                            : "hover:bg-light-300 dark:hover:bg-white/5"
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -223,7 +223,7 @@ const Calendar = () => {
                               ? "bg-lime text-dark font-bold"
                               : selectedDate === day
                                 ? "bg-dark text-white font-bold"
-                                : "text-dark"
+                                : "text-dark dark:text-zinc-300"
                           }`}
                         >
                           {day}
@@ -242,14 +242,14 @@ const Calendar = () => {
                             className={`text-[10px] px-1 py-0.5 rounded font-medium truncate ${
                               event.status === "ongoing"
                                 ? "bg-lime/20 text-dark"
-                                : "bg-dark/10 text-dark"
+                                : "bg-dark/10 dark:bg-white/10 text-dark dark:text-zinc-300"
                             }`}
                           >
                             {event.title}
                           </div>
                         ))}
                         {dayEvents.length > 2 && (
-                          <div className="text-[10px] text-dark-200 pl-1 font-medium">
+                          <div className="text-[10px] text-dark-200 dark:text-zinc-500 pl-1 font-medium">
                             +{dayEvents.length - 2} more
                           </div>
                         )}
@@ -264,7 +264,7 @@ const Calendar = () => {
 
         {/* Selected Date Events */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-3xl shadow-card sticky top-20 border border-light-400/50 overflow-hidden">
+          <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none sticky top-20 border border-light-400/50 dark:border-white/5 overflow-hidden">
             <div className="p-5 bg-dark text-white">
               <h3 className="font-bold text-sm">
                 {selectedDate
@@ -275,8 +275,8 @@ const Calendar = () => {
 
             <div className="p-4">
               {!selectedDate ? (
-                <div className="text-center py-8 text-dark-200">
-                  <div className="w-12 h-12 bg-light-300 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <div className="text-center py-8 text-dark-200 dark:text-zinc-500">
+                  <div className="w-12 h-12 bg-light-300 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3">
                     <span className="text-2xl">📅</span>
                   </div>
                   <p className="text-sm font-medium">
@@ -284,8 +284,8 @@ const Calendar = () => {
                   </p>
                 </div>
               ) : selectedEvents.length === 0 ? (
-                <div className="text-center py-8 text-dark-200">
-                  <div className="w-12 h-12 bg-light-300 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <div className="text-center py-8 text-dark-200 dark:text-zinc-500">
+                  <div className="w-12 h-12 bg-light-300 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-3">
                     <span className="text-2xl">📭</span>
                   </div>
                   <p className="text-sm font-medium">No events on this date</p>
@@ -296,10 +296,10 @@ const Calendar = () => {
                     <Link
                       key={event._id}
                       to={`/participant/event/${event._id}`}
-                      className="block p-3 rounded-2xl bg-light-300 hover:bg-lime/10 transition-all"
+                      className="block p-3 rounded-2xl bg-light-300 dark:bg-white/5 hover:bg-lime/10 dark:hover:bg-lime/5 transition-all"
                     >
                       <div className="flex items-start justify-between">
-                        <h4 className="font-bold text-dark text-sm">
+                        <h4 className="font-bold text-dark dark:text-white text-sm">
                           {event.title}
                         </h4>
                         <span
@@ -315,7 +315,7 @@ const Calendar = () => {
                         </span>
                       </div>
 
-                      <div className="mt-2 text-xs text-dark-300 space-y-1">
+                      <div className="mt-2 text-xs text-dark-300 dark:text-zinc-400 space-y-1">
                         <div>🕐 {formatTime(event.startDate)}</div>
                         {(event.location || event.venue) && (
                           <div>📍 {event.venue || event.location}</div>
@@ -323,7 +323,7 @@ const Calendar = () => {
                       </div>
 
                       {event.isRegistered && (
-                        <div className="mt-2 text-xs text-dark font-bold">
+                        <div className="mt-2 text-xs text-dark dark:text-lime font-bold">
                           <span className="bg-lime/20 px-2 py-0.5 rounded-full">
                             ✓ Registered
                           </span>
@@ -339,23 +339,29 @@ const Calendar = () => {
       </div>
 
       {/* Legend */}
-      <div className="bg-white rounded-3xl shadow-card p-4 border border-light-400/50">
+      <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-4 border border-light-400/50 dark:border-white/5">
         <div className="flex flex-wrap gap-5 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-lime"></div>
-            <span className="text-dark-300 text-xs font-medium">Today</span>
+            <span className="text-dark-300 dark:text-zinc-400 text-xs font-medium">
+              Today
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-dark/10"></div>
-            <span className="text-dark-300 text-xs font-medium">Upcoming</span>
+            <span className="text-dark-300 dark:text-zinc-400 text-xs font-medium">
+              Upcoming
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-lime/20"></div>
-            <span className="text-dark-300 text-xs font-medium">Ongoing</span>
+            <span className="text-dark-300 dark:text-zinc-400 text-xs font-medium">
+              Ongoing
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-lime-600 font-bold text-xs">✓</span>
-            <span className="text-dark-300 text-xs font-medium">
+            <span className="text-dark-300 dark:text-zinc-400 text-xs font-medium">
               Registered
             </span>
           </div>
