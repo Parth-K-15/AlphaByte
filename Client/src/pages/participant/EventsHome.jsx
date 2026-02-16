@@ -300,57 +300,68 @@ const EventsHome = () => {
         ].map((stat, index) => (
           <div
             key={index}
-            className={`rounded-3xl p-5 transition-all duration-300 hover:scale-[1.02] ${
+            className={`group relative rounded-3xl p-6 transition-all duration-500 hover:scale-[1.03] overflow-hidden ${
               stat.variant === "dark"
-                ? "bg-dark text-white"
+                ? "bg-gradient-to-br from-dark via-dark to-dark-500 text-white shadow-2xl hover:shadow-lime/20"
                 : stat.variant === "lime"
-                  ? "bg-lime text-dark"
-                  : "bg-white dark:bg-white/5 text-dark dark:text-white border border-light-400/50 dark:border-white/5 shadow-card dark:shadow-none"
+                  ? "bg-gradient-to-br from-lime via-lime to-lime/90 text-dark shadow-xl hover:shadow-lime/40"
+                  : "bg-gradient-to-br from-white via-white to-light-200 dark:from-white/10 dark:via-white/5 dark:to-white/5 text-dark dark:text-white border border-light-400/50 dark:border-white/10 shadow-lg hover:shadow-xl dark:shadow-white/5"
             }`}
           >
-            <div className="flex items-start justify-between mb-3">
-              <div
-                className={`p-2 rounded-xl ${
-                  stat.variant === "dark"
-                    ? "bg-lime/15"
-                    : stat.variant === "lime"
-                      ? "bg-dark/10"
-                      : "bg-light-300"
-                }`}
-              >
-                <stat.icon
+            {/* Animated Background Gradient */}
+            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+              stat.variant === "dark" 
+                ? "bg-gradient-to-tr from-lime/10 to-transparent"
+                : stat.variant === "lime"
+                  ? "bg-gradient-to-tr from-dark/10 to-transparent"
+                  : "bg-gradient-to-tr from-lime/10 to-transparent"
+            }`}></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-start justify-between mb-4">
+                <div
+                  className={`p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300 ${
+                    stat.variant === "dark"
+                      ? "bg-gradient-to-br from-lime/20 to-lime/10 backdrop-blur-sm"
+                      : stat.variant === "lime"
+                        ? "bg-gradient-to-br from-dark/15 to-dark/5 backdrop-blur-sm"
+                        : "bg-gradient-to-br from-light-400 to-light-300 dark:from-white/15 dark:to-white/5"
+                  }`}
+                >
+                  <stat.icon
+                    size={20}
+                    className={
+                      stat.variant === "dark"
+                        ? "text-lime"
+                        : stat.variant === "lime"
+                          ? "text-dark"
+                          : "text-dark dark:text-lime"
+                    }
+                  />
+                </div>
+                <ArrowUpRight
                   size={18}
-                  className={
+                  className={`opacity-40 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-300 ${
                     stat.variant === "dark"
                       ? "text-lime"
                       : stat.variant === "lime"
                         ? "text-dark"
-                        : "text-dark-300"
-                  }
+                        : "text-dark dark:text-lime"
+                  }`}
                 />
               </div>
-              <ArrowUpRight
-                size={16}
-                className={
+              <div className="text-3xl lg:text-4xl font-black mb-2 group-hover:scale-105 transition-transform duration-300">{stat.value}</div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wide ${
                   stat.variant === "dark"
                     ? "text-dark-200"
                     : stat.variant === "lime"
-                      ? "text-dark/40"
-                      : "text-dark-200"
-                }
-              />
-            </div>
-            <div className="text-2xl font-bold mb-1">{stat.value}</div>
-            <div
-              className={`text-xs font-medium ${
-                stat.variant === "dark"
-                  ? "text-dark-200"
-                  : stat.variant === "lime"
-                    ? "text-dark/60"
-                    : "text-dark-200"
-              }`}
-            >
-              {stat.label}
+                      ? "text-dark/60"
+                      : "text-dark-300 dark:text-zinc-400"
+                }`}
+              >
+                {stat.label}
+              </div>
             </div>
           </div>
         ))}
@@ -655,49 +666,59 @@ const EventsHome = () => {
                   <Link
                     key={registration._id}
                     to={`/participant/event/${registration.event?._id}`}
-                    className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-300 hover:scale-[1.01] ${
+                    className={`group relative flex items-center justify-between p-5 rounded-2xl transition-all duration-500 hover:scale-[1.02] overflow-hidden ${
                       variant === "dark"
-                        ? "bg-dark text-white"
-                        : "bg-lime/20 text-dark"
+                        ? "bg-gradient-to-br from-dark via-dark to-dark-500 text-white shadow-lg hover:shadow-lime/10"
+                        : "bg-gradient-to-br from-lime/20 via-lime/15 to-lime/10 text-dark hover:shadow-lg"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    {/* Hover Glow Effect */}
+                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                      variant === "dark" ? "bg-gradient-to-r from-lime/5 to-transparent" : "bg-gradient-to-r from-dark/5 to-transparent"
+                    }`}></div>
+                    
+                    <div className="relative z-10 flex items-center gap-4 flex-1">
                       <div
-                        className={`text-lg w-10 h-10 flex items-center justify-center rounded-xl ${
-                          variant === "dark" ? "bg-lime/15" : "bg-dark/10"
+                        className={`text-2xl w-12 h-12 flex items-center justify-center rounded-xl shadow-md group-hover:scale-110 transition-transform duration-300 ${
+                          variant === "dark" ? "bg-gradient-to-br from-lime/20 to-lime/10 backdrop-blur-sm" : "bg-gradient-to-br from-dark/15 to-dark/5 backdrop-blur-sm"
                         }`}
                       >
                         {icons[index % icons.length]}
                       </div>
-                      <div>
-                        <div className="font-bold text-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm mb-1 truncate group-hover:translate-x-1 transition-transform duration-300">
                           {registration.event?.title || "Event"}
                         </div>
-                        <div
-                          className={`text-xs ${variant === "dark" ? "text-dark-200" : "text-dark/60"}`}
-                        >
-                          Status: {registration.registrationStatus}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${variant === "dark" ? "bg-lime/15 text-lime" : "bg-dark/15 text-dark"}`}
+                          >
+                            {registration.registrationStatus}
+                          </span>
+                          {registration.certificate && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-600 dark:text-yellow-400">
+                              <Award size={10} />
+                              Certified
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="relative z-10 text-right ml-2">
                       <div
-                        className={`text-xs mb-2 flex items-center gap-1 justify-end ${variant === "dark" ? "text-dark-200" : "text-dark/60"}`}
+                        className={`text-xs mb-2 font-medium ${variant === "dark" ? "text-dark-200" : "text-dark/60"}`}
                       >
                         {progressLabel}
-                        {registration.certificate && (
-                          <Award size={14} className="text-yellow-400" />
-                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <div
-                          className={`w-20 h-1.5 rounded-full overflow-hidden ${
+                          className={`w-20 h-2 rounded-full overflow-hidden shadow-inner ${
                             variant === "dark" ? "bg-white/10" : "bg-dark/10"
                           }`}
                         >
                           <div
-                            className={`h-full rounded-full ${
-                              variant === "dark" ? "bg-lime" : "bg-dark"
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              variant === "dark" ? "bg-gradient-to-r from-lime to-lime/80" : "bg-gradient-to-r from-dark to-dark/80"
                             }`}
                             style={{ width: `${completion}%` }}
                           />
@@ -760,74 +781,129 @@ const EventsHome = () => {
                     className="block group"
                   >
                     <div
-                      className={`rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] ${
+                      className={`relative rounded-3xl p-6 transition-all duration-500 hover:scale-[1.02] overflow-hidden ${
                         variant === "dark"
-                          ? "bg-dark text-white"
+                          ? "bg-gradient-to-br from-dark via-dark to-dark-500 text-white shadow-2xl hover:shadow-lime/20"
                           : variant === "lime"
-                            ? "bg-lime text-dark"
-                            : "bg-light-300 dark:bg-white/5 text-dark dark:text-white"
+                            ? "bg-gradient-to-br from-lime via-lime to-lime/90 text-dark shadow-xl hover:shadow-lime/40"
+                            : "bg-gradient-to-br from-white via-white to-light-200 dark:from-white/10 dark:via-white/5 dark:to-white/5 text-dark dark:text-white shadow-lg hover:shadow-xl dark:shadow-white/5 border border-light-400/50 dark:border-white/10"
                       }`}
                     >
-                      {/* Status Badge */}
-                      <div className="flex items-center justify-between mb-3">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                            variant === "dark"
-                              ? "bg-lime text-dark"
-                              : variant === "lime"
-                                ? "bg-dark text-white"
-                                : "bg-dark text-white"
-                          }`}
-                        >
-                          {event.status}
-                        </span>
-                        {daysLeft && daysLeft > 0 && (
+                      {/* Gradient Overlay Effect */}
+                      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                        variant === "dark" 
+                          ? "bg-gradient-to-tr from-lime/5 to-transparent"
+                          : variant === "lime"
+                            ? "bg-gradient-to-tr from-dark/5 to-transparent"
+                            : "bg-gradient-to-tr from-lime/5 to-transparent"
+                      }`}></div>
+                      
+                      <div className="relative z-10">
+                        {/* Status Badge */}
+                        <div className="flex items-center justify-between mb-4">
                           <span
-                            className={`text-xs font-bold ${
+                            className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md ${
                               variant === "dark"
-                                ? "text-dark-200"
+                                ? "bg-lime text-dark"
                                 : variant === "lime"
-                                  ? "text-dark/60"
-                                  : "text-dark-300"
+                                  ? "bg-dark text-lime"
+                                  : "bg-dark text-lime"
                             }`}
                           >
-                            {daysLeft} days left
+                            <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></div>
+                            {event.status}
                           </span>
-                        )}
-                      </div>
+                          {daysLeft && daysLeft > 0 && (
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-sm ${
+                              variant === "dark"
+                                ? "bg-white/10 text-lime"
+                                : variant === "lime"
+                                  ? "bg-dark/10 text-dark"
+                                  : "bg-light-400 dark:bg-white/10 text-dark-300 dark:text-zinc-300"
+                            }`}>
+                              <Clock size={12} />
+                              {daysLeft}d left
+                            </div>
+                          )}
+                        </div>
 
-                      <h3 className="font-bold text-lg mb-2 leading-tight">
-                        {event.title}
-                      </h3>
+                        <h3 className="font-black text-xl mb-3 leading-tight group-hover:translate-x-1 transition-transform duration-300">
+                          {event.title}
+                        </h3>
 
-                      {/* Details */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-1.5">
-                            <MapPin size={14} />
+                        {/* Details Grid */}
+                        <div className="space-y-2.5 mb-4">
+                          <div className={`flex items-center gap-2 text-sm font-medium ${
+                            variant === "dark"
+                              ? "text-dark-200"
+                              : variant === "lime"
+                                ? "text-dark/70"
+                                : "text-dark-300 dark:text-zinc-400"
+                          }`}>
+                            <div className={`p-1.5 rounded-lg ${
+                              variant === "dark"
+                                ? "bg-lime/10"
+                                : variant === "lime"
+                                  ? "bg-dark/10"
+                                  : "bg-light-400 dark:bg-white/10"
+                            }`}>
+                              <MapPin size={14} />
+                            </div>
                             <span>{event.type || "Online"}</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Calendar size={14} />
+                          <div className={`flex items-center gap-2 text-sm font-medium ${
+                            variant === "dark"
+                              ? "text-dark-200"
+                              : variant === "lime"
+                                ? "text-dark/70"
+                                : "text-dark-300 dark:text-zinc-400"
+                          }`}>
+                            <div className={`p-1.5 rounded-lg ${
+                              variant === "dark"
+                                ? "bg-lime/10"
+                                : variant === "lime"
+                                  ? "bg-dark/10"
+                                  : "bg-light-400 dark:bg-white/10"
+                            }`}>
+                              <Calendar size={14} />
+                            </div>
                             <span>{formatDate(event.startDate)}</span>
                           </div>
                         </div>
-                        <div
-                          className={`flex items-center gap-1 font-bold text-sm ${
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-3 border-t border-current/10">
+                          <div
+                            className={`flex items-center gap-2 font-black text-lg ${
+                              variant === "dark"
+                                ? "text-lime"
+                                : variant === "lime"
+                                  ? "text-dark"
+                                  : "text-dark dark:text-lime"
+                            }`}
+                          >
+                            {event.registrationFee > 0 ? (
+                              <>
+                                <span className="text-xs font-medium opacity-60">₹</span>
+                                {event.registrationFee}
+                              </>
+                            ) : (
+                              <span className="text-base">FREE</span>
+                            )}
+                          </div>
+                          <div className={`flex items-center gap-1.5 text-sm font-bold group-hover:gap-2.5 transition-all ${
                             variant === "dark"
                               ? "text-lime"
                               : variant === "lime"
                                 ? "text-dark"
-                                : "text-dark"
-                          }`}
-                        >
-                          {event.registrationFee > 0
-                            ? `₹${event.registrationFee}`
-                            : "FREE"}
-                          <ArrowUpRight
-                            size={16}
-                            className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
-                          />
+                                : "text-dark dark:text-lime"
+                          }`}>
+                            <span>View Details</span>
+                            <ArrowUpRight
+                              size={18}
+                              className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -839,67 +915,79 @@ const EventsHome = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-dark rounded-3xl p-6">
-          <h3 className="font-bold text-white mb-6">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              {
-                name: "Scan QR",
-                icon: CheckCircle,
-                variant: "lime",
-                path: "/participant/scan",
-              },
-              {
-                name: "My Events",
-                icon: Calendar,
-                variant: "white",
-                path: "/participant/registrations",
-              },
-              {
-                name: "Certificates",
-                icon: Award,
-                variant: "white",
-                path: "/participant/certificates",
-              },
-              {
-                name: "Profile",
-                icon: Users,
-                variant: "lime",
-                path: "/participant/profile",
-              },
-            ].map((action, index) => (
-              <Link
-                key={index}
-                to={action.path}
-                className={`flex flex-col items-center gap-3 p-5 rounded-2xl transition-all duration-300 hover:scale-105 group ${
-                  action.variant === "lime"
-                    ? "bg-lime text-dark hover:shadow-lime"
-                    : "bg-white/10 text-white hover:bg-white/15"
-                }`}
-              >
-                <action.icon size={24} />
-                <span className="text-xs font-bold">{action.name}</span>
-              </Link>
-            ))}
-          </div>
+        <div className="relative bg-gradient-to-br from-dark via-dark to-dark-500 rounded-3xl p-6 lg:p-8 overflow-hidden shadow-2xl">
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-lime/5 rounded-full blur-2xl"></div>
+          
+          <div className="relative z-10">
+            <h3 className="font-black text-xl text-white mb-6">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                {
+                  name: "Scan QR",
+                  icon: CheckCircle,
+                  variant: "lime",
+                  path: "/participant/scan",
+                },
+                {
+                  name: "My Events",
+                  icon: Calendar,
+                  variant: "white",
+                  path: "/participant/registrations",
+                },
+                {
+                  name: "Certificates",
+                  icon: Award,
+                  variant: "white",
+                  path: "/participant/certificates",
+                },
+                {
+                  name: "Profile",
+                  icon: Users,
+                  variant: "lime",
+                  path: "/participant/profile",
+                },
+              ].map((action, index) => (
+                <Link
+                  key={index}
+                  to={action.path}
+                  className={`group/action relative flex flex-col items-center gap-3 p-5 rounded-2xl transition-all duration-500 hover:scale-110 overflow-hidden ${
+                    action.variant === "lime"
+                      ? "bg-gradient-to-br from-lime to-lime/90 text-dark shadow-lg hover:shadow-lime/40"
+                      : "bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 border border-white/10"
+                  }`}
+                >
+                  {/* Shine Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/action:translate-x-[100%] transition-transform duration-700"></div>
+                  
+                  <action.icon size={24} className="relative z-10 group-hover/action:scale-110 transition-transform duration-300" />
+                  <span className="relative z-10 text-xs font-bold">{action.name}</span>
+                </Link>
+              ))}
+            </div>
 
-          <div className="mt-5 p-4 bg-lime/10 rounded-2xl border border-lime/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-bold text-white">
-                  Learning Streak
-                </h4>
-                <p className="text-xs text-dark-200 mt-1">
-                  {userStats.learningStreak > 0
-                    ? "Keep up the great work!"
-                    : "Start your journey!"}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-black text-lime">
-                  {userStats.learningStreak}
+            <div className="mt-6 relative p-5 bg-gradient-to-br from-lime/15 to-lime/5 rounded-2xl border-2 border-lime/30 overflow-hidden backdrop-blur-sm">
+              {/* Animated Background */}
+              <div className="absolute top-0 right-0 w-24 h-24 bg-lime/10 rounded-full blur-xl"></div>
+              
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-black text-white flex items-center gap-2">
+                    <Sparkles size={16} className="text-lime" />
+                    Learning Streak
+                  </h4>
+                  <p className="text-xs text-dark-200 mt-1 font-medium">
+                    {userStats.learningStreak > 0
+                      ? "Keep up the great work!"
+                      : "Start your journey!"}
+                  </p>
                 </div>
-                <div className="text-xs text-dark-200">events</div>
+                <div className="text-right">
+                  <div className="text-3xl font-black text-lime">
+                    {userStats.learningStreak}
+                  </div>
+                  <div className="text-xs text-dark-200 font-bold uppercase">events</div>
+                </div>
               </div>
             </div>
           </div>
@@ -909,7 +997,7 @@ const EventsHome = () => {
       {/* Floating QR Scanner Button */}
       <Link
         to="/participant/scan"
-        className="fixed bottom-6 right-6 z-50 bg-lime text-dark p-4 rounded-full shadow-lg hover:shadow-lime hover:scale-110 transition-all duration-300 group"
+        className="fixed bottom-6 right-6 z-50 bg-gradient-to-br from-lime to-lime/90 text-dark p-5 rounded-full shadow-2xl hover:shadow-lime/60 hover:scale-110 transition-all duration-300 group"
         title="Scan QR Code"
       >
         <Zap size={24} className="group-hover:animate-pulse" />

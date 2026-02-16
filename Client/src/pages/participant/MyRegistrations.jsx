@@ -8,6 +8,10 @@ import {
   Mail,
   ArrowUpRight,
   RefreshCw,
+  Calendar,
+  MapPin,
+  Users,
+  Award,
 } from "lucide-react";
 import jsQR from "jsqr";
 
@@ -368,17 +372,22 @@ const MyRegistrations = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-dark rounded-3xl p-8 text-white">
-        <div className="flex items-start justify-between mb-4">
+      <div className="relative bg-gradient-to-br from-dark via-dark to-dark-500 rounded-3xl p-8 lg:p-10 text-white overflow-hidden shadow-2xl">
+        {/* Animated Background Elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-lime/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-lime/10 rounded-full blur-3xl"></div>
+        
+        <div className="relative z-10 flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+            <h1 className="text-3xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
               My Registrations
             </h1>
-            <p className="text-dark-200 text-base">
+            <p className="text-dark-200 text-base lg:text-lg font-medium">
               Track your event registrations and attendance status
             </p>
             {lastUpdated && (
-              <p className="text-dark-200 text-xs mt-1">
+              <p className="text-dark-200/60 text-xs mt-2 flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 bg-lime rounded-full animate-pulse"></div>
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </p>
             )}
@@ -386,17 +395,19 @@ const MyRegistrations = () => {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-lime/10 border border-lime/20 rounded-xl text-lime hover:bg-lime/20 transition-all disabled:opacity-50"
+            className="group flex items-center gap-2 px-5 py-3 bg-lime/10 border-2 border-lime/20 rounded-2xl text-lime hover:bg-lime/20 transition-all duration-300 disabled:opacity-50 hover:scale-105 hover:shadow-lg hover:shadow-lime/20"
           >
-            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={18} className={`${refreshing ? "animate-spin" : ""} group-hover:rotate-180 transition-transform duration-500`} />
             <span className="text-sm font-bold hidden sm:inline">
               {refreshing ? "Refreshing..." : "Refresh"}
             </span>
           </button>
         </div>
-        <div className="inline-flex items-center gap-2 bg-lime/10 border border-lime/20 px-4 py-2 rounded-xl">
-          <Mail size={16} className="text-lime" />
-          <span className="font-medium text-lime text-sm">{email}</span>
+        <div className="relative z-10 inline-flex items-center gap-2.5 bg-gradient-to-r from-lime/15 to-lime/5 border-2 border-lime/30 px-5 py-3 rounded-2xl backdrop-blur-sm shadow-lg">
+          <div className="p-1.5 bg-lime/20 rounded-lg">
+            <Mail size={16} className="text-lime" />
+          </div>
+          <span className="font-bold text-lime text-sm">{email}</span>
         </div>
       </div>
 
@@ -415,22 +426,29 @@ const MyRegistrations = () => {
 
       {/* Registrations List */}
       {registrations.length === 0 ? (
-        <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none p-12 text-center border border-light-400/50 dark:border-white/5">
-          <div className="w-20 h-20 bg-dark rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <span className="text-3xl">📭</span>
+        <div className="relative bg-gradient-to-br from-white via-white to-light-100 dark:from-white/10 dark:via-white/5 dark:to-white/5 rounded-3xl shadow-2xl dark:shadow-white/5 p-12 lg:p-16 text-center border border-light-400/50 dark:border-white/10 overflow-hidden">
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-lime/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-dark/5 dark:bg-lime/5 rounded-full blur-2xl"></div>
+          
+          <div className="relative z-10">
+            <div className="w-24 h-24 bg-gradient-to-br from-dark to-dark-400 dark:from-lime/20 dark:to-lime/10 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl animate-bounce">
+              <span className="text-5xl">📭</span>
+            </div>
+            <h3 className="text-2xl lg:text-3xl font-black text-dark dark:text-white mb-3">
+              No Registrations Yet
+            </h3>
+            <p className="text-dark-300 dark:text-zinc-400 mb-8 text-base lg:text-lg max-w-md mx-auto">
+              You haven't registered for any events yet. Start exploring and join events to begin your journey!
+            </p>
+            <Link
+              to="/participant"
+              className="group inline-flex items-center gap-2.5 px-8 py-4 bg-gradient-to-r from-lime to-lime/90 text-dark rounded-2xl font-bold hover:shadow-2xl hover:shadow-lime/50 transition-all hover:scale-105 text-base"
+            >
+              <span>Browse Events</span>
+              <ArrowUpRight size={18} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </Link>
           </div>
-          <h3 className="text-2xl font-bold text-dark dark:text-white mb-2">
-            No Registrations Yet
-          </h3>
-          <p className="text-dark-300 dark:text-zinc-400 mb-6">
-            You haven't registered for any events yet.
-          </p>
-          <Link
-            to="/participant"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-lime text-dark rounded-2xl font-bold hover:shadow-lime transition-all hover:scale-[1.02]"
-          >
-            Browse Events <ArrowUpRight size={16} />
-          </Link>
         </div>
       ) : (
         <div className="space-y-4">
@@ -440,124 +458,159 @@ const MyRegistrations = () => {
             return (
               <div
                 key={reg._id}
-                className={`rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.01] ${
+                className={`group relative rounded-3xl overflow-hidden transition-all duration-500 hover:scale-[1.01] ${
                   variant === "dark"
-                    ? "bg-dark text-white"
-                    : "bg-white dark:bg-white/[0.03] shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5 text-dark dark:text-white"
+                    ? "bg-gradient-to-br from-dark via-dark to-dark-500 text-white shadow-2xl hover:shadow-lime/20"
+                    : "bg-white dark:bg-gradient-to-br dark:from-white/10 dark:via-white/5 dark:to-white/5 shadow-xl hover:shadow-2xl dark:shadow-white/5 border border-light-400/50 dark:border-white/10 text-dark dark:text-white"
                 }`}
               >
-                <div className="flex flex-col md:flex-row">
+                {/* Gradient Overlay on Hover */}
+                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                  variant === "dark" ? "bg-gradient-to-tr from-lime/5 to-transparent" : "bg-gradient-to-tr from-lime/5 to-transparent"
+                }`}></div>
+                
+                <div className="relative z-10 flex flex-col lg:flex-row">
                   {/* Event Image */}
                   <div
-                    className={`w-full md:w-48 h-36 md:h-auto relative overflow-hidden ${
+                    className={`w-full lg:w-64 h-48 lg:h-auto relative overflow-hidden ${
                       variant === "dark"
-                        ? "bg-dark-500"
-                        : "bg-lime/20 dark:bg-lime/10"
+                        ? "bg-gradient-to-br from-dark-400 to-dark-500"
+                        : "bg-gradient-to-br from-lime/20 via-lime/10 to-lime/5 dark:from-lime/15 dark:via-lime/10 dark:to-lime/5"
                     }`}
                   >
                     {reg.event?.bannerImage ? (
                       <img
                         src={reg.event.bannerImage}
                         alt={reg.event?.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-4xl">🎪</span>
+                        <div className="text-6xl drop-shadow-lg">🎪</div>
                       </div>
                     )}
+                    {/* Overlay Gradient */}
+                    <div className={`absolute inset-0 ${
+                      variant === "dark" 
+                        ? "bg-gradient-to-t from-dark/50 to-transparent" 
+                        : "bg-gradient-to-t from-white/50 dark:from-dark/50 to-transparent"
+                    }`}></div>
                   </div>
 
                   {/* Event Info */}
-                  <div className="flex-1 p-5">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold text-lg mb-1">
+                  <div className="flex-1 p-6 lg:p-8">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                      <div className="flex-1">
+                        <h3 className="font-black text-xl lg:text-2xl mb-2 leading-tight group-hover:translate-x-1 transition-transform duration-300">
                           {reg.event?.title || "Event Deleted"}
                         </h3>
-                        <p
-                          className={`text-sm flex items-center gap-3 ${variant === "dark" ? "text-dark-200" : "text-dark-300 dark:text-zinc-400"}`}
+                        <div
+                          className={`flex flex-wrap items-center gap-4 text-sm font-medium ${variant === "dark" ? "text-dark-200" : "text-dark-300 dark:text-zinc-400"}`}
                         >
-                          <span>📅 {formatDate(reg.event?.startDate)}</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className={`p-1 rounded-md ${variant === "dark" ? "bg-lime/10" : "bg-light-400 dark:bg-white/10"}`}>
+                              <Calendar size={14} />
+                            </div>
+                            <span>{formatDate(reg.event?.startDate)}</span>
+                          </div>
                           {reg.event?.venue && (
-                            <span>📍 {reg.event.venue}</span>
+                            <div className="flex items-center gap-1.5">
+                              <div className={`p-1 rounded-md ${variant === "dark" ? "bg-lime/10" : "bg-light-400 dark:bg-white/10"}`}>
+                                <MapPin size={14} />
+                              </div>
+                              <span className="truncate max-w-[200px]">{reg.event.venue}</span>
+                            </div>
                           )}
-                        </p>
+                        </div>
                       </div>
 
                       {reg.event?.status && (
                         <span
-                          className={`self-start px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                          className={`self-start px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-sm flex items-center gap-1.5 ${
                             reg.event.status === "upcoming"
-                              ? "bg-lime text-dark"
+                              ? "bg-gradient-to-r from-lime to-lime/90 text-dark"
                               : reg.event.status === "ongoing"
                                 ? variant === "dark"
-                                  ? "bg-lime/15 text-lime"
-                                  : "bg-dark text-white"
+                                  ? "bg-lime/15 text-lime border border-lime/30"
+                                  : "bg-dark text-lime"
                                 : variant === "dark"
-                                  ? "bg-dark-400 text-dark-200"
-                                  : "bg-light-400 text-dark-300"
+                                  ? "bg-dark-400/50 text-dark-200 border border-white/10"
+                                  : "bg-light-400/50 dark:bg-white/10 text-dark-300 dark:text-zinc-400 border border-dark/10 dark:border-white/10"
                           }`}
                         >
+                          <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse mr-1"></div>
                           {reg.event.status}
                         </span>
                       )}
                     </div>
 
                     {/* Status Badges */}
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-5 flex flex-wrap gap-2.5">
                       <span
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold ${getStatusBadge(reg.registrationStatus)}`}
+                        className={`group/badge relative px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all duration-300 hover:scale-105 ${getStatusBadge(reg.registrationStatus)}`}
                       >
-                        Registration: {reg.registrationStatus}
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle size={12} className="group-hover/badge:scale-110 transition-transform" />
+                          <span>Registration: {reg.registrationStatus}</span>
+                        </div>
                       </span>
                       <span
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold ${getAttendanceBadge(reg.attendanceStatus)}`}
+                        className={`group/badge relative px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all duration-300 hover:scale-105 ${getAttendanceBadge(reg.attendanceStatus)}`}
                       >
-                        Attendance: {reg.attendanceStatus}
+                        <div className="flex items-center gap-1.5">
+                          <Users size={12} className="group-hover/badge:scale-110 transition-transform" />
+                          <span>Attendance: {reg.attendanceStatus}</span>
+                        </div>
                       </span>
                       {reg.certificate && (
-                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-lime text-dark">
-                          🏆 Certificate: {reg.certificate.status}
+                        <span className="group/badge relative px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-lime to-lime/90 text-dark shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lime/50">
+                          <div className="flex items-center gap-1.5">
+                            <Award size={12} className="group-hover/badge:rotate-12 transition-transform" />
+                            <span>Certificate: {reg.certificate.status}</span>
+                          </div>
                         </span>
                       )}
                     </div>
 
                     {/* Actions */}
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-5 flex flex-wrap gap-3">
                       {reg.event && (
                         <Link
                           to={`/participant/event/${reg.event._id}`}
-                          className={`px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-1 ${
+                          className={`group/btn relative px-5 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 shadow-md overflow-hidden ${
                             variant === "dark"
-                              ? "bg-lime/10 text-lime border border-lime/20 hover:bg-lime/20"
-                              : "bg-dark/5 text-dark border border-dark/10 hover:bg-dark/10"
+                              ? "bg-lime/10 text-lime border-2 border-lime/30 hover:bg-lime/20 hover:shadow-lime/20"
+                              : "bg-dark/5 text-dark dark:text-lime border-2 border-dark/10 dark:border-lime/30 hover:bg-dark/10 dark:hover:bg-lime/10 hover:shadow-lg"
                           }`}
                         >
-                          View Event <ArrowUpRight size={14} />
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
+                          <span className="relative z-10">View Event</span>
+                          <ArrowUpRight size={16} className="relative z-10 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                         </Link>
                       )}
                       {reg.attendanceStatus !== "ATTENDED" && reg.event && (
                         <button
                           onClick={() => handleOpenScanner(reg.event)}
-                          className="px-4 py-2 text-sm bg-lime text-dark rounded-xl hover:shadow-lime flex items-center gap-2 font-bold transition-all duration-300 hover:scale-105"
+                          className="group/btn relative px-5 py-2.5 text-sm bg-gradient-to-r from-lime to-lime/90 text-dark rounded-xl hover:shadow-2xl hover:shadow-lime/50 flex items-center gap-2 font-bold transition-all duration-300 hover:scale-105 overflow-hidden"
                         >
-                          <Camera size={16} />
-                          Scan QR
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
+                          <Camera size={16} className="relative z-10 group-hover/btn:scale-110 transition-transform" />
+                          <span className="relative z-10">Scan QR</span>
                         </button>
                       )}
                       {reg.attendanceStatus === "ATTENDED" && (
-                        <span className="px-4 py-2 text-sm bg-lime/20 text-dark rounded-xl flex items-center gap-2 font-bold">
-                          <CheckCircle size={16} />
+                        <span className="px-5 py-2.5 text-sm bg-lime/20 text-dark dark:text-lime rounded-xl flex items-center gap-2 font-bold shadow-md border-2 border-lime/30">
+                          <CheckCircle size={16} className="animate-pulse" />
                           Attended
                         </span>
                       )}
                       {reg.certificate && reg.certificate.certificateUrl && (
                         <Link
                           to={`/participant/certificates`}
-                          className="px-4 py-2 text-sm bg-dark text-lime rounded-xl font-bold transition-all duration-300 hover:scale-105"
+                          className="group/btn relative px-5 py-2.5 text-sm bg-gradient-to-r from-dark to-dark/90 text-lime rounded-xl font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-xl overflow-hidden"
                         >
-                          📜 Certificate
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-lime/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
+                          <span className="relative z-10">📜 Certificate</span>
                         </Link>
                       )}
                     </div>

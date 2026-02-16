@@ -8,11 +8,8 @@ import {
   Eye,
   QrCode,
   Award,
-  Filter,
   Search,
-  ChevronRight,
   Circle,
-  Play,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -20,6 +17,7 @@ import {
   X,
   Loader2,
   Banknote,
+  ChevronRight,
 } from "lucide-react";
 import {
   getAssignedEvents,
@@ -28,26 +26,20 @@ import {
 
 const EventCard = ({ event }) => {
   const statusColors = {
-    upcoming: "UPCOMING",
-    ongoing: "ONGOING",
-    completed: "COMPLETED",
-    draft: "DRAFT",
+    upcoming: { bg: "bg-orange-500", text: "text-orange-500", dot: "bg-orange-500" },
+    ongoing: { bg: "bg-green-500", text: "text-green-500", dot: "bg-green-500" },
+    completed: { bg: "bg-blue-500", text: "text-blue-500", dot: "bg-blue-500" },
+    draft: { bg: "bg-gray-400", text: "text-gray-400", dot: "bg-gray-400" },
   };
 
-  const statusEmojis = {
-    upcoming: "🔥",
-    ongoing: "🚀",
-    completed: "✅",
-    draft: "📝",
-  };
-
-  // Modern clean backgrounds for cards
-  const gradients = [
-    "from-[#B9FF66] via-[#A8EE55] to-[#B9FF66]",
-    "from-[#191A23] via-[#2A2B33] to-[#191A23]",
-    "from-gray-300 via-gray-400 to-gray-300",
-    "from-[#B9FF66]/80 via-[#A8EE55]/80 to-[#B9FF66]/80",
-    "from-[#191A23]/90 via-[#2A2B33]/90 to-[#191A23]/90",
+  // Hackathon/Event themed background images from Unsplash
+  const eventImages = [
+    "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80", // Coding/Hackathon
+    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80", // Team collaboration
+    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&q=80", // Tech conference
+    "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&q=80", // Coding setup
+    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80", // Tech team
+    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80", // Team meeting
   ];
 
   const formatDate = (dateStr) => {
@@ -60,154 +52,121 @@ const EventCard = ({ event }) => {
     });
   };
 
-  const calculateDaysLeft = () => {
-    if (!event.date) return null;
-    const eventDate = new Date(event.date);
-    const today = new Date();
-    const diffTime = eventDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : null;
-  };
-
-  const daysLeft = calculateDaysLeft();
-  const gradientIndex = Math.abs((event.title || "").length) % gradients.length;
+  const imageIndex = Math.abs((event.title || "").length) % eventImages.length;
+  const statusColor = statusColors[event.status] || statusColors.draft;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
-      {/* Background with Gradient */}
-      <div
-        className={`h-64 bg-gradient-to-br ${gradients[gradientIndex]} relative`}
-      >
-        {/* Overlay pattern for visual interest */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-8 left-8 w-24 h-24 bg-white/20 rounded-full blur-2xl"></div>
-          <div className="absolute bottom-12 right-12 w-20 h-20 bg-white/15 rounded-full blur-xl"></div>
-          <div className="absolute top-1/3 right-1/4 w-16 h-16 bg-white/10 rounded-full blur-lg"></div>
+    <div className="bg-white dark:bg-[#1a1a2a] rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+      {/* Large Visual Area - Hackathon Image Background */}
+      <div className="relative h-56 overflow-hidden bg-gray-900">
+        {/* Background Image */}
+        <img
+          src={eventImages[imageIndex]}
+          alt={event.title}
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+        />
+        
+        {/* Gradient Overlay for better contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+        
+        {/* Event Icon - Centered */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="p-4 bg-white/10 backdrop-blur-sm rounded-2xl">
+            <Calendar size={48} strokeWidth={1.5} className="text-white" />
+          </div>
         </div>
-
-        {/* Status Badge */}
-        <div className="absolute top-4 left-4">
-          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-white text-[#191A23] shadow-md">
-            <span className="mr-1">{statusEmojis[event.status]}</span>
-            {statusColors[event.status]}
-          </span>
-        </div>
-
-        {/* Days Left Badge */}
-        {daysLeft && daysLeft > 0 && (
-          <div className="absolute top-4 right-4">
-            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-[#191A23] text-[#B9FF66] shadow-md">
-              {daysLeft} DAYS LEFT
-            </span>
-          </div>
-        )}
-
-        {/* Event Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/70 via-black/30 to-transparent">
-          <h3 className="text-white font-bold text-xl mb-3 leading-tight">
-            {event.title}
-          </h3>
-
-          {/* Location & Date */}
-          <div className="space-y-2 mb-4">
-            <div className="flex items-center text-white/90 text-sm">
-              <MapPin size={14} className="mr-2" />
-              <span>{event.venue || "Online Event"} 🌐</span>
-              {event.venue && event.venue !== "Online" && (
-                <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-md text-xs font-medium">
-                  {event.venue.includes("India") ? "🇮🇳" : "🌍"} +2 more
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center text-white/90 text-sm">
-              <Calendar size={14} className="mr-2" />
-              <span className="font-medium">{formatDate(event.date)}</span>
-            </div>
-          </div>
-
-          {/* Bottom Row: Organizer & Stats */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center text-white/80 text-xs">
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-2">
-                <Users size={14} />
-              </div>
-              <div>
-                <div className="font-medium">Lead Organizer</div>
-                <div className="text-white/70">
-                  {event.teamLead?.name || "Event Team"}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex items-center gap-4 text-white text-xs">
-              <div className="text-center">
-                <div className="font-bold text-sm">
-                  {event.participantCount || 0}
-                </div>
-                <div className="text-white/70">Registered</div>
-              </div>
-              <div className="text-center">
-                <div className="font-bold text-sm">
-                  {event.attendanceCount || 0}
-                </div>
-                <div className="text-white/70">Attended</div>
-              </div>
-            </div>
-          </div>
+        
+        {/* Status Dot Indicator (top-right corner like bookmark) */}
+        <div className="absolute top-4 right-4">
+          <div className={`w-3 h-3 ${statusColor.dot} rounded-full shadow-lg ring-2 ring-white/30`}></div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="bg-white dark:bg-white/[0.03] p-4">
-        <div className="flex items-center gap-3">
-          <Link
-            to={`/organizer/events/${event._id || event.id}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 
-               border-2 border-gray-300 dark:border-white/10 text-[#191A23] dark:text-zinc-300 rounded-xl font-semibold text-sm
-               hover:bg-gray-50 dark:hover:bg-white/5 hover:border-[#191A23] dark:hover:border-white/30 transition-all"
-          >
-            <Eye size={16} />
-            View Details
-          </Link>
-
-          <Link
-            to={`/organizer/attendance/qr?event=${event._id || event.id}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5
-               bg-[#B9FF66] text-[#191A23] 
-               rounded-xl font-semibold text-sm hover:bg-[#A8EE55] 
-               transition-all shadow-md hover:shadow-lg"
-          >
-            <QrCode size={16} />
-            Attendance
-          </Link>
-
-          <Link
-            to={`/organizer/events/${event._id || event.id}/finance`}
-            className="flex items-center justify-center gap-2 px-4 py-2.5
-               border-2 border-gray-300 dark:border-white/10 text-[#191A23] dark:text-zinc-300 rounded-xl font-semibold text-sm
-               hover:bg-gray-50 dark:hover:bg-white/5 hover:border-[#191A23] dark:hover:border-white/30 transition-all"
-          >
-            <Banknote size={16} />
-            Finance
-          </Link>
+      {/* Clean White Content Section */}
+      <div className="p-6">
+        {/* Event Category/Type */}
+        <div className="flex items-center gap-2 mb-3">
+          <Users size={14} className="text-gray-400" />
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide">
+            {event.status}
+          </span>
         </div>
 
-        {/* Lifecycle Management */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            event.onManageLifecycle?.(event);
-          }}
-          className="w-full flex items-center justify-center gap-2 mt-3
-             px-4 py-2.5 border-2 border-gray-300 dark:border-white/10 text-[#191A23] dark:text-zinc-300
-             rounded-xl font-semibold text-sm 
-             hover:bg-gray-50 dark:hover:bg-white/5 hover:border-[#191A23] dark:hover:border-white/30 transition-all"
-        >
-          <Settings size={16} />
-          Manage Status
-        </button>
+        {/* Event Title */}
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
+          {event.title}
+        </h3>
+
+        {/* Simple Stats Row */}
+        <div className="flex items-center gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-1">
+            <Users size={16} />
+            <span className="font-medium">{event.participantCount || 0}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <CheckCircle size={16} />
+            <span className="font-medium">{event.attendanceCount || 0}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Award size={16} />
+            <span className="font-medium">{event.certificateCount || 0}</span>
+          </div>
+        </div>
+
+        {/* Event Details */}
+        <div className="space-y-2 mb-6 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2">
+            <MapPin size={14} />
+            <span>{event.venue || "Online Event"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar size={14} />
+            <span>{formatDate(event.date)}</span>
+          </div>
+        </div>
+
+        {/* Action Buttons Grid - 2x2 Layout */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* View Details - Primary Button */}
+          <Link
+            to={`/organizer/events/${event._id}`}
+            className="flex items-center justify-center gap-2 py-2.5 bg-[#B9FF66] hover:bg-[#A8EE55] text-[#191A23] rounded-xl font-semibold text-sm transition-colors duration-200"
+          >
+            <Eye size={16} />
+            <span>Details</span>
+          </Link>
+
+          {/* Attendance QR */}
+          <Link
+            to={`/organizer/attendance/qr?event=${event._id || event.id}`}
+            className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 dark:bg-[#252535] hover:bg-gray-200 dark:hover:bg-[#2a2a3a] text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm transition-colors duration-200"
+          >
+            <QrCode size={16} />
+            <span>Scan</span>
+          </Link>
+
+          {/* Finance */}
+          <Link
+            to={`/organizer/events/${event._id || event.id}/finance`}
+            className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 dark:bg-[#252535] hover:bg-gray-200 dark:hover:bg-[#2a2a3a] text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm transition-colors duration-200"
+          >
+            <Banknote size={16} />
+            <span>Finance</span>
+          </Link>
+
+          {/* Manage Status */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              event.onManageLifecycle?.(event);
+            }}
+            className="flex items-center justify-center gap-2 py-2.5 bg-gray-100 dark:bg-[#252535] hover:bg-gray-200 dark:hover:bg-[#2a2a3a] text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm transition-colors duration-200"
+          >
+            <Settings size={16} />
+            <span>Status</span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -289,51 +248,45 @@ const MyEvents = () => {
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="inline-block">
-            <h1 className="text-4xl font-black text-gray-900 dark:text-white mb-2 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text">
-              My Events
-            </h1>
-            <div className="h-1 w-20 bg-[#B9FF66] rounded-full"></div>
-          </div>
-          <p className="text-gray-600 dark:text-zinc-400 mt-3 text-lg font-semibold">
-            Manage your assigned events
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Simple Page Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          My Events
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Manage and monitor your assigned events
+        </p>
       </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-2xl p-6 border border-white/60 dark:border-white/5 shadow-lg dark:shadow-none">
+      {/* Simple Search and Filters */}
+      <div className="bg-white dark:bg-[#1a1a2a] rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
-          {/* Search */}
-          <div className="relative flex-1 group">
+          {/* Simple Search */}
+          <div className="relative flex-1">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-blue-500 transition-colors"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
               size={18}
-              strokeWidth={2.5}
             />
             <input
               type="text"
               placeholder="Search events..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B9FF66] focus:border-transparent text-sm font-semibold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-500 hover:border-[#B9FF66] transition-all shadow-sm dark:shadow-none"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#252535] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B9FF66] focus:border-transparent text-sm text-gray-900 dark:text-white placeholder:text-gray-400"
             />
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {/* Simple Filter Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto">
             {filters.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   filter === f.key
-                    ? "bg-[#191A23] text-[#B9FF66] shadow-lg shadow-[#191A23]/30 scale-105"
-                    : "bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-zinc-400 hover:bg-gray-200 dark:hover:bg-white/10 hover:scale-105"
+                    ? "bg-[#B9FF66] text-[#191A23]"
+                    : "bg-gray-100 dark:bg-[#252535] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#2a2a3a]"
                 }`}
               >
                 {f.label}
@@ -346,33 +299,32 @@ const MyEvents = () => {
       {/* Events Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-2xl border border-white/60 dark:border-white/5 animate-pulse"
+              className="bg-white dark:bg-[#1a1a2a] rounded-2xl overflow-hidden shadow-lg animate-pulse"
             >
-              <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300" />
+              <div className="h-56 bg-gray-300 dark:bg-gray-700"></div>
               <div className="p-6 space-y-3">
-                <div className="h-5 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-100 rounded w-1/2" />
-                <div className="h-4 bg-gray-100 rounded w-2/3" />
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                <div className="h-10 bg-gray-300 dark:bg-gray-600 rounded-xl mt-4"></div>
               </div>
             </div>
           ))}
         </div>
       ) : filteredEvents.length === 0 ? (
-        <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-2xl p-16 text-center border border-white/60 dark:border-white/5 shadow-lg dark:shadow-none">
-          <div className="p-4 bg-[#B9FF66]/10 rounded-2xl shadow-md inline-block mb-4">
-            <Calendar
-              size={56}
-              className="text-[#191A23] opacity-50"
-              strokeWidth={2}
-            />
-          </div>
-          <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2">
+        <div className="bg-white dark:bg-[#1a1a2a] rounded-2xl p-16 text-center border border-gray-200 dark:border-gray-700">
+          <Calendar
+            size={64}
+            className="mx-auto text-gray-400 mb-4"
+            strokeWidth={1.5}
+          />
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
             No events found
           </h3>
-          <p className="text-gray-600 dark:text-zinc-400 font-semibold">
+          <p className="text-gray-600 dark:text-gray-400">
             {searchQuery
               ? "Try adjusting your search query"
               : "You don't have any events assigned yet."}
@@ -392,46 +344,43 @@ const MyEvents = () => {
         </div>
       )}
 
-      {/* Summary Stats */}
-      <div className="relative bg-[#191A23] rounded-2xl p-8 border border-[#191A23]/10 shadow-2xl overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
-        <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+      {/* Simple Summary Stats */}
+      <div className="bg-white dark:bg-[#1a1a2a] rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          Summary Statistics
+        </h3>
 
-        <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div>
-            <p className="text-gray-400 text-sm font-bold mb-1">Total Events</p>
-            <p className="text-4xl font-black text-[#B9FF66]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 bg-gray-50 dark:bg-[#252535] rounded-xl">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">Events</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {filteredEvents.length}
             </p>
           </div>
-          <div>
-            <p className="text-gray-400 text-sm font-bold mb-1">
-              Total Participants
-            </p>
-            <p className="text-4xl font-black text-[#B9FF66]">
+
+          <div className="p-4 bg-gray-50 dark:bg-[#252535] rounded-xl">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">Participants</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {filteredEvents.reduce(
                 (sum, e) => sum + (e.participantCount || 0),
                 0,
               )}
             </p>
           </div>
-          <div>
-            <p className="text-gray-400 text-sm font-bold mb-1">
-              Total Attendance
-            </p>
-            <p className="text-4xl font-black text-[#B9FF66]">
+
+          <div className="p-4 bg-gray-50 dark:bg-[#252535] rounded-xl">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">Attendance</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {filteredEvents.reduce(
                 (sum, e) => sum + (e.attendanceCount || 0),
                 0,
               )}
             </p>
           </div>
-          <div>
-            <p className="text-gray-400 text-sm font-bold mb-1">
-              Certificates Issued
-            </p>
-            <p className="text-4xl font-black text-[#B9FF66]">
+
+          <div className="p-4 bg-gray-50 dark:bg-[#252535] rounded-xl">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">Certificates</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {filteredEvents.reduce(
                 (sum, e) => sum + (e.certificateCount || 0),
                 0,
