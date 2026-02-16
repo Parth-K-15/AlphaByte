@@ -41,6 +41,11 @@ const eventSchema = new mongoose.Schema(
     bannerImage: String,
     tags: [String],
 
+    rulebook: {
+      type: String,
+      default: ''
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // ADMIN

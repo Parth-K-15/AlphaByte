@@ -140,7 +140,8 @@ router.post('/', async (req, res) => {
       bannerImage,
       tags,
       teamLead,
-      createdBy
+      createdBy,
+      rulebook
     } = req.body;
 
     // Validate required fields
@@ -176,6 +177,7 @@ router.post('/', async (req, res) => {
       website,
       bannerImage,
       tags: tags || [],
+      rulebook: rulebook || '',
       teamLead,
       createdBy,
       teamMembers: [],

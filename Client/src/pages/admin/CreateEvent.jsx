@@ -11,6 +11,7 @@ import {
   Save,
   X,
   Loader2,
+  BookOpen,
 } from 'lucide-react';
 import { eventsApi, teamsApi } from '../../services/api';
 
@@ -35,6 +36,7 @@ const CreateEvent = () => {
     certificateTemplate: '',
     category: '',
     tags: '',
+    rulebook: '',
   });
 
   const categories = ['Conference', 'Workshop', 'Hackathon', 'Seminar', 'Webinar', 'Competition'];
@@ -62,6 +64,7 @@ const CreateEvent = () => {
               certificateTemplate: event.certificateTemplate || '',
               category: event.category || '',
               tags: event.tags ? event.tags.join(', ') : '',
+              rulebook: event.rulebook || '',
             });
           }
         } catch (error) {
@@ -114,6 +117,7 @@ const CreateEvent = () => {
         tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
         enableCertificates: formData.enableCertificates,
         certificateTemplate: formData.certificateTemplate,
+        rulebook: formData.rulebook,
       };
       
       if (isEditMode) {
@@ -270,6 +274,31 @@ const CreateEvent = () => {
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Event Rulebook */}
+        <div className="card">
+          <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <BookOpen size={20} className="text-primary-600" />
+            Event Rulebook
+          </h2>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Rulebook / Guidelines
+            </label>
+            <textarea
+              name="rulebook"
+              value={formData.rulebook}
+              onChange={handleChange}
+              placeholder={"Enter event rules and guidelines point-wise, e.g.:\n1. All participants must register before the deadline.\n2. Attendance is mandatory for certificate eligibility.\n3. No plagiarism allowed in submissions.\n\nYou can also copy-paste rules here."}
+              rows={10}
+              className="input-field resize-y font-mono text-sm"
+            />
+            <p className="text-sm text-gray-500 mt-2">
+              Add rules point-wise (numbered or bulleted). You can also copy-paste from another document.
+            </p>
           </div>
         </div>
 
