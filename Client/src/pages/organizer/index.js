@@ -8,6 +8,7 @@ export { default as Certificates } from './Certificates';
 export { default as TeamAccess } from './TeamAccess';
 export { default as Speakers } from './Speakers';
 export { default as SpeakerProfile } from './SpeakerProfile';
+export { default as SpeakerRecommendation } from './SpeakerRecommendation';
 export { default as SessionAssignment } from './SessionAssignment';
 export { default as Logs } from './Logs';
 export { default as RoleHistory } from './RoleHistory';

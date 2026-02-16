@@ -1,8 +1,10 @@
 import express from 'express';
 import { verifyToken, isSpeaker } from '../middleware/auth.js';
 import Session from '../models/Session.js';
+import Event from '../models/Event.js';
 import SpeakerAuth from '../models/SpeakerAuth.js';
 import SpeakerReview from '../models/SpeakerReview.js';
+import SpeakerRequest from '../models/SpeakerRequest.js';
 import EventRole from '../models/EventRole.js';
 
 const router = express.Router();
@@ -538,6 +540,134 @@ router.put('/profile', async (req, res) => {
       message: 'Error updating profile',
       error: error.message,
     });
+  }
+});
+
+// ============================================================================
+// SPEAKER REQUESTS / INVITATIONS
+// ============================================================================
+
+// @desc    Get all invitations/requests for the authenticated speaker
+// @route   GET /api/speaker/requests
+router.get('/requests', async (req, res) => {
+  try {
+    const speakerId = req.userId;
+    const { status } = req.query; // optional filter: pending, accepted, rejected
+
+    const query = { speaker: speakerId };
+    if (status && ['pending', 'accepted', 'rejected'].includes(status)) {
+      query.status = status;
+    }
+
+    const requests = await SpeakerRequest.find(query)
+      .populate('event', 'title description category type tags startDate endDate location venue status')
+      .populate('organizer', 'name email')
+      .sort({ createdAt: -1 });
+
+    // Add counts
+    const counts = {
+      total: requests.length,
+      pending: requests.filter(r => r.status === 'pending').length,
+      accepted: requests.filter(r => r.status === 'accepted').length,
+      rejected: requests.filter(r => r.status === 'rejected').length,
+    };
+
+    res.json({
+      success: true,
+      counts,
+      data: requests,
+    });
+  } catch (error) {
+    console.error('Get speaker requests error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching requests', error: error.message });
+  }
+});
+
+// @desc    Respond to a speaker request (accept/reject)
+// @route   PUT /api/speaker/requests/:requestId
+router.put('/requests/:requestId', async (req, res) => {
+  try {
+    const speakerId = req.userId;
+    const { requestId } = req.params;
+    const { decision, reason } = req.body; // decision: 'accepted' or 'rejected'
+
+    if (!['accepted', 'rejected'].includes(decision)) {
+      return res.status(400).json({ success: false, message: 'Decision must be "accepted" or "rejected"' });
+    }
+
+    const request = await SpeakerRequest.findById(requestId);
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+
+    // Ensure this request belongs to the authenticated speaker
+    if (request.speaker.toString() !== speakerId.toString()) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to respond to this request' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Request has already been ${request.status}` });
+    }
+
+    request.status = decision;
+    request.respondedAt = new Date();
+    if (decision === 'rejected' && reason) {
+      request.rejectionReason = reason;
+    }
+    await request.save();
+
+    // If accepted, auto-create a confirmed session for the speaker
+    let session = null;
+    if (decision === 'accepted') {
+      const event = await Event.findById(request.event);
+
+      session = await Session.create({
+        event: request.event,
+        speaker: request.speaker,
+        title: event ? `Speaker Session - ${event.title}` : 'Speaker Session',
+        description: request.message || '',
+        status: 'confirmed',
+        assignment: {
+          requestedAt: request.createdAt,
+          respondedAt: new Date(),
+        },
+      });
+
+      // Auto-create EventRole for the speaker
+      const speaker = await SpeakerAuth.findById(request.speaker);
+      if (speaker && event) {
+        await EventRole.create({
+          email: speaker.email,
+          name: speaker.name,
+          event: event._id,
+          role: 'speaker',
+          details: {
+            topic: session.title,
+            sessionId: session._id,
+            notes: 'Auto-assigned via speaker invitation acceptance',
+          },
+          source: 'auto',
+          status: 'active',
+        }).catch(err => console.error('EventRole creation skipped (may already exist):', err.message));
+      }
+    }
+
+    const populated = await SpeakerRequest.findById(request._id)
+      .populate('event', 'title description category type startDate endDate location venue')
+      .populate('organizer', 'name email')
+      .populate('speaker', 'name email');
+
+    res.json({
+      success: true,
+      message: decision === 'accepted'
+        ? 'Request accepted and session assigned successfully'
+        : 'Request rejected successfully',
+      data: populated,
+      session: session ? { _id: session._id, title: session.title, status: session.status } : undefined,
+    });
+  } catch (error) {
+    console.error('Respond to request error:', error);
+    res.status(500).json({ success: false, message: 'Error responding to request', error: error.message });
   }
 });
 
