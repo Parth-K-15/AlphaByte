@@ -72,13 +72,13 @@ export const getAttendanceLogs = (eventId, params = {}) => {
 export const getLiveAttendanceCount = (eventId) => fetchApi(`/organizer/attendance/${eventId}/live`);
 export const markManualAttendance = (eventId, participantId) => {
   const organizerId = localStorage.getItem('userId');
-  return fetchApi(`/organizer/attendance/${eventId}/manual/${participantId}`, { 
-    method: 'POST', 
-    body: { organizerId } 
+  return fetchApi(`/organizer/attendance/${eventId}/manual/${participantId}`, {
+    method: 'POST',
+    body: { organizerId }
   });
 };
 export const unmarkAttendance = (eventId, participantId) => {
-  return fetchApi(`/organizer/attendance/${eventId}/unmark/${participantId}`, { 
+  return fetchApi(`/organizer/attendance/${eventId}/unmark/${participantId}`, {
     method: 'DELETE'
   });
 };
@@ -96,9 +96,9 @@ export const getCertificateRequests = (eventId, status) => {
   const query = status ? `?status=${status}` : '';
   return fetchApi(`/organizer/certificates/${eventId}/requests${query}`);
 };
-export const approveCertificateRequest = (requestId, data) => 
+export const approveCertificateRequest = (requestId, data) =>
   fetchApi(`/organizer/certificates/request/${requestId}/approve`, { method: 'POST', body: data });
-export const rejectCertificateRequest = (requestId, data) => 
+export const rejectCertificateRequest = (requestId, data) =>
   fetchApi(`/organizer/certificates/request/${requestId}/reject`, { method: 'POST', body: data });
 
 // Email debugging endpoints
@@ -120,7 +120,7 @@ export const debugParticipants = (eventId) => fetchApi(`/organizer/communication
 export const getTeamMembers = (eventId) => fetchApi(`/organizer/team/${eventId}`);
 export const addTeamMember = (eventId, data) => fetchApi(`/organizer/team/${eventId}`, { method: 'POST', body: data });
 export const removeTeamMember = (eventId, memberId, organizerId) => fetchApi(`/organizer/team/${eventId}/${memberId}`, { method: 'DELETE', body: { organizerId } });
-export const updateTeamMemberPermissions = (eventId, memberId, permissions, organizerId) => 
+export const updateTeamMemberPermissions = (eventId, memberId, permissions, organizerId) =>
   fetchApi(`/organizer/team/${eventId}/${memberId}/permissions`, { method: 'PUT', body: { permissions, organizerId } });
 
 // Logs & Audit Trail
@@ -128,6 +128,28 @@ export const getLogs = (params = {}) => {
   const query = new URLSearchParams(params).toString();
   return fetchApi(`/organizer/logs${query ? `?${query}` : ''}`);
 };
+
+// Retroactive Change & Audit Trail
+export const invalidateAttendance = (attendanceId, reason, organizerId) =>
+  fetchApi(`/organizer/attendance/${attendanceId}/invalidate`, {
+    method: 'POST',
+    body: { reason, organizerId }
+  });
+
+export const revokeCertificate = (certificateId, reason, organizerId) =>
+  fetchApi(`/organizer/certificates/${certificateId}/revoke`, {
+    method: 'POST',
+    body: { reason, organizerId }
+  });
+
+export const invalidateParticipant = (participantId, reason, organizerId) =>
+  fetchApi(`/organizer/participants/${participantId}/invalidate`, {
+    method: 'POST',
+    body: { reason, organizerId }
+  });
+
+export const getAuditTrail = (entityType, entityId) =>
+  fetchApi(`/organizer/audit-trail/${entityType}/${entityId}`);
 
 export default {
   getDashboardStats,
@@ -160,4 +182,8 @@ export default {
   removeTeamMember,
   updateTeamMemberPermissions,
   getLogs,
+  invalidateAttendance,
+  revokeCertificate,
+  invalidateParticipant,
+  getAuditTrail,
 };

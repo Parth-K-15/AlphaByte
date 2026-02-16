@@ -12,6 +12,8 @@ import {
   Filter,
   UserPlus,
   Activity,
+  ShieldAlert,
+  History,
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
@@ -23,6 +25,8 @@ import {
   getAssignedEvents,
   getParticipants,
 } from "../../services/organizerApi";
+import InvalidateAttendanceModal from "../../components/organizer/InvalidateAttendanceModal";
+import AuditTrailViewer from "../../components/organizer/AuditTrailViewer";
 
 // Custom QR Code Component using qrcode library
 const QRCodeCanvas = ({ value, size = 240 }) => {
@@ -71,6 +75,11 @@ const AttendanceQR = () => {
   const [participants, setParticipants] = useState([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const intervalRef = useRef(null);
+
+  // Retroactive Change & Audit Trail states
+  const [showInvalidateModal, setShowInvalidateModal] = useState(false);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState(null);
 
   useEffect(() => {
     fetchEvents();
@@ -233,14 +242,14 @@ const AttendanceQR = () => {
 
   const filteredLogs = Array.isArray(attendanceLogs)
     ? attendanceLogs.filter(
-        (log) =>
-          log.participant?.name
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          log.participant?.email
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()),
-      )
+      (log) =>
+        log.participant?.name
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        log.participant?.email
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()),
+    )
     : [];
 
   return (
@@ -373,11 +382,10 @@ const AttendanceQR = () => {
           <div className="flex">
             <button
               onClick={() => setActiveTab("qr")}
-              className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
-                activeTab === "qr"
-                  ? "text-[#191A23] dark:text-white"
-                  : "text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
-              }`}
+              className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${activeTab === "qr"
+                ? "text-[#191A23] dark:text-white"
+                : "text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
+                }`}
             >
               <QrCode
                 size={18}
@@ -391,11 +399,10 @@ const AttendanceQR = () => {
             </button>
             <button
               onClick={() => setActiveTab("logs")}
-              className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${
-                activeTab === "logs"
-                  ? "text-[#191A23] dark:text-white"
-                  : "text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
-              }`}
+              className={`relative flex-1 py-4 text-center font-bold transition-all duration-300 ${activeTab === "logs"
+                ? "text-[#191A23] dark:text-white"
+                : "text-gray-500 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300"
+                }`}
             >
               <UserPlus
                 size={18}
@@ -727,35 +734,80 @@ const AttendanceQR = () => {
                                 )}
                               </td>
                               <td className="px-6 py-4">
-                                {hasAttended ? (
-                                  <button
-                                    onClick={() =>
-                                      handleUnmarkAttendance(participant._id)
-                                    }
-                                    className="group flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all text-xs font-bold"
-                                  >
-                                    <XCircle
-                                      size={14}
-                                      strokeWidth={2.5}
-                                      className="group-hover:rotate-90 transition-transform"
-                                    />
-                                    Unmark
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() =>
-                                      handleManualAttendance(participant._id)
-                                    }
-                                    className="group flex items-center gap-2 px-4 py-2 bg-[#191A23] text-[#B9FF66] rounded-xl hover:shadow-lg hover:scale-105 transition-all text-xs font-bold"
-                                  >
-                                    <CheckCircle
-                                      size={14}
-                                      strokeWidth={2.5}
-                                      className="group-hover:scale-110 transition-transform"
-                                    />
-                                    Mark
-                                  </button>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  {hasAttended ? (
+                                    <>
+                                      <button
+                                        onClick={() =>
+                                          handleUnmarkAttendance(participant._id)
+                                        }
+                                        className="group flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all text-xs font-bold"
+                                      >
+                                        <XCircle
+                                          size={14}
+                                          strokeWidth={2.5}
+                                          className="group-hover:rotate-90 transition-transform"
+                                        />
+                                        Unmark
+                                      </button>
+                                      {/* Invalidate Attendance Button */}
+                                      <button
+                                        onClick={() => {
+                                          // Find the attendance record for this participant
+                                          const attendanceRecord = attendanceLogs.find(
+                                            log => log.participant?._id === participant._id
+                                          );
+                                          if (attendanceRecord) {
+                                            setSelectedAttendance(attendanceRecord);
+                                            setShowInvalidateModal(true);
+                                          }
+                                        }}
+                                        disabled={
+                                          participant.attendanceInvalid ||
+                                          !attendanceLogs.find(log => log.participant?._id === participant._id)
+                                        }
+                                        className="p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title={
+                                          participant.attendanceInvalid
+                                            ? 'Already Invalidated'
+                                            : !attendanceLogs.find(log => log.participant?._id === participant._id)
+                                              ? 'Attendance record not found'
+                                              : 'Invalidate Attendance'
+                                        }
+                                      >
+                                        <ShieldAlert size={16} />
+                                      </button>
+                                      {/* View Audit Trail Button */}
+                                      <button
+                                        onClick={() => {
+                                          const attendanceRecord = attendanceLogs.find(
+                                            log => log.participant?._id === participant._id
+                                          );
+                                          setSelectedAttendance(attendanceRecord);
+                                          setShowAuditTrail(true);
+                                        }}
+                                        className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg text-gray-500 hover:text-blue-600"
+                                        title="View Audit Trail"
+                                      >
+                                        <History size={16} />
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      onClick={() =>
+                                        handleManualAttendance(participant._id)
+                                      }
+                                      className="group flex items-center gap-2 px-4 py-2 bg-[#191A23] text-[#B9FF66] rounded-xl hover:shadow-lg hover:scale-105 transition-all text-xs font-bold"
+                                    >
+                                      <CheckCircle
+                                        size={14}
+                                        strokeWidth={2.5}
+                                        className="group-hover:scale-110 transition-transform"
+                                      />
+                                      Mark
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -787,6 +839,32 @@ const AttendanceQR = () => {
           )}
         </div>
       </div>
+
+      {/* Retroactive Change & Audit Trail Modals */}
+      <InvalidateAttendanceModal
+        isOpen={showInvalidateModal}
+        onClose={() => {
+          setShowInvalidateModal(false);
+          setSelectedAttendance(null);
+        }}
+        attendance={selectedAttendance}
+        onSuccess={() => {
+          fetchAttendanceLogs();
+          fetchLiveCount();
+          fetchParticipants();
+        }}
+      />
+
+      <AuditTrailViewer
+        isOpen={showAuditTrail}
+        onClose={() => {
+          setShowAuditTrail(false);
+          setSelectedAttendance(null);
+        }}
+        entityType="attendance"
+        entityId={selectedAttendance?._id}
+        eventId={selectedEvent}
+      />
     </div>
   );
 };

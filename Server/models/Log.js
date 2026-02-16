@@ -22,7 +22,7 @@ const logSchema = new mongoose.Schema(
     participantEmail: {
       type: String,
     },
-    
+
     // Action classification
     actionType: {
       type: String,
@@ -34,25 +34,26 @@ const logSchema = new mongoose.Schema(
         'EVENT_STATE_CHANGED',
         'EVENT_UPDATED',
         'EVENT_ARCHIVED',
-        
+
         // Participation & Attendance
         'STUDENT_REGISTERED',
         'REGISTRATION_CANCELLED',
         'PARTICIPANT_ADDED',
         'PARTICIPANT_UPDATED',
         'PARTICIPANT_REMOVED',
+        'PARTICIPANT_INVALIDATED',
         'ATTENDANCE_RECORDED',
         'ATTENDANCE_MANUAL',
         'ATTENDANCE_INVALIDATED',
         'SCAN_REJECTED',
         'DUPLICATE_SCAN',
-        
+
         // Reconciliation
         'RECONCILIATION_EXECUTED',
         'PARTICIPATION_STATUS_CHANGED',
         'CONFLICT_DETECTED',
         'PARTICIPATION_INVALIDATED',
-        
+
         // Certificate
         'CERTIFICATE_GENERATED',
         'CERTIFICATE_ISSUED',
@@ -62,9 +63,9 @@ const logSchema = new mongoose.Schema(
         'CERTIFICATE_REQUEST_APPROVED',
         'CERTIFICATE_REQUEST_REJECTED',
         'FRAUD_DETECTED',
-        'CERTIFICATES_GENERATED', // Bulk certificate generation
-        'CERTIFICATES_SENT', // Bulk certificate sending
-        
+        'CERTIFICATES_GENERATED',
+        'CERTIFICATES_SENT',
+
         // Communication
         'EMAIL_SENT',
         'ANNOUNCEMENT_POSTED',
@@ -73,7 +74,7 @@ const logSchema = new mongoose.Schema(
         'EVENT_UPDATE_DELETED',
         'EVENT_UPDATE_PINNED',
         'EVENT_UPDATE_UNPINNED',
-        
+
         // Role & Identity
         'ROLE_ASSIGNED',
         'ROLE_CHANGED',
@@ -82,12 +83,12 @@ const logSchema = new mongoose.Schema(
         'TEAM_MEMBER_ADDED',
         'TEAM_MEMBER_REMOVED',
         'TEAM_PERMISSIONS_UPDATED',
-        
+
         // Audit & Corrections
         'ATTENDANCE_CORRECTED',
         'CERTIFICATE_CORRECTION',
         'MANUAL_OVERRIDE',
-        
+
         // Legacy types
         'AUTH',
         'EVENT',
@@ -98,13 +99,13 @@ const logSchema = new mongoose.Schema(
         'MEMBER',
       ],
     },
-    
+
     entityType: {
       type: String,
       enum: ['EVENT', 'PARTICIPATION', 'ATTENDANCE', 'CERTIFICATE', 'ROLE', 'SYSTEM', 'USER', 'COMMUNICATION', 'TEAM'],
       required: true,
     },
-    
+
     // State tracking
     oldState: {
       type: mongoose.Schema.Types.Mixed,
@@ -112,7 +113,7 @@ const logSchema = new mongoose.Schema(
     newState: {
       type: mongoose.Schema.Types.Mixed,
     },
-    
+
     // Actor information
     actorType: {
       type: String,
@@ -129,7 +130,7 @@ const logSchema = new mongoose.Schema(
     actorEmail: {
       type: String,
     },
-    
+
     // Details
     action: {
       type: String,
@@ -141,7 +142,7 @@ const logSchema = new mongoose.Schema(
     reason: {
       type: String, // Mandatory for corrections/revocations
     },
-    
+
     // Severity
     severity: {
       type: String,
@@ -153,7 +154,7 @@ const logSchema = new mongoose.Schema(
       enum: ['info', 'success', 'warning', 'error'],
       default: 'info',
     },
-    
+
     // Legacy fields (kept for compatibility)
     type: {
       type: String,
@@ -166,7 +167,7 @@ const logSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
-    
+
     // Additional metadata
     metadata: {
       type: mongoose.Schema.Types.Mixed,

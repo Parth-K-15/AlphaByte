@@ -1,0 +1,235 @@
+import { useState } from 'react';
+import { X, AlertTriangle, CheckCircle, UserX } from 'lucide-react';
+import { invalidateParticipant } from '../../services/organizerApi';
+
+const InvalidateParticipantModal = ({ isOpen, onClose, participant, onSuccess }) => {
+    const [reason, setReason] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [showConfirmation, setShowConfirmation] = useState(false);
+
+    if (!isOpen || !participant) return null;
+
+    const handleSubmit = async () => {
+        if (reason.trim().length < 10) {
+            setError('Reason must be at least 10 characters');
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+
+        try {
+            const organizerId = localStorage.getItem('userId');
+            await invalidateParticipant(participant._id, reason.trim(), organizerId);
+
+            // Success
+            onSuccess?.();
+            handleClose();
+        } catch (err) {
+            setError(err.message || 'Failed to invalidate participant');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleClose = () => {
+        setReason('');
+        setError('');
+        setShowConfirmation(false);
+        onClose();
+    };
+
+    const characterCount = reason.trim().length;
+    const isValid = characterCount >= 10;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                            <UserX className="w-6 h-6 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                                Invalidate Participant
+                            </h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Mark this participant record as invalid
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleClose}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        disabled={isLoading}
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 space-y-6">
+                    {/* Participant Details */}
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-2">
+                        <h3 className="font-medium text-gray-900 dark:text-white mb-3">Participant Details</h3>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span className="text-gray-500 dark:text-gray-400">Name:</span>
+                                <p className="font-medium text-gray-900 dark:text-white mt-1">
+                                    {participant.name || participant.fullName || 'Unknown'}
+                                </p>
+                            </div>
+                            <div>
+                                <span className="text-gray-500 dark:text-gray-400">Email:</span>
+                                <p className="font-medium text-gray-900 dark:text-white mt-1">
+                                    {participant.email || 'N/A'}
+                                </p>
+                            </div>
+                            <div>
+                                <span className="text-gray-500 dark:text-gray-400">Phone:</span>
+                                <p className="font-medium text-gray-900 dark:text-white mt-1">
+                                    {participant.phone || 'N/A'}
+                                </p>
+                            </div>
+                            <div>
+                                <span className="text-gray-500 dark:text-gray-400">Registration Status:</span>
+                                <p className="font-medium text-gray-900 dark:text-white mt-1">
+                                    <span className={`inline-flex px-2 py-1 rounded-full text-xs ${participant.registrationStatus === 'CONFIRMED' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                            participant.registrationStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                                        }`}>
+                                        {participant.registrationStatus || 'PENDING'}
+                                    </span>
+                                </p>
+                            </div>
+                            <div>
+                                <span className="text-gray-500 dark:text-gray-400">Attendance Status:</span>
+                                <p className="font-medium text-gray-900 dark:text-white mt-1">
+                                    {participant.attendanceStatus || 'ABSENT'}
+                                </p>
+                            </div>
+                            <div>
+                                <span className="text-gray-500 dark:text-gray-400">Certificate Status:</span>
+                                <p className="font-medium text-gray-900 dark:text-white mt-1">
+                                    {participant.certificateStatus || 'PENDING'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Warning */}
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <div className="flex gap-3">
+                            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-red-800 dark:text-red-200">
+                                <p className="font-medium mb-1">⚠️ Important - Understand the Impact:</p>
+                                <ul className="list-disc list-inside space-y-1">
+                                    <li>This will mark the participant record as <strong>INVALID</strong></li>
+                                    <li>Registration status will be changed to <strong>CANCELLED</strong></li>
+                                    <li>The participant will no longer appear in active participant lists</li>
+                                    <li><strong>Note:</strong> This does NOT automatically invalidate attendance or certificates</li>
+                                    <li>You must separately invalidate attendance and revoke certificates if needed</li>
+                                    <li>The original record will be preserved for audit purposes</li>
+                                    <li>This action will be logged with CRITICAL severity</li>
+                                    <li>A mandatory reason must be provided (minimum 10 characters)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {!showConfirmation ? (
+                        <>
+                            {/* Reason Input */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Reason for Invalidation <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                    placeholder="e.g., Duplicate registration detected - same person registered twice with different emails"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none ${error && !isValid ? 'border-red-500' : 'border-gray-300'
+                                        }`}
+                                    rows={4}
+                                    disabled={isLoading}
+                                />
+                                <div className="flex justify-between items-center mt-2">
+                                    <span className={`text-sm ${characterCount < 10 ? 'text-red-500' : 'text-green-600 dark:text-green-400'
+                                        }`}>
+                                        {characterCount < 10 ? `${10 - characterCount} more characters needed` : '✓ Valid reason'}
+                                    </span>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                        {characterCount} / 500
+                                    </span>
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-800 dark:text-red-200">
+                                    {error}
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        /* Confirmation Step */
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            <div className="flex gap-3">
+                                <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm text-blue-800 dark:text-blue-200">
+                                    <p className="font-medium mb-2">Please confirm:</p>
+                                    <p className="mb-2">You are about to invalidate the participant record for <strong>{participant.name || participant.fullName}</strong> with the following reason:</p>
+                                    <div className="bg-white dark:bg-gray-800 rounded p-3 italic border border-blue-200 dark:border-blue-700 mb-2">
+                                        "{reason.trim()}"
+                                    </div>
+                                    <p className="text-xs mt-2 text-blue-700 dark:text-blue-300">
+                                        💡 Reminder: Remember to separately invalidate attendance and revoke certificates if applicable.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                        onClick={handleClose}
+                        className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        disabled={isLoading}
+                    >
+                        Cancel
+                    </button>
+                    {!showConfirmation ? (
+                        <button
+                            onClick={() => setShowConfirmation(true)}
+                            disabled={!isValid || isLoading}
+                            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Continue
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleSubmit}
+                            disabled={isLoading}
+                            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Invalidating...
+                                </>
+                            ) : (
+                                'Confirm Invalidation'
+                            )}
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default InvalidateParticipantModal;

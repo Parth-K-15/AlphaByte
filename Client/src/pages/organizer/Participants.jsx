@@ -17,6 +17,8 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  ShieldAlert,
+  History,
 } from "lucide-react";
 import {
   getParticipants,
@@ -26,6 +28,8 @@ import {
   getAssignedEvents,
   markManualAttendance,
 } from "../../services/organizerApi";
+import InvalidateParticipantModal from "../../components/organizer/InvalidateParticipantModal";
+import AuditTrailViewer from "../../components/organizer/AuditTrailViewer";
 
 // Helper to check if ID is a valid MongoDB ObjectId
 const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
@@ -51,6 +55,11 @@ const Participants = () => {
     organization: "",
     isWalkIn: false,
   });
+
+  // Retroactive Change & Audit Trail states
+  const [showInvalidateModal, setShowInvalidateModal] = useState(false);
+  const [showAuditTrail, setShowAuditTrail] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
 
   useEffect(() => {
     fetchEvents();
@@ -480,6 +489,29 @@ const Participants = () => {
                           >
                             <Trash2 size={16} />
                           </button>
+                          {/* Invalidate Participant Button */}
+                          <button
+                            onClick={() => {
+                              setSelectedParticipant(participant);
+                              setShowInvalidateModal(true);
+                            }}
+                            disabled={!participant.isValid}
+                            className="p-2 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={!participant.isValid ? 'Already Invalidated' : 'Invalidate Participant'}
+                          >
+                            <ShieldAlert size={16} />
+                          </button>
+                          {/* View Audit Trail Button */}
+                          <button
+                            onClick={() => {
+                              setSelectedParticipant(participant);
+                              setShowAuditTrail(true);
+                            }}
+                            className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg text-gray-500 hover:text-blue-600"
+                            title="View Audit Trail"
+                          >
+                            <History size={16} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -713,6 +745,30 @@ const Participants = () => {
           </div>
         </div>
       )}
+
+      {/* Retroactive Change & Audit Trail Modals */}
+      <InvalidateParticipantModal
+        isOpen={showInvalidateModal}
+        onClose={() => {
+          setShowInvalidateModal(false);
+          setSelectedParticipant(null);
+        }}
+        participant={selectedParticipant}
+        onSuccess={() => {
+          fetchParticipants();
+        }}
+      />
+
+      <AuditTrailViewer
+        isOpen={showAuditTrail}
+        onClose={() => {
+          setShowAuditTrail(false);
+          setSelectedParticipant(null);
+        }}
+        entityType="participant"
+        entityId={selectedParticipant?._id}
+        eventId={selectedEvent}
+      />
     </div>
   );
 };
