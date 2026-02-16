@@ -240,6 +240,50 @@
     background: linear-gradient(135deg, #818cf8, #6366f1);
     box-shadow: 0 0 8px rgba(129, 140, 248, 0.5);
   }
+
+  /* Dropdown/Select Fixes */
+  select {
+    background-color: white !important;
+    color: #191a23 !important;
+  }
+
+  :is(.dark select) {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #e4e4e7 !important;
+  }
+
+  /* Option elements styling */
+  select option {
+    background-color: white !important;
+    color: #191a23 !important;
+    padding: 0.5rem 0.75rem;
+    font-weight: 500;
+  }
+
+  :is(.dark select option) {
+    background-color: #1a1a24 !important;
+    color: #e4e4e7 !important;
+  }
+
+  /* Fix for option hover/selected states */
+  select option:checked {
+    background-color: #b9ff66 !important;
+    color: #191a23 !important;
+    font-weight: 600;
+  }
+
+  /* Firefox-specific fixes */
+  @-moz-document url-prefix() {
+    select option {
+      background-color: white !important;
+      color: #191a23 !important;
+    }
+    
+    :is(.dark select option) {
+      background-color: #1a1a24 !important;
+      color: #e4e4e7 !important;
+    }
+  }
 }
 
 @layer utilities {
