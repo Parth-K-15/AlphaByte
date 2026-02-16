@@ -34,12 +34,12 @@ router.post("/budget/request", async (req, res) => {
         .json({ success: false, message: "Event not found" });
 
     // Verify user is team lead or authorized member
-    if (
-      event.teamLead.toString() !== userId &&
-      !event.teamMembers.some(
-        (m) => m.user.toString() === userId && m.role === "TEAM_LEAD",
-      )
-    ) {
+    const isTeamLead = event.teamLead?.toString() === userId;
+    const isAuthorizedMember = event.teamMembers?.some(
+      (m) => m.user?.toString() === userId && m.role === "TEAM_LEAD",
+    );
+
+    if (!isTeamLead && !isAuthorizedMember) {
       return res
         .status(403)
         .json({ success: false, message: "Not authorized to request budget" });
@@ -50,12 +50,10 @@ router.post("/budget/request", async (req, res) => {
 
     if (budget) {
       if (["APPROVED", "CLOSED"].includes(budget.status)) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Cannot modify approved or closed budget",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Cannot modify approved or closed budget",
+        });
       }
 
       // Update existing budget
@@ -123,9 +121,12 @@ router.get("/budget/:eventId", async (req, res) => {
       .populate("createdBy", "name email");
 
     if (!budget) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No budget found for this event" });
+      // Return 200 with null to avoid noisy console errors in frontend during initial load
+      return res.json({
+        success: true,
+        data: null,
+        message: "No budget found for this event",
+      });
     }
 
     // Calculate usage stats
@@ -168,6 +169,12 @@ router.put("/budget/:eventId/approval", async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: "Invalid event ID" });
+
+    if (adminId && !isValidObjectId(adminId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid admin ID format" });
+    }
 
     const budget = await Budget.findOne({ event: eventId });
     if (!budget)
@@ -239,34 +246,28 @@ router.post("/expense", async (req, res) => {
 
     const budget = await Budget.findOne({ event: eventId });
     if (!budget)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "No active budget found for this event",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "No active budget found for this event",
+      });
 
     if (
       budget.status !== "APPROVED" &&
       budget.status !== "PARTIALLY_APPROVED"
     ) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Budget must be approved before logging expenses",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Budget must be approved before logging expenses",
+      });
     }
 
     // Verify category exists in budget
     const budgetCategory = budget.categories.find((c) => c.name === category);
     if (!budgetCategory) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: `Category '${category}' not found in budget`,
-        });
+      return res.status(400).json({
+        success: false,
+        message: `Category '${category}' not found in budget`,
+      });
     }
 
     const expense = new Expense({
@@ -283,13 +284,11 @@ router.post("/expense", async (req, res) => {
 
     await expense.save();
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Expense logged successfully",
-        data: expense,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Expense logged successfully",
+      data: expense,
+    });
   } catch (error) {
     console.error("Error logging expense:", error);
     res

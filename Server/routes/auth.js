@@ -1,18 +1,19 @@
-import express from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-import ParticipantAuth from '../models/ParticipantAuth.js';
+import express from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import ParticipantAuth from "../models/ParticipantAuth.js";
+//
 
 const router = express.Router();
 
 // JWT Secret (use environment variable in production)
-const JWT_SECRET = process.env.JWT_SECRET || 'alphabyte_jwt_secret_key_2026';
-const JWT_EXPIRES_IN = '7d';
+const JWT_SECRET = process.env.JWT_SECRET || "alphabyte_jwt_secret_key_2026";
+const JWT_EXPIRES_IN = "7d";
 
 // @desc    Participant Signup
 // @route   POST /api/auth/signup
-router.post('/signup', async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
     const { name, email, password, phone, college, branch, year } = req.body;
 
@@ -20,7 +21,7 @@ router.post('/signup', async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Name, email, and password are required',
+        message: "Name, email, and password are required",
       });
     }
 
@@ -29,7 +30,7 @@ router.post('/signup', async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid email address',
+        message: "Please provide a valid email address",
       });
     }
 
@@ -37,16 +38,18 @@ router.post('/signup', async (req, res) => {
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters long',
+        message: "Password must be at least 6 characters long",
       });
     }
 
     // Check if participant already exists
-    const existingParticipant = await ParticipantAuth.findOne({ email: email.toLowerCase() });
+    const existingParticipant = await ParticipantAuth.findOne({
+      email: email.toLowerCase(),
+    });
     if (existingParticipant) {
       return res.status(400).json({
         success: false,
-        message: 'An account with this email already exists',
+        message: "An account with this email already exists",
       });
     }
 
@@ -55,7 +58,8 @@ router.post('/signup', async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'This email is already registered as a staff member. Please login instead.',
+        message:
+          "This email is already registered as a staff member. Please login instead.",
       });
     }
 
@@ -76,29 +80,29 @@ router.post('/signup', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: participant._id, role: 'PARTICIPANT', isParticipant: true },
+      { id: participant._id, role: "PARTICIPANT", isParticipant: true },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      { expiresIn: JWT_EXPIRES_IN },
     );
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully',
+      message: "Account created successfully",
       data: {
         token,
         user: {
           id: participant._id,
           name: participant.name,
           email: participant.email,
-          role: 'PARTICIPANT',
+          role: "PARTICIPANT",
         },
       },
     });
   } catch (error) {
-    console.error('Signup error:', error);
+    console.error("Signup error:", error);
     res.status(500).json({
       success: false,
-      message: 'Error creating account',
+      message: "Error creating account",
       error: error.message,
     });
   }
@@ -106,7 +110,7 @@ router.post('/signup', async (req, res) => {
 
 // @desc    Login for all roles
 // @route   POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -114,7 +118,7 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required',
+        message: "Email and password are required",
       });
     }
 
@@ -123,28 +127,28 @@ router.post('/login', async (req, res) => {
     let isParticipant = false;
     let role = null;
 
-    console.log('Login attempt for:', email.toLowerCase());
-    console.log('Found in User collection:', !!user);
+    console.log("Login attempt for:", email.toLowerCase());
+    console.log("Found in User collection:", !!user);
 
     if (!user) {
       // Check ParticipantAuth collection
       user = await ParticipantAuth.findOne({ email: email.toLowerCase() });
-      console.log('Found in ParticipantAuth collection:', !!user);
+      console.log("Found in ParticipantAuth collection:", !!user);
       if (user) {
         isParticipant = true;
-        role = 'PARTICIPANT';
-        console.log('User is participant:', user.name);
+        role = "PARTICIPANT";
+        console.log("User is participant:", user.name);
       }
     } else {
       role = user.role;
-      console.log('User role from User collection:', role);
+      console.log("User role from User collection:", role);
     }
 
     if (!user) {
-      console.log('No user found with email:', email);
+      console.log("No user found with email:", email);
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: "Invalid email or password",
       });
     }
 
@@ -152,7 +156,7 @@ router.post('/login', async (req, res) => {
     if (user.isSuspended) {
       return res.status(403).json({
         success: false,
-        message: `Account suspended: ${user.suspensionReason || 'Contact admin for more information'}`,
+        message: `Account suspended: ${user.suspensionReason || "Contact admin for more information"}`,
       });
     }
 
@@ -160,20 +164,20 @@ router.post('/login', async (req, res) => {
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'Account is deactivated. Contact admin for assistance.',
+        message: "Account is deactivated. Contact admin for assistance.",
       });
     }
 
     // Compare password
-    console.log('Comparing password...');
-    console.log('Stored hash starts with:', user.password.substring(0, 10));
+    console.log("Comparing password...");
+    console.log("Stored hash starts with:", user.password.substring(0, 10));
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log('Password valid:', isPasswordValid);
-    
+    console.log("Password valid:", isPasswordValid);
+
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: "Invalid email or password",
       });
     }
 
@@ -181,29 +185,29 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user._id, role: role, isParticipant },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      { expiresIn: JWT_EXPIRES_IN },
     );
 
     // Determine redirect path based on role
-    let redirectPath = '/participant';
+    let redirectPath = "/participant";
     switch (role) {
-      case 'ADMIN':
-        redirectPath = '/admin/dashboard';
+      case "ADMIN":
+        redirectPath = "/admin/dashboard";
         break;
-      case 'TEAM_LEAD':
-        redirectPath = '/organizer';
+      case "TEAM_LEAD":
+        redirectPath = "/organizer";
         break;
-      case 'EVENT_STAFF':
-        redirectPath = '/organizer';
+      case "EVENT_STAFF":
+        redirectPath = "/organizer";
         break;
-      case 'PARTICIPANT':
-        redirectPath = '/participant';
+      case "PARTICIPANT":
+        redirectPath = "/participant";
         break;
     }
 
     res.json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: {
         token,
         user: {
@@ -220,10 +224,10 @@ router.post('/login', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     res.status(500).json({
       success: false,
-      message: 'Error logging in',
+      message: "Error logging in",
       error: error.message,
     });
   }
@@ -231,27 +235,27 @@ router.post('/login', async (req, res) => {
 
 // @desc    Logout (frontend clears token)
 // @route   POST /api/auth/logout
-router.post('/logout', (req, res) => {
+router.post("/logout", (req, res) => {
   res.json({
     success: true,
-    message: 'Logged out successfully',
+    message: "Logged out successfully",
   });
 });
 
 // @desc    Get current user profile
 // @route   GET /api/auth/me
-router.get('/me', async (req, res) => {
+router.get("/me", async (req, res) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided',
+        message: "No token provided",
       });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
 
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -259,18 +263,18 @@ router.get('/me', async (req, res) => {
     // Get user from appropriate collection
     let user;
     if (decoded.isParticipant) {
-      user = await ParticipantAuth.findById(decoded.id).select('-password');
+      user = await ParticipantAuth.findById(decoded.id).select("-password");
       if (user) {
-        user = { ...user.toObject(), role: 'PARTICIPANT' };
+        user = { ...user.toObject(), role: "PARTICIPANT" };
       }
     } else {
-      user = await User.findById(decoded.id).select('-password');
+      user = await User.findById(decoded.id).select("-password");
     }
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
@@ -279,21 +283,21 @@ router.get('/me', async (req, res) => {
       data: user,
     });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
+    if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
         success: false,
-        message: 'Invalid token',
+        message: "Invalid token",
       });
     }
-    if (error.name === 'TokenExpiredError') {
+    if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
-        message: 'Token expired',
+        message: "Token expired",
       });
     }
     res.status(500).json({
       success: false,
-      message: 'Error fetching user',
+      message: "Error fetching user",
       error: error.message,
     });
   }
@@ -301,18 +305,18 @@ router.get('/me', async (req, res) => {
 
 // @desc    Update user profile
 // @route   PUT /api/auth/profile
-router.put('/profile', async (req, res) => {
+router.put("/profile", async (req, res) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided',
+        message: "No token provided",
       });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const { name, email, phone, avatar } = req.body;
@@ -321,7 +325,7 @@ router.put('/profile', async (req, res) => {
     if (!name || !email) {
       return res.status(400).json({
         success: false,
-        message: 'Name and email are required',
+        message: "Name and email are required",
       });
     }
 
@@ -330,7 +334,7 @@ router.put('/profile', async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid email address',
+        message: "Please provide a valid email address",
       });
     }
 
@@ -339,19 +343,19 @@ router.put('/profile', async (req, res) => {
     if (decoded.isParticipant) {
       existingUser = await ParticipantAuth.findOne({
         email: email.toLowerCase(),
-        _id: { $ne: decoded.id }
+        _id: { $ne: decoded.id },
       });
     } else {
       existingUser = await User.findOne({
         email: email.toLowerCase(),
-        _id: { $ne: decoded.id }
+        _id: { $ne: decoded.id },
       });
     }
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'Email is already taken',
+        message: "Email is already taken",
       });
     }
 
@@ -360,7 +364,7 @@ router.put('/profile', async (req, res) => {
     const updateData = {
       name,
       email: email.toLowerCase(),
-      phone: phone || '',
+      phone: phone || "",
     };
 
     // Add avatar if provided
@@ -372,44 +376,43 @@ router.put('/profile', async (req, res) => {
       updatedUser = await ParticipantAuth.findByIdAndUpdate(
         decoded.id,
         updateData,
-        { new: true, runValidators: true }
-      ).select('-password');
+        { new: true, runValidators: true },
+      ).select("-password");
     } else {
-      updatedUser = await User.findByIdAndUpdate(
-        decoded.id,
-        updateData,
-        { new: true, runValidators: true }
-      ).select('-password');
+      updatedUser = await User.findByIdAndUpdate(decoded.id, updateData, {
+        new: true,
+        runValidators: true,
+      }).select("-password");
     }
 
     if (!updatedUser) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
     res.json({
       success: true,
-      message: 'Profile updated successfully',
+      message: "Profile updated successfully",
       data: updatedUser,
     });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
+    if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
         success: false,
-        message: 'Invalid token',
+        message: "Invalid token",
       });
     }
-    if (error.name === 'TokenExpiredError') {
+    if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
-        message: 'Token expired',
+        message: "Token expired",
       });
     }
     res.status(500).json({
       success: false,
-      message: 'Error updating profile',
+      message: "Error updating profile",
       error: error.message,
     });
   }
@@ -417,18 +420,18 @@ router.put('/profile', async (req, res) => {
 
 // @desc    Change password
 // @route   PUT /api/auth/password
-router.put('/password', async (req, res) => {
+router.put("/password", async (req, res) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided',
+        message: "No token provided",
       });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
     const { currentPassword, newPassword } = req.body;
@@ -437,7 +440,7 @@ router.put('/password', async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Current password and new password are required',
+        message: "Current password and new password are required",
       });
     }
 
@@ -445,7 +448,7 @@ router.put('/password', async (req, res) => {
     if (newPassword.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'New password must be at least 6 characters long',
+        message: "New password must be at least 6 characters long",
       });
     }
 
@@ -460,16 +463,19 @@ router.put('/password', async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Current password is incorrect',
+        message: "Current password is incorrect",
       });
     }
 
@@ -483,24 +489,24 @@ router.put('/password', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Password changed successfully',
+      message: "Password changed successfully",
     });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
+    if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
         success: false,
-        message: 'Invalid token',
+        message: "Invalid token",
       });
     }
-    if (error.name === 'TokenExpiredError') {
+    if (error.name === "TokenExpiredError") {
       return res.status(401).json({
         success: false,
-        message: 'Token expired',
+        message: "Token expired",
       });
     }
     res.status(500).json({
       success: false,
-      message: 'Error changing password',
+      message: "Error changing password",
       error: error.message,
     });
   }
