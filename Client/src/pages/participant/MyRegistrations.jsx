@@ -10,16 +10,18 @@ import {
   RefreshCw,
 } from "lucide-react";
 import jsQR from "jsqr";
+import { useAuth } from "../../context/AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://eventsync-blue.vercel.app/api";
 
 const MyRegistrations = () => {
+  const { user } = useAuth();
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [email, setEmail] = useState(
-    localStorage.getItem("participantEmail") || "",
+    user?.email || localStorage.getItem("participantEmail") || "",
   );
   const [inputEmail, setInputEmail] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });

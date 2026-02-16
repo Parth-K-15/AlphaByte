@@ -13,6 +13,7 @@ import {
   X,
   Sun,
   Moon,
+  Mail,
 } from "lucide-react";
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -43,6 +44,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       title: "My Sessions",
       icon: Presentation,
       path: "/speaker/sessions",
+    },
+    {
+      title: "Invitations",
+      icon: Mail,
+      path: "/speaker/invitations",
     },
     {
       title: "My Profile",

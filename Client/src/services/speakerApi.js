@@ -75,3 +75,15 @@ export const updateProfile = (data) =>
 // Auth (speaker-specific)
 export const speakerSignup = (data) =>
   fetchApi('/auth/speaker/signup', { method: 'POST', body: data });
+
+// Speaker Requests / Invitations
+export const getRequests = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return fetchApi(`/speaker/requests${query ? `?${query}` : ''}`);
+};
+
+export const respondToRequest = (requestId, decision, reason) =>
+  fetchApi(`/speaker/requests/${requestId}`, {
+    method: 'PUT',
+    body: { decision, reason },
+  });

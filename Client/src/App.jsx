@@ -46,6 +46,7 @@ import {
   Logs as OrganizerLogs,
   Speakers as OrganizerSpeakers,
   SpeakerProfile as OrganizerSpeakerProfile,
+  SpeakerRecommendation,
   SessionAssignment,
   RoleHistory,
   FinanceDashboard as OrganizerFinanceDashboard,
@@ -76,6 +77,7 @@ import {
   Profile as SpeakerProfile,
   Materials as SpeakerMaterials,
   Analytics as SpeakerAnalytics,
+  Invitations as SpeakerInvitations,
 } from "./pages/speaker";
 
 function App() {
@@ -253,6 +255,7 @@ function App() {
               {/* Speaker Management */}
               <Route path="speakers" element={<OrganizerSpeakers />} />
               <Route path="speakers/:id" element={<OrganizerSpeakerProfile />} />
+              <Route path="speakers/recommend" element={<SpeakerRecommendation />} />
               <Route path="sessions/assign" element={<SessionAssignment />} />
 
               {/* Role History */}
@@ -337,6 +340,7 @@ function App() {
               <Route index element={<SpeakerDashboard />} />
               <Route path="sessions" element={<SpeakerSessions />} />
               <Route path="sessions/:id" element={<SpeakerSessionDetail />} />
+              <Route path="invitations" element={<SpeakerInvitations />} />
               <Route path="profile" element={<SpeakerProfile />} />
               <Route path="materials" element={<SpeakerMaterials />} />
               <Route path="analytics" element={<SpeakerAnalytics />} />

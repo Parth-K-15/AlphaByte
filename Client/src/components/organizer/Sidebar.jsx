@@ -129,6 +129,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       key: "speakers",
       submenu: [
         { title: "All Speakers", path: "/organizer/speakers" },
+        { title: "Recommendations", path: "/organizer/speakers/recommend" },
         { title: "Assign Sessions", path: "/organizer/sessions/assign" },
       ],
     }] : []),
