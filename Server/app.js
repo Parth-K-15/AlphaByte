@@ -20,6 +20,9 @@ import logsRoutes from "./routes/logs.js";
 import { testEmailConnection } from "./utils/emailService.js";
 import financeRoutes from "./routes/finance.js";
 
+// Import Redis
+import { initRedis, closeRedis } from "./config/redis.js";
+
 // Load env variables
 dotenv.config();
 
@@ -112,10 +115,22 @@ if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, async () => {
     console.log(`🚀 Server running on port ${PORT}`);
 
+    // Initialize Redis
+    console.log("\n🔄 Initializing Redis...");
+    await initRedis();
+
     // Test email configuration
     console.log("\n📧 Testing email configuration...");
     await testEmailConnection();
   });
 }
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("\n⚠️  Shutting down gracefully...");
+  await closeRedis();
+  await mongoose.connection.close();
+  process.exit(0);
+});
 
 export default app;
