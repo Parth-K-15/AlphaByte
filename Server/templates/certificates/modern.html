@@ -5,127 +5,359 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Modern Certificate</title>
   <style>
-    @page {
-      size: A4 landscape;
-      margin: 0;
-    }
-    
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
     
+    html, body {
+      width: 3508px;
+      height: 2480px;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      width: 297mm;
-      height: 210mm;
+      background: #ffffff;
       position: relative;
     }
     
     .certificate-container {
       width: 100%;
       height: 100%;
-      background: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
       position: relative;
       overflow: hidden;
     }
     
-    /* Geometric background patterns */
-    .bg-pattern {
+    /* Floating geometric shapes */
+    .wave-decoration {
       position: absolute;
-      width: 100%;
-      height: 100%;
-      opacity: 0.03;
-      background-image: 
-        linear-gradient(30deg, #667eea 12%, transparent 12.5%, transparent 87%, #667eea 87.5%, #667eea),
-        linear-gradient(150deg, #667eea 12%, transparent 12.5%, transparent 87%, #667eea 87.5%, #667eea);
-      background-size: 80px 140px;
+      z-index: 1;
+      opacity: 0.2;
     }
     
-    /* Side accent bar */
-    .accent-bar {
+    .left-wave {
+      left: 200px;
+      top: 300px;
+      width: 500px;
+      height: 500px;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+      transform: rotate(-20deg);
+    }
+    
+    .left-wave::before {
+      content: '';
       position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 15px;
-      background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+      left: 100px;
+      top: 100px;
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+      opacity: 0.6;
+    }
+    
+    .right-wave {
+      right: 200px;
+      bottom: 300px;
+      width: 600px;
+      height: 600px;
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      border-radius: 50% 50% 30% 70% / 60% 40% 60% 40%;
+      transform: rotate(15deg);
+    }
+    
+    .right-wave::before {
+      content: '';
+      position: absolute;
+      right: 120px;
+      bottom: 120px;
+      width: 400px;
+      height: 400px;
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      border-radius: 40% 60% 60% 40% / 60% 30% 70% 40%;
+      opacity: 0.5;
+    }
+    
+    /* Inner white card */
+    .border-frame {
+      position: absolute;
+      top: 200px;
+      left: 500px;
+      right: 500px;
+      bottom: 200px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 40px;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.3);
+      z-index: 2;
     }
     
     /* Header */
     .header {
       text-align: center;
-      padding: 50px 80px 30px 80px;
+      padding-top: 250px;
       position: relative;
       z-index: 10;
+      margin-bottom: 60px;
     }
     
     .organization-name {
-      font-size: 20px;
-      font-weight: 600;
-      color: #667eea;
-      margin-bottom: 5px;
+      font-size: 58px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
       text-transform: uppercase;
-      letter-spacing: 3px;
+      letter-spacing: 8px;
     }
     
     .department-name {
-      font-size: 13px;
+      font-size: 42px;
       color: #666;
-      font-weight: 400;
+      margin-bottom: 15px;
     }
     
     /* Content */
     .content {
-      padding: 20px 100px;
+      padding: 0 700px;
       text-align: center;
       position: relative;
       z-index: 10;
     }
     
     .certificate-title {
-      font-size: 52px;
-      font-weight: 300;
-      color: #333;
+      font-size: 130px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin-bottom: 40px;
-      letter-spacing: 6px;
+      letter-spacing: 15px;
       text-transform: uppercase;
     }
     
     .subtitle {
-      font-size: 14px;
-      color: #999;
-      margin-bottom: 25px;
+      font-size: 48px;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 100px;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 6px;
+      font-weight: 600;
+    }
+    
+    .presented-text {
+      font-size: 44px;
+      color: #555;
+      margin-bottom: 50px;
+      font-style: italic;
     }
     
     .participant-name {
-      font-size: 56px;
+      font-size: 120px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 70px 0;
+      position: relative;
+      display: inline-block;
+      padding-bottom: 25px;
+      text-transform: capitalize;
+    }
+    
+    .participant-name::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .description {
+      font-size: 42px;
+      color: #2c3e50;
+      line-height: 1.9;
+      margin: 90px auto 80px auto;
+      max-width: 2000px;
+    }
+    
+    /* Date section on right */
+    .date-section {
+      position: absolute;
+      right: 700px;
+      bottom: 450px;
+      text-align: right;
+      z-index: 10;
+    }
+    
+    .date-label {
+      font-size: 36px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    
+    .date-value {
+      font-size: 44px;
+      font-weight: bold;
+      color: #1a3a6b;
+    }
+    
+    /* Signatures */
+    .signatures {
+      position: absolute;
+      bottom: 200px;
+      left: 700px;
+      right: 700px;
+      display: flex;
+      justify-content: space-between;
+      z-index: 10;
+    }
+    
+    .signature-block {
+      text-align: center;
+      width: 450px;
+    }
+    
+    .signature-line {
+      border-top: 4px solid #333;
+      margin-bottom: 20px;
+      padding-top: 70px;
+    }
+    
+    .signature-name {
+      font-size: 38px;
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    
+    .signature-title {
+      font-size: 32px;
+      color: #666;
+    }
+    
+    /* Colorful accent line */
+    .gold-accent {
+      position: absolute;
+      top: 250px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 8px;
+      background: linear-gradient(90deg, #4facfe 0%, #00f2fe 25%, #f093fb 50%, #f5576c 75%, #fa709a 100%);
+      border-radius: 10px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="certificate-container">
+    <!-- Curved wave decorations -->
+    <div class="wave-decoration left-wave"></div>
+    <div class="wave-decoration right-wave"></div>
+    
+    <!-- Border frame -->
+    <div class="border-frame"></div>
+    
+    <!-- Gold accent line -->
+    <div class="gold-accent"></div>
+    
+    <!-- Header -->
+    <div class="header">
+      <div class="organization-name">{{organizationName}}</div>
+      <div class="department-name">{{departmentName}}</div>
+    </div>
+    
+    <!-- Content -->
+    <div class="content">
+      <div class="certificate-title">CERTIFICATE</div>
+      <div class="subtitle">OF {{achievement}}</div>
+      
+      <div class="presented-text">This certificate is presented to</div>
+      <div class="participant-name">{{participantName}}</div>
+      
+      <div class="description">
+        For outstanding achievement in "{{competitionName}}", 
+        held as part of {{eventName}}, organized by {{organizerName}}, {{organizationName}}.
+      </div>
+    </div>
+    
+    <!-- Date section -->
+    <div class="date-section">
+      <div class="date-label">Date:</div>
+      <div class="date-value">{{eventDate}}</div>
+    </div>
+    
+    <!-- Signatures -->
+    <div class="signatures">
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-name">{{signature1Name}}</div>
+        <div class="signature-title">{{signature1Title}}</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-name">{{signature2Name}}</div>
+        <div class="signature-title">{{signature2Title}}</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-name">{{signature3Name}}</div>
+        <div class="signature-title">{{signature3Title}}</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <div class="signature-name">{{signature4Name}}</div>
+        <div class="signature-title">{{signature4Title}}</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      margin-bottom: 75px;
+      text-transform: uppercase;
+      letter-spacing: 6px;
+    }
+    
+    .participant-name {
+      font-size: 168px;
       font-weight: 700;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin: 25px 0;
-      letter-spacing: 1px;
+      margin: 75px 0;
+      letter-spacing: 3px;
     }
     
     .divider {
-      width: 200px;
-      height: 3px;
+      width: 600px;
+      height: 9px;
       background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-      margin: 20px auto;
+      margin: 60px auto;
     }
     
     .description {
-      font-size: 15px;
+      font-size: 45px;
       color: #555;
       line-height: 1.8;
-      max-width: 700px;
-      margin: 30px auto;
+      max-width: 2100px;
+      margin: 90px auto;
       font-weight: 300;
     }
     
@@ -138,72 +370,72 @@
       display: inline-block;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 12px 30px;
-      border-radius: 30px;
-      font-size: 14px;
+      padding: 36px 90px;
+      border-radius: 90px;
+      font-size: 42px;
       font-weight: 600;
-      margin: 15px 0;
+      margin: 45px 0;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      letter-spacing: 3px;
+      box-shadow: 0 18px 60px rgba(102, 126, 234, 0.4);
     }
     
     /* Signatures */
     .signatures {
       display: flex;
       justify-content: center;
-      gap: 80px;
-      margin-top: 50px;
-      padding: 0 100px;
+      gap: 240px;
+      margin-top: 150px;
+      padding: 0 300px;
     }
     
     .signature-block {
       text-align: center;
-      width: 180px;
+      width: 540px;
     }
     
     .signature-line {
-      border-top: 2px solid #667eea;
-      margin-bottom: 10px;
-      padding-top: 35px;
+      border-top: 6px solid #667eea;
+      margin-bottom: 30px;
+      padding-top: 105px;
     }
     
     .signature-name {
-      font-size: 13px;
+      font-size: 39px;
       font-weight: 600;
       color: #333;
     }
     
     .signature-title {
-      font-size: 11px;
+      font-size: 33px;
       color: #999;
-      margin-top: 3px;
+      margin-top: 9px;
     }
     
     /* Date badge */
     .date-badge {
       position: absolute;
-      top: 50px;
-      right: 80px;
+      top: 150px;
+      right: 240px;
       background: white;
-      border: 2px solid #667eea;
-      border-radius: 8px;
-      padding: 12px 20px;
+      border: 6px solid #667eea;
+      border-radius: 24px;
+      padding: 36px 60px;
       text-align: center;
     }
     
     .date-label {
-      font-size: 10px;
+      font-size: 30px;
       color: #999;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 3px;
     }
     
     .date-value {
-      font-size: 13px;
+      font-size: 39px;
       font-weight: 600;
       color: #667eea;
-      margin-top: 3px;
+      margin-top: 9px;
     }
     
     /* Decorative circles */
@@ -214,27 +446,27 @@
     }
     
     .circle-1 {
-      width: 300px;
-      height: 300px;
+      width: 900px;
+      height: 900px;
       background: #667eea;
-      top: -100px;
-      right: -100px;
+      top: -300px;
+      right: -300px;
     }
     
     .circle-2 {
-      width: 200px;
-      height: 200px;
+      width: 600px;
+      height: 600px;
       background: #764ba2;
-      bottom: -50px;
-      left: 100px;
+      bottom: -150px;
+      left: 300px;
     }
     
     .circle-3 {
-      width: 150px;
-      height: 150px;
+      width: 450px;
+      height: 450px;
       background: #667eea;
       top: 50%;
-      right: 50px;
+      right: 150px;
     }
   </style>
 </head>

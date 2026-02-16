@@ -127,10 +127,11 @@ class CertificateGenerator {
       const page = await browser.newPage();
       
       // Set viewport for high-quality image (A4 landscape dimensions)
+      // A4 landscape: 297mm x 210mm at 300 DPI = 3508 x 2480 pixels
       await page.setViewport({
-        width: 1754,  // A4 landscape width at 150 DPI
-        height: 1240, // A4 landscape height at 150 DPI
-        deviceScaleFactor: 2 // Retina display for better quality
+        width: 3508,  // A4 landscape width at 300 DPI
+        height: 2480, // A4 landscape height at 300 DPI
+        deviceScaleFactor: 1
       });
       
       console.log('\ud83d\udcc4 Setting content...');
@@ -142,12 +143,18 @@ class CertificateGenerator {
       const filepath = path.join(this.outputDir, filename);
       console.log('\ud83d\udcbe Saving JPG to:', filepath);
 
-      // Generate JPG Screenshot
+      // Generate JPG Screenshot (capture exactly the viewport, not full page)
       await page.screenshot({
         path: filepath,
         type: 'jpeg',
         quality: 95,
-        fullPage: true
+        fullPage: false, // Changed to false to capture only viewport
+        clip: {
+          x: 0,
+          y: 0,
+          width: 3508,
+          height: 2480
+        }
       });
       console.log('✅ JPG generated successfully');
 

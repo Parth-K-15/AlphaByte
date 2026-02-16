@@ -915,11 +915,11 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
 
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
 
-    const { organizerId, template = 'default', achievement = 'Participation', competitionName } = req.body;
+    const { organizerId, template = 'default', achievement = 'Participation', competitionName, participantIds } = req.body;
 
     console.log('🎯 Generating certificates for event:', eventId);
     console.log('Request body:', req.body);
-    console.log('Request params:', { organizerId, template, achievement, competitionName });
+    console.log('Request params:', { organizerId, template, achievement, competitionName, participantIds });
 
     // Validate organizerId
     if (!organizerId) {
@@ -945,48 +945,82 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
     }
     console.log('✅ Event found:', event.title || event.name);
 
-    // Get participants who attended but don't have certificates yet
-    console.log('Querying attendance for event:', eventId);
-    const attendedParticipants = await Attendance.find({ event: eventId }).populate('participant');
-    console.log(`Found ${attendedParticipants.length} attendance records`);
-
-    if (attendedParticipants.length === 0) {
-      console.log('NO ATTENDANCE RECORDS FOUND! Please mark attendance first.');
-      return res.status(400).json({
-        success: false,
-        message: 'No attendance records found. Please mark participants as present using the Attendance QR page before generating certificates.',
-        data: { generated: 0, failed: 0 }
-      });
-    }
-
-    // Filter out records with missing participant data
-    const validAttendance = attendedParticipants.filter(a => a.participant && a.participant._id);
-    console.log(`Valid attendance with participant data: ${validAttendance.length}`);
-
-    if (validAttendance.length === 0) {
-      console.log('Attendance exists but participant data is null/missing');
-      return res.status(400).json({
-        success: false,
-        message: 'Attendance records exist but participant information is missing.',
-        data: { generated: 0, failed: 0 }
-      });
-    }
-
+    // Get existing certificates to check for duplicates
     const existingCerts = await Certificate.find({ event: eventId });
-    const certifiedParticipantIds = existingCerts.map(c => c.participant.toString());
-    const eligibleParticipants = validAttendance.filter(a =>
-      !certifiedParticipantIds.includes(a.participant._id.toString())
-    );
 
-    console.log(`📋 Certificate Status - Total Attended: ${validAttendance.length}, Already Issued: ${existingCerts.length}, Eligible: ${eligibleParticipants.length}`);
+    let eligibleParticipants = [];
 
-    if (eligibleParticipants.length === 0) {
-      console.log('✅ All participants already have certificates');
-      return res.json({
-        success: true,
-        message: `All ${validAttendance.length} participant${validAttendance.length === 1 ? '' : 's'} already have certificates. No new certificates to generate.`,
-        data: { generated: 0, alreadyIssued: existingCerts.length, totalAttended: validAttendance.length }
+    // If participantIds are provided (for winner certificates), generate only for those
+    if (participantIds && Array.isArray(participantIds) && participantIds.length > 0) {
+      console.log(`🎖️ Generating individual certificates for ${participantIds.length} specific participant(s)`);
+      
+      // Fetch attendance records for the specific participants
+      const attendanceRecords = await Attendance.find({
+        event: eventId,
+        participant: { $in: participantIds }
+      }).populate('participant');
+
+      eligibleParticipants = attendanceRecords.filter(a => {
+        if (!a.participant || !a.participant._id) return false;
+        
+        // Check if this participant already has a certificate with the same achievement
+        const existingCert = existingCerts.find(c =>
+          c.participant.toString() === a.participant._id.toString() &&
+          c.achievement === achievement
+        );
+        return !existingCert;
       });
+
+      if (eligibleParticipants.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Selected participant(s) either have not attended or already have certificates with this achievement type.',
+          data: { generated: 0, failed: 0 }
+        });
+      }
+    } else {
+      // Original bulk generation logic for all attended participants
+      console.log('Querying attendance for event:', eventId);
+      const attendedParticipants = await Attendance.find({ event: eventId }).populate('participant');
+      console.log(`Found ${attendedParticipants.length} attendance records`);
+
+      if (attendedParticipants.length === 0) {
+        console.log('NO ATTENDANCE RECORDS FOUND! Please mark attendance first.');
+        return res.status(400).json({
+          success: false,
+          message: 'No attendance records found. Please mark participants as present using the Attendance QR page before generating certificates.',
+          data: { generated: 0, failed: 0 }
+        });
+      }
+
+      // Filter out records with missing participant data
+      const validAttendance = attendedParticipants.filter(a => a.participant && a.participant._id);
+      console.log(`Valid attendance with participant data: ${validAttendance.length}`);
+
+      if (validAttendance.length === 0) {
+        console.log('Attendance exists but participant data is null/missing');
+        return res.status(400).json({
+          success: false,
+          message: 'Attendance records exist but participant information is missing.',
+          data: { generated: 0, failed: 0 }
+        });
+      }
+
+      const certifiedParticipantIds = existingCerts.map(c => c.participant.toString());
+      eligibleParticipants = validAttendance.filter(a =>
+        !certifiedParticipantIds.includes(a.participant._id.toString())
+      );
+
+      console.log(`📋 Certificate Status - Total Attended: ${validAttendance.length}, Already Issued: ${existingCerts.length}, Eligible: ${eligibleParticipants.length}`);
+
+      if (eligibleParticipants.length === 0) {
+        console.log('✅ All participants already have certificates');
+        return res.json({
+          success: true,
+          message: `All ${validAttendance.length} participant${validAttendance.length === 1 ? '' : 's'} already have certificates. No new certificates to generate.`,
+          data: { generated: 0, alreadyIssued: existingCerts.length, totalAttended: validAttendance.length }
+        });
+      }
     }
 
     console.log(`\ud83d\udcdd Generating ${eligibleParticipants.length} certificates...`);
