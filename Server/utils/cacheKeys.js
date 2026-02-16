@@ -25,6 +25,8 @@ export const CacheKeys = {
 
   // Finance keys
   budget: (eventId) => `finance:${eventId}:budget`,
+  budgetsPending: () => `finance:budgets:pending`,
+  allBudgets: () => `finance:budgets:all`,
   expenses: (eventId) => `finance:${eventId}:expenses`,
   expensesPending: () => `finance:expenses:pending`,
 
@@ -57,6 +59,8 @@ export const CachePatterns = {
   userAll: (userId) => `user:${userId}:*`,
   eventAll: (eventId) => `event:${eventId}:*`,
   financeAll: (eventId) => `finance:${eventId}:*`,
+  allBudgets: "finance:budgets:*",
+  allExpenses: "finance:expenses:*",
   participantAll: (email) => `participant:${email}:*`,
   allDashboards: "dashboard:*",
   allAnalytics: "analytics*",

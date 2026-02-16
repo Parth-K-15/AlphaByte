@@ -42,7 +42,7 @@ const expenseSchema = new mongoose.Schema(
     },
     receiptUrl: {
       type: String,
-      required: true, // Receipt is mandatory for expense tracking
+      required: false, // Receipt is optional for small expenses
     },
     receiptPublicId: String, // For Cloudinary
     status: {

@@ -42,6 +42,9 @@ const budgetHistorySchema = new mongoose.Schema({
       "REJECTED",
       "ALLOCATED",
       "CLOSED",
+      "AMENDMENT_REQUESTED",
+      "AMENDMENT_APPROVED",
+      "AMENDMENT_REJECTED",
     ],
     required: true,
   },
@@ -57,6 +60,34 @@ const budgetHistorySchema = new mongoose.Schema({
   note: String,
   previousStatus: String,
   newStatus: String,
+});
+
+const budgetAmendmentSchema = new mongoose.Schema({
+  requestedCategories: [budgetCategorySchema],
+  reason: {
+    type: String,
+    required: true,
+  },
+  requestedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ["PENDING", "APPROVED", "REJECTED"],
+    default: "PENDING",
+  },
+  adminNotes: String,
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  reviewedAt: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const budgetSchema = new mongoose.Schema(
@@ -89,6 +120,7 @@ const budgetSchema = new mongoose.Schema(
     },
     categories: [budgetCategorySchema],
     approvalNotes: String,
+    amendments: [budgetAmendmentSchema],
     history: [budgetHistorySchema],
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -100,7 +132,7 @@ const budgetSchema = new mongoose.Schema(
 );
 
 // Calculate totals before saving
-budgetSchema.pre("save", function (next) {
+budgetSchema.pre("save", function () {
   if (this.categories) {
     this.totalRequestAmount = this.categories.reduce(
       (sum, cat) => sum + (cat.requestedAmount || 0),
@@ -111,7 +143,6 @@ budgetSchema.pre("save", function (next) {
       0,
     );
   }
-  next();
 });
 
 export default mongoose.model("Budget", budgetSchema);

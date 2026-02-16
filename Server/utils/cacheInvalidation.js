@@ -23,6 +23,8 @@ export const invalidateParticipantCache = async (email) => {
 
 export const invalidateFinanceCache = async (eventId) => {
   await deleteCachePattern(CachePatterns.financeAll(eventId));
+  await deleteCachePattern(CachePatterns.allBudgets);
+  await deleteCachePattern(CachePatterns.allExpenses);
   console.log(`✅ Invalidated finance cache for event: ${eventId}`);
 };
 
