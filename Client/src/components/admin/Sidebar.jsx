@@ -21,6 +21,7 @@ import {
   UserX,
   Ban,
   FileText,
+  QrCode,
 } from 'lucide-react';
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -82,6 +83,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       title: 'System Logs',
       icon: FileText,
       path: '/admin/logs',
+    },
+    {
+      title: 'Verify Certificate',
+      icon: QrCode,
+      path: '/admin/verify',
     },
     {
       title: 'Settings',

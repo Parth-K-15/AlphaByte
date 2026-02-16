@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cloudinary from '../config/cloudinary.js';
 import puppeteer from 'puppeteer';
+import QRCode from 'qrcode';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,6 +66,7 @@ class CertificateGenerator {
       eventName,
       eventDate,
       certificateId,
+      verificationId = '',
       organizationName = 'PCET\'s Pimpri Chinchwad College of Engineering',
       departmentName = 'Department of Computer Science & Engineering',
       associationText = 'In association with',
@@ -88,6 +90,21 @@ class CertificateGenerator {
     console.log('  - Certificate ID:', certificateId);
 
     try {
+      // Generate QR code data URI for verification
+      let qrCodeDataUri = '';
+      if (verificationId) {
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const verifyUrl = `${clientUrl}/verify/${verificationId}`;
+        console.log('🔗 QR Verification URL:', verifyUrl);
+        qrCodeDataUri = await QRCode.toDataURL(verifyUrl, {
+          width: 180,
+          margin: 1,
+          color: { dark: '#000000', light: '#ffffff' },
+          errorCorrectionLevel: 'H'
+        });
+        console.log('✅ QR code generated');
+      }
+
       // Prepare template data
       const templateData = {
         participantName,
@@ -106,7 +123,9 @@ class CertificateGenerator {
         signature3Name,
         signature3Title,
         signature4Name,
-        signature4Title
+        signature4Title,
+        qrCodeDataUri,
+        verificationId
       };
 
       console.log('\u2705 Template data prepared');

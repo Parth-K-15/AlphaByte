@@ -16,6 +16,11 @@ const certificateSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
+  verificationId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   certificateUrl: {
     type: String,
     default: null
@@ -104,6 +109,13 @@ certificateSchema.pre('validate', function () {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);
     this.certificateId = `CERT-${timestamp}-${random}`.toUpperCase();
+  }
+  if (!this.verificationId) {
+    // Generate a unique verification ID using timestamp + random hex
+    const ts = Date.now().toString(16);
+    const r1 = Math.random().toString(16).substring(2, 10);
+    const r2 = Math.random().toString(16).substring(2, 10);
+    this.verificationId = `${ts}-${r1}-${r2}`;
   }
 });
 

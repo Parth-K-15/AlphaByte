@@ -793,12 +793,14 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
         }
 
         // Prepare certificate data with all required fields
+        const certVerificationId = `${Date.now().toString(16)}-${Math.random().toString(16).substring(2, 10)}-${Math.random().toString(16).substring(2, 10)}`;
         const certificateData = {
           template,
           participantName: participant.name || participant.fullName || 'Participant',
           eventName: event.title || event.name || 'Event',
           eventDate: event.startDate || event.createdAt || new Date(),
           certificateId: `CERT-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
+          verificationId: certVerificationId,
           organizationName: event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
           departmentName: event.departmentName || 'Department of Computer Science & Engineering',
           competitionName: competitionName || event.title || event.name || 'Competition',
@@ -841,6 +843,7 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
               event: eventId,
               participant: participant._id,
               certificateId: certificateData.certificateId,
+              verificationId: certVerificationId,
               issuedBy: organizerId,
               template,
               achievement,
@@ -1469,12 +1472,14 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
     }
 
     // Generate certificate
+    const certVerificationId = `${Date.now().toString(16)}-${Math.random().toString(16).substring(2, 10)}-${Math.random().toString(16).substring(2, 10)}`;
     const certificateData = {
       template,
       participantName: request.participant.name || request.participant.fullName,
       eventName: request.event.title || request.event.name,
       eventDate: request.event.startDate || request.event.createdAt,
       certificateId: `CERT-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
+      verificationId: certVerificationId,
       organizationName: request.event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
       departmentName: request.event.departmentName || 'Department of Computer Science & Engineering',
       competitionName: competitionName || request.event.title || request.event.name,
@@ -1491,6 +1496,7 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
         event: request.event._id,
         participant: request.participant._id,
         certificateId: certificateData.certificateId,
+        verificationId: certVerificationId,
         issuedBy: organizerId,
         template,
         achievement: achievement || 'Participation',

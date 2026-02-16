@@ -118,6 +118,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         { title: "Assign Sessions", path: "/organizer/sessions/assign" },
       ],
     },
+    {
+      title: "Verify Certificate",
+      icon: QrCode,
+      path: "/organizer/verify",
+    },
   ];
 
   const isActive = (path) => location.pathname === path;
