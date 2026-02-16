@@ -36,6 +36,7 @@ import {
   Communication,
   Certificates,
   TeamAccess,
+  Logs as OrganizerLogs,
 } from "./pages/organizer";
 import {
   EventsHome,
@@ -172,6 +173,9 @@ function App() {
                 path="certificates/distribution"
                 element={<Certificates />}
               />
+
+              {/* Logs & Audit Trail */}
+              <Route path="logs" element={<OrganizerLogs />} />
 
               {/* Team Access (Team Lead Only) */}
               <Route path="team" element={<TeamAccess />} />

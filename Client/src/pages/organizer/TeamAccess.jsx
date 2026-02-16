@@ -99,7 +99,11 @@ const TeamAccess = () => {
       return;
     }
     try {
-      const response = await addTeamMember(selectedEvent, newMember);
+      const organizerId = localStorage.getItem("userId");
+      const response = await addTeamMember(selectedEvent, {
+        ...newMember,
+        organizerId,
+      });
       if (response.data.success) {
         setTeamMembers([...teamMembers, response.data.data]);
         setShowAddModal(false);
@@ -126,7 +130,8 @@ const TeamAccess = () => {
   const handleRemoveMember = async (memberId) => {
     if (!confirm("Are you sure you want to remove this team member?")) return;
     try {
-      await removeTeamMember(selectedEvent, memberId);
+      const organizerId = localStorage.getItem("userId");
+      await removeTeamMember(selectedEvent, memberId, organizerId);
       setTeamMembers(teamMembers.filter((m) => m._id !== memberId));
     } catch (error) {
       console.error("Error removing team member:", error);
@@ -135,10 +140,19 @@ const TeamAccess = () => {
 
   const handleUpdatePermissions = async () => {
     try {
+      const organizerId = localStorage.getItem("userId");
+      console.log("🔧 Updating permissions:", {
+        eventId: selectedEvent,
+        memberId: editingMember._id,
+        memberUserId: editingMember.user?._id,
+        permissions: editingMember.permissions,
+        organizerId
+      });
       await updateTeamMemberPermissions(
         selectedEvent,
-        editingMember._id,
+        editingMember.user?._id || editingMember._id,
         editingMember.permissions,
+        organizerId,
       );
       setTeamMembers(
         teamMembers.map((m) =>

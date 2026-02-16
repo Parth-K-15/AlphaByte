@@ -15,6 +15,7 @@ import {
   X,
   Sun,
   Moon,
+  FileText,
 } from "lucide-react";
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -94,6 +95,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         { title: "Distribution", path: "/organizer/certificates/distribution" },
       ],
       key: "certificates",
+    },
+    {
+      title: "Logs",
+      icon: FileText,
+      path: "/organizer/logs",
     },
     {
       title: "Team Access",

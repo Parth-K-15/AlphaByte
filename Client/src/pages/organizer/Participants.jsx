@@ -107,7 +107,11 @@ const Participants = () => {
       return;
     }
     try {
-      const response = await addParticipant(selectedEvent, newParticipant);
+      const organizerId = localStorage.getItem("userId");
+      const response = await addParticipant(selectedEvent, {
+        ...newParticipant,
+        organizerId,
+      });
       if (response.data.success) {
         setParticipants([response.data.data, ...participants]);
         setShowAddModal(false);
@@ -127,7 +131,8 @@ const Participants = () => {
   const handleRemoveParticipant = async (participantId) => {
     if (!confirm("Are you sure you want to remove this participant?")) return;
     try {
-      await removeParticipant(participantId);
+      const organizerId = localStorage.getItem("userId");
+      await removeParticipant(selectedEvent, participantId, organizerId);
       setParticipants(participants.filter((p) => p._id !== participantId));
     } catch (error) {
       console.error("Error removing participant:", error);
@@ -136,9 +141,11 @@ const Participants = () => {
 
   const handleUpdateParticipant = async () => {
     try {
+      const organizerId = localStorage.getItem("userId");
       const response = await updateParticipant(
+        selectedEvent,
         editingParticipant._id,
-        editingParticipant,
+        { ...editingParticipant, organizerId },
       );
       if (response.data.success) {
         setParticipants(

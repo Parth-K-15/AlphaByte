@@ -242,7 +242,8 @@ const Certificates = () => {
 
     setSendingCertId(certificateId);
     try {
-      const response = await resendCertificate(certificateId);
+      const organizerId = localStorage.getItem("userId");
+      const response = await resendCertificate(certificateId, organizerId);
 
       if (response.data.success) {
         alert(
@@ -349,10 +350,12 @@ const Certificates = () => {
     setSending(true);
     let successCount = 0;
     let failCount = 0;
+    
+    const organizerId = localStorage.getItem("userId");
 
     for (const certId of selectedCertificates) {
       try {
-        await resendCertificate(certId);
+        await resendCertificate(certId, organizerId);
         successCount++;
       } catch (error) {
         console.error(`Failed to send certificate ${certId}:`, error);

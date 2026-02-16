@@ -7,6 +7,7 @@ import Certificate from '../models/Certificate.js';
 import CertificateRequest from '../models/CertificateRequest.js';
 import EventUpdate from '../models/EventUpdate.js';
 import User from '../models/User.js';
+import Log from '../models/Log.js';
 import activeSessions from '../utils/sessionStore.js';
 
 const router = express.Router();
@@ -219,6 +220,29 @@ router.post('/register', async (req, res) => {
     });
     
     await participant.save();
+    
+    // Create log entry for registration
+    await Log.create({
+      eventId,
+      eventName: event.title,
+      participantId: participant._id,
+      participantName: fullName,
+      participantEmail: email.toLowerCase(),
+      actionType: 'STUDENT_REGISTERED',
+      entityType: 'PARTICIPATION',
+      action: 'Student registered for event',
+      details: `${fullName} registered for "${event.title}" (${event.registrationFee === 0 ? 'Free' : 'Paid'} event)`,
+      actorType: 'STUDENT',
+      actorId: participant._id,
+      actorName: fullName,
+      actorEmail: email.toLowerCase(),
+      severity: 'INFO',
+      newState: {
+        registrationStatus: participant.registrationStatus,
+        registrationType: 'ONLINE',
+        fee: event.registrationFee
+      }
+    });
     
     res.status(201).json({
       success: true,

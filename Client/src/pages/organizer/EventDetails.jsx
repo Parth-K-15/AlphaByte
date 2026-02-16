@@ -67,9 +67,11 @@ const EventDetails = () => {
 
   const handleCreateUpdate = async () => {
     try {
+      const organizerId = localStorage.getItem("userId");
       const response = await createEventUpdate({
         eventId,
         ...newUpdate,
+        organizerId,
       });
       if (response.data.success) {
         setUpdates([response.data.data, ...updates]);
@@ -83,7 +85,8 @@ const EventDetails = () => {
 
   const handleDeleteUpdate = async (updateId) => {
     try {
-      await deleteEventUpdate(updateId);
+      const organizerId = localStorage.getItem("userId");
+      await deleteEventUpdate(updateId, organizerId);
       setUpdates(updates.filter((u) => u._id !== updateId));
     } catch (error) {
       console.error("Error deleting update:", error);
@@ -92,7 +95,8 @@ const EventDetails = () => {
 
   const handleTogglePin = async (updateId) => {
     try {
-      const response = await togglePinUpdate(updateId);
+      const organizerId = localStorage.getItem("userId");
+      const response = await togglePinUpdate(updateId, organizerId);
       if (response.data.success) {
         setUpdates(
           updates.map((u) =>

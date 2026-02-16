@@ -6,3 +6,4 @@ export { default as AttendanceQR } from './AttendanceQR';
 export { default as Communication } from './Communication';
 export { default as Certificates } from './Certificates';
 export { default as TeamAccess } from './TeamAccess';
+export { default as Logs } from './Logs';
