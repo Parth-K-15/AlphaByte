@@ -41,6 +41,7 @@ import {
   Speakers as OrganizerSpeakers,
   SpeakerProfile as OrganizerSpeakerProfile,
   SessionAssignment,
+  RoleHistory,
 } from "./pages/organizer";
 import {
   EventsHome,
@@ -205,6 +206,9 @@ function App() {
               <Route path="speakers" element={<OrganizerSpeakers />} />
               <Route path="speakers/:id" element={<OrganizerSpeakerProfile />} />
               <Route path="sessions/assign" element={<SessionAssignment />} />
+
+              {/* Role History */}
+              <Route path="role-history" element={<RoleHistory />} />
             </Route>
 
             {/* Participant Routes - Protected */}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useLocation } from "react-router-dom";
+import { usePermissions } from "../../context/PermissionContext";
 import {
   Mail,
   Send,
@@ -33,6 +34,7 @@ const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
 const Communication = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const { setSelectedEventId } = usePermissions();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(
     searchParams.get("event") || "",
@@ -81,6 +83,7 @@ const Communication = () => {
   useEffect(() => {
     if (selectedEvent && isValidObjectId(selectedEvent)) {
       fetchHistory();
+      setSelectedEventId(selectedEvent);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEvent]);

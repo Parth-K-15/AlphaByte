@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
+import { usePermissions } from "../../context/PermissionContext";
 import {
   Plus,
   Loader2,
@@ -43,6 +44,7 @@ const fetchApi = async (endpoint, options = {}) => {
 
 const SessionAssignment = () => {
   const { theme } = useTheme();
+  const { setSelectedEventId } = usePermissions();
   const dark = theme === "dark";
 
   const [events, setEvents] = useState([]);
@@ -71,6 +73,7 @@ const SessionAssignment = () => {
   useEffect(() => {
     if (selectedEvent) {
       loadSessions(selectedEvent);
+      setSelectedEventId(selectedEvent);
     }
   }, [selectedEvent]);
 

@@ -42,21 +42,13 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    // Check if participant already exists
+    // Check if participant already exists in ParticipantAuth collection
+    // Note: Same email can exist in other role collections (User, SpeakerAuth)
     const existingParticipant = await ParticipantAuth.findOne({ email: email.toLowerCase() });
     if (existingParticipant) {
       return res.status(400).json({
         success: false,
-        message: 'An account with this email already exists',
-      });
-    }
-
-    // Also check User collection (admin/staff can't signup as participant)
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'This email is already registered as a staff member. Please login instead.',
+        message: 'You already have a participant account with this email',
       });
     }
 
@@ -136,29 +128,13 @@ router.post('/speaker/signup', async (req, res) => {
       });
     }
 
-    // Check if speaker already exists
+    // Check if speaker already exists in SpeakerAuth collection
+    // Note: Same email can exist in other role collections (User, ParticipantAuth)
     const existingSpeaker = await SpeakerAuth.findOne({ email: email.toLowerCase() });
     if (existingSpeaker) {
       return res.status(400).json({
         success: false,
-        message: 'An account with this email already exists',
-      });
-    }
-
-    // Also check User and ParticipantAuth collections
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'This email is already registered as a staff member.',
-      });
-    }
-
-    const existingParticipant = await ParticipantAuth.findOne({ email: email.toLowerCase() });
-    if (existingParticipant) {
-      return res.status(400).json({
-        success: false,
-        message: 'This email is already registered as a participant.',
+        message: 'You already have a speaker account with this email',
       });
     }
 
@@ -207,7 +183,7 @@ router.post('/speaker/signup', async (req, res) => {
   }
 });
 
-// @desc    Login for all roles
+// @desc    Login for all roles (supports multiple roles per email)
 // @route   POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
@@ -221,46 +197,81 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // First check User collection (Admin, Team Lead, Event Staff)
-    let user = await User.findOne({ email: email.toLowerCase() });
-    let isParticipant = false;
-    let isSpeaker = false;
-    let role = null;
-
     console.log('Login attempt for:', email.toLowerCase());
-    console.log('Found in User collection:', !!user);
 
-    if (!user) {
-      // Check SpeakerAuth collection
-      user = await SpeakerAuth.findOne({ email: email.toLowerCase() });
-      if (user) {
-        isSpeaker = true;
-        role = 'SPEAKER';
-        console.log('User is speaker:', user.name);
-      }
-    } else {
-      role = user.role;
-      console.log('User role from User collection:', role);
+    // Collect all accounts with this email across all collections
+    const accounts = [];
+
+    // Check User collection (Admin, Team Lead, Event Staff)
+    const userAccount = await User.findOne({ email: email.toLowerCase() });
+    if (userAccount) {
+      accounts.push({
+        user: userAccount,
+        isParticipant: false,
+        isSpeaker: false,
+        role: userAccount.role,
+        collection: 'User'
+      });
     }
 
-    if (!user) {
-      // Check ParticipantAuth collection
-      user = await ParticipantAuth.findOne({ email: email.toLowerCase() });
-      console.log('Found in ParticipantAuth collection:', !!user);
-      if (user) {
-        isParticipant = true;
-        role = 'PARTICIPANT';
-        console.log('User is participant:', user.name);
-      }
+    // Check SpeakerAuth collection
+    const speakerAccount = await SpeakerAuth.findOne({ email: email.toLowerCase() });
+    if (speakerAccount) {
+      accounts.push({
+        user: speakerAccount,
+        isParticipant: false,
+        isSpeaker: true,
+        role: 'SPEAKER',
+        collection: 'SpeakerAuth'
+      });
     }
 
-    if (!user) {
+    // Check ParticipantAuth collection
+    const participantAccount = await ParticipantAuth.findOne({ email: email.toLowerCase() });
+    if (participantAccount) {
+      accounts.push({
+        user: participantAccount,
+        isParticipant: true,
+        isSpeaker: false,
+        role: 'PARTICIPANT',
+        collection: 'ParticipantAuth'
+      });
+    }
+
+    if (accounts.length === 0) {
       console.log('No user found with email:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password',
       });
     }
+
+    console.log(`Found ${accounts.length} account(s) for this email:`, accounts.map(a => a.collection));
+
+    // Try password against all accounts and find the matching one
+    let matchedAccount = null;
+    for (const account of accounts) {
+      const isPasswordValid = await bcrypt.compare(password, account.user.password);
+      console.log(`Password check for ${account.collection}:`, isPasswordValid);
+      if (isPasswordValid) {
+        matchedAccount = account;
+        break;
+      }
+    }
+
+    if (!matchedAccount) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
+      });
+    }
+
+    const user = matchedAccount.user;
+    const isParticipant = matchedAccount.isParticipant;
+    const isSpeaker = matchedAccount.isSpeaker;
+    const role = matchedAccount.role;
+
+    console.log(`Successful login as ${role} from ${matchedAccount.collection}`);
 
     // Check if account is suspended
     if (user.isSuspended) {
@@ -275,19 +286,6 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({
         success: false,
         message: 'Account is deactivated. Contact admin for assistance.',
-      });
-    }
-
-    // Compare password
-    console.log('Comparing password...');
-    console.log('Stored hash starts with:', user.password.substring(0, 10));
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log('Password valid:', isPasswordValid);
-    
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password',
       });
     }
 

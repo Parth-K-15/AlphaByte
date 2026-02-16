@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { usePermissions } from "../../context/PermissionContext";
 import {
   Users,
   Search,
@@ -32,6 +33,7 @@ const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
 
 const Participants = () => {
   const [searchParams] = useSearchParams();
+  const { setSelectedEventId } = usePermissions();
   const [participants, setParticipants] = useState([]);
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(
@@ -59,6 +61,7 @@ const Participants = () => {
   useEffect(() => {
     if (selectedEvent && isValidObjectId(selectedEvent)) {
       fetchParticipants();
+      setSelectedEventId(selectedEvent);
     } else {
       setLoading(false);
     }

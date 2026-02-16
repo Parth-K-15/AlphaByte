@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useLocation } from "react-router-dom";
+import { usePermissions } from "../../context/PermissionContext";
 import {
   Award,
   Download,
@@ -30,6 +31,7 @@ const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
 const Certificates = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const { setSelectedEventId } = usePermissions();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(
     searchParams.get("event") || "",
@@ -77,6 +79,7 @@ const Certificates = () => {
     if (selectedEvent && isValidObjectId(selectedEvent)) {
       fetchCertificates();
       fetchCertificateStats();
+      setSelectedEventId(selectedEvent);
     } else {
       setLoading(false);
       setCertStats(null);

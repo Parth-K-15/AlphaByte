@@ -420,7 +420,7 @@ router.put('/:id/assign-lead', async (req, res) => {
 router.post('/:id/team-leads', async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, permissions } = req.body;
+    const { userId, permissions, startTime, endTime } = req.body;
 
     if (!isValidObjectId(id) || !isValidObjectId(userId)) {
       return res.status(400).json({
@@ -445,9 +445,9 @@ router.post('/:id/team-leads', async (req, res) => {
       });
     }
 
-    // Check if user is already in team
+    // Check if user is already in team with active status
     const existingMember = event.teamMembers.find(
-      (m) => m.user.toString() === userId
+      (m) => m.user.toString() === userId && m.status === 'active'
     );
     if (existingMember) {
       return res.status(400).json({
@@ -456,7 +456,7 @@ router.post('/:id/team-leads', async (req, res) => {
       });
     }
 
-    // Add team lead with permissions
+    // Add team lead with permissions and time bounds
     event.teamMembers.push({
       user: userId,
       role: 'TEAM_LEAD',
@@ -467,7 +467,10 @@ router.post('/:id/team-leads', async (req, res) => {
         canGenerateCertificates: true,
         canEditEvent: true,
       },
-      addedAt: Date.now()
+      addedAt: Date.now(),
+      startTime: (startTime && typeof startTime === 'string' && startTime.trim() !== '') ? new Date(startTime) : null,
+      endTime: (endTime && typeof endTime === 'string' && endTime.trim() !== '') ? new Date(endTime) : null,
+      status: 'active'
     });
 
     // If this is the first team lead, also set as primary team lead
@@ -680,7 +683,7 @@ router.put('/:id/lifecycle', async (req, res) => {
 router.post('/:id/team-members', async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId, permissions } = req.body;
+    const { userId, permissions, startTime, endTime } = req.body;
 
     if (!isValidObjectId(id) || !isValidObjectId(userId)) {
       return res.status(400).json({
@@ -705,9 +708,9 @@ router.post('/:id/team-members', async (req, res) => {
       });
     }
 
-    // Check if user is already a team member
+    // Check if user is already a team member with active status
     const existingMember = event.teamMembers.find(
-      (m) => m.user.toString() === userId
+      (m) => m.user.toString() === userId && m.status === 'active'
     );
     if (existingMember) {
       return res.status(400).json({
@@ -724,12 +727,15 @@ router.post('/:id/team-members', async (req, res) => {
       canEditEvent: false,
     };
 
-    // Add team member with permissions
+    // Add team member with permissions and time bounds
     event.teamMembers.push({
       user: userId,
       role: 'TEAM_MEMBER',
       permissions: memberPermissions,
-      addedAt: Date.now()
+      addedAt: Date.now(),
+      startTime: (startTime && typeof startTime === 'string' && startTime.trim() !== '') ? new Date(startTime) : null,
+      endTime: (endTime && typeof endTime === 'string' && endTime.trim() !== '') ? new Date(endTime) : null,
+      status: 'active'
     });
 
     await event.save();
@@ -1014,4 +1020,261 @@ router.put('/:id/team-members/:userId/permissions', async (req, res) => {
   }
 });
 
+// @desc    Get role history for a user across all events
+// @route   GET /api/events/user/:userId/role-history
+router.get('/user/:userId/role-history', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { includeActive, includeCompleted, includeRemoved } = req.query;
+
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Build status filter
+    const statusFilter = [];
+    if (includeActive !== 'false') statusFilter.push('active');
+    if (includeCompleted === 'true') statusFilter.push('completed');
+    if (includeRemoved === 'true') statusFilter.push('removed');
+
+    // Find all events where the user is a team member
+    const events = await Event.find({
+      'teamMembers.user': userId
+    })
+    .populate('createdBy', 'name email')
+    .populate('teamLead', 'name email')
+    .sort({ startDate: -1 });
+
+    // Extract role history
+    const roleHistory = [];
+    for (const event of events) {
+      const userRoles = event.teamMembers.filter(
+        (member) => member.user.toString() === userId && 
+        (statusFilter.length === 0 || statusFilter.includes(member.status))
+      );
+
+      for (const role of userRoles) {
+        // Calculate if the role is currently active based on time bounds
+        const now = new Date();
+        const isTimeActive = (!role.startTime || new Date(role.startTime) <= now) &&
+                            (!role.endTime || new Date(role.endTime) >= now);
+
+        roleHistory.push({
+          eventId: event._id,
+          eventTitle: event.title,
+          eventStartDate: event.startDate,
+          eventEndDate: event.endDate,
+          eventStatus: event.status,
+          role: role.role,
+          permissions: role.permissions,
+          addedAt: role.addedAt,
+          startTime: role.startTime,
+          endTime: role.endTime,
+          status: role.status,
+          isTimeActive: isTimeActive,
+          removalReason: role.removalReason,
+          removedAt: role.removedAt,
+          teamLead: event.teamLead ? {
+            id: event.teamLead._id,
+            name: event.teamLead.name,
+            email: event.teamLead.email
+          } : null
+        });
+      }
+    }
+
+    // Sort by added date (most recent first)
+    roleHistory.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+
+    res.json({
+      success: true,
+      count: roleHistory.length,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email
+        },
+        roleHistory: roleHistory
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching role history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching role history',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Update time bounds for a team member
+// @route   PUT /api/events/:eventId/team-members/:userId/time-bounds
+router.put('/:eventId/team-members/:userId/time-bounds', async (req, res) => {
+  try {
+    const { eventId, userId } = req.params;
+    const { startTime, endTime } = req.body;
+
+    if (!isValidObjectId(eventId) || !isValidObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid ID format'
+      });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+
+    const memberIndex = event.teamMembers.findIndex(
+      (m) => m.user.toString() === userId && m.status === 'active'
+    );
+
+    if (memberIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Team member not found or not active'
+      });
+    }
+
+    // Update time bounds
+    event.teamMembers[memberIndex].startTime = (startTime && typeof startTime === 'string' && startTime.trim() !== '') ? new Date(startTime) : null;
+    event.teamMembers[memberIndex].endTime = (endTime && typeof endTime === 'string' && endTime.trim() !== '') ? new Date(endTime) : null;
+
+    await event.save();
+
+    const updatedEvent = await Event.findById(eventId)
+      .populate('teamMembers.user', 'name email');
+
+    res.json({
+      success: true,
+      message: 'Time bounds updated successfully',
+      data: {
+        event: {
+          id: event._id,
+          title: event.title
+        },
+        member: updatedEvent.teamMembers[memberIndex]
+      }
+    });
+  } catch (error) {
+    console.error('Error updating time bounds:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating time bounds',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Mark team member role as completed or remove
+// @route   PUT /api/events/:eventId/team-members/:userId/status
+router.put('/:eventId/team-members/:userId/status', async (req, res) => {
+  try {
+    const { eventId, userId } = req.params;
+    const { status, reason } = req.body;
+
+    if (!isValidObjectId(eventId) || !isValidObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid ID format'
+      });
+    }
+
+    if (!['active', 'completed', 'removed'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status must be active, completed, or removed'
+      });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+
+    const memberIndex = event.teamMembers.findIndex(
+      (m) => m.user.toString() === userId && m.status === 'active'
+    );
+
+    if (memberIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Active team member not found'
+      });
+    }
+
+    // Update status
+    event.teamMembers[memberIndex].status = status;
+    
+    if (status === 'removed') {
+      event.teamMembers[memberIndex].removalReason = reason || '';
+      event.teamMembers[memberIndex].removedAt = new Date();
+    } else if (status === 'completed') {
+      // Optionally set endTime to now if not already set
+      if (!event.teamMembers[memberIndex].endTime) {
+        event.teamMembers[memberIndex].endTime = new Date();
+      }
+    }
+
+    await event.save();
+
+    const updatedEvent = await Event.findById(eventId)
+      .populate('teamMembers.user', 'name email');
+
+    // Log status change
+    await Log.create({
+      eventId: event._id,
+      eventName: event.title,
+      actionType: 'TEAM_MEMBER_STATUS_CHANGED',
+      entityType: 'TEAM',
+      action: `Team member status changed to ${status}`,
+      details: reason ? `Reason: ${reason}` : `Status changed to ${status}`,
+      actorType: 'ADMIN',
+      actorId: req.user?._id,
+      actorName: req.user?.name || 'Admin',
+      actorEmail: req.user?.email || '',
+      severity: 'INFO'
+    });
+
+    res.json({
+      success: true,
+      message: `Team member status updated to ${status}`,
+      data: {
+        event: {
+          id: event._id,
+          title: event.title
+        },
+        member: updatedEvent.teamMembers[memberIndex]
+      }
+    });
+  } catch (error) {
+    console.error('Error updating member status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating member status',
+      error: error.message
+    });
+  }
+});
+
 export default router;
+

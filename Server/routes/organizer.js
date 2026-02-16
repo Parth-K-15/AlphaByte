@@ -22,6 +22,162 @@ import { verifyToken, isOrganizer } from '../middleware/auth.js';
 const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
 
+// ─── Apply verifyToken + isOrganizer to ALL organizer routes ───
+router.use(verifyToken, isOrganizer);
+
+// ─── Permission helper: checks if the authenticated user has a specific permission for an event ───
+// Team Leads (event.teamLead) get ALL permissions automatically.
+// Event Staff get only what's explicitly granted in their teamMembers.permissions.
+// Also checks time-bound access: if startTime is in the future or endTime is in the past, deny.
+async function checkPermission(req, eventId, permissionKey) {
+  const userId = req.user._id.toString();
+
+  // ADMIN gets everything
+  if (req.user.role === 'ADMIN') return { allowed: true };
+
+  if (!eventId || !isValidObjectId(eventId)) {
+    return { allowed: false, status: 400, message: 'Invalid event ID' };
+  }
+
+  const event = await Event.findById(eventId);
+  if (!event) {
+    return { allowed: false, status: 404, message: 'Event not found' };
+  }
+
+  // Team Lead of the event gets all permissions
+  if (event.teamLead && event.teamLead.toString() === userId) {
+    return { allowed: true, event };
+  }
+
+  // Check if TEAM_LEAD role in teamMembers array
+  if (req.user.role === 'TEAM_LEAD') {
+    const teamLeadEntry = event.teamMembers?.find(
+      m => m.user.toString() === userId && m.role === 'TEAM_LEAD' && m.status === 'active'
+    );
+    if (teamLeadEntry) {
+      return { allowed: true, event };
+    }
+  }
+
+  // For EVENT_STAFF, find their membership and check specific permission
+  const membership = event.teamMembers?.find(
+    m => m.user.toString() === userId && m.status === 'active'
+  );
+
+  if (!membership) {
+    return { allowed: false, status: 403, message: 'You are not assigned to this event' };
+  }
+
+  // Check time bounds
+  const now = new Date();
+  if (membership.startTime && new Date(membership.startTime) > now) {
+    return { allowed: false, status: 403, message: 'Your access to this event has not started yet' };
+  }
+  if (membership.endTime && new Date(membership.endTime) < now) {
+    return { allowed: false, status: 403, message: 'Your access to this event has expired' };
+  }
+
+  // If no specific permission is required (just event membership), allow
+  if (!permissionKey) {
+    return { allowed: true, event, membership };
+  }
+
+  // Check the specific permission
+  if (!membership.permissions || !membership.permissions[permissionKey]) {
+    return { allowed: false, status: 403, message: `Access denied. You do not have '${permissionKey}' permission for this event.` };
+  }
+
+  return { allowed: true, event, membership };
+}
+
+// ─── GET /my-permissions/:eventId — Return the current user's permissions for an event ───
+router.get('/my-permissions/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const userId = req.user._id.toString();
+
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    // Team Lead gets all permissions
+    const isTeamLead = (event.teamLead && event.teamLead.toString() === userId) ||
+      event.teamMembers?.some(m => m.user.toString() === userId && m.role === 'TEAM_LEAD' && m.status === 'active');
+
+    if (req.user.role === 'ADMIN' || isTeamLead) {
+      return res.json({
+        success: true,
+        data: {
+          isTeamLead: true,
+          permissions: {
+            canViewParticipants: true,
+            canManageAttendance: true,
+            canSendEmails: true,
+            canGenerateCertificates: true,
+            canEditEvent: true,
+          },
+          canManageTeam: true,
+          canManageSpeakers: true,
+          canViewLogs: true,
+        }
+      });
+    }
+
+    // Find membership
+    const membership = event.teamMembers?.find(
+      m => m.user.toString() === userId && m.status === 'active'
+    );
+
+    if (!membership) {
+      return res.status(403).json({ success: false, message: 'Not assigned to this event' });
+    }
+
+    // Check time bounds
+    const now = new Date();
+    const isTimeBound = (membership.startTime && new Date(membership.startTime) > now) ||
+      (membership.endTime && new Date(membership.endTime) < now);
+
+    if (isTimeBound) {
+      return res.json({
+        success: true,
+        data: {
+          isTeamLead: false,
+          expired: true,
+          permissions: {
+            canViewParticipants: false,
+            canManageAttendance: false,
+            canSendEmails: false,
+            canGenerateCertificates: false,
+            canEditEvent: false,
+          },
+          canManageTeam: false,
+          canManageSpeakers: false,
+          canViewLogs: false,
+        }
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        isTeamLead: false,
+        permissions: membership.permissions || {},
+        canManageTeam: false,
+        canManageSpeakers: membership.permissions?.canEditEvent || false,
+        canViewLogs: true,
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching permissions:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Test email configuration endpoint
 router.get('/email/test', async (req, res) => {
   try {
@@ -67,6 +223,10 @@ router.get('/email/test', async (req, res) => {
 router.get('/email/logs/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
+
+    // Permission check: canSendEmails
+    const perm = await checkPermission(req, eventId, 'canSendEmails');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
     if (!isValidObjectId(eventId)) {
       return res.status(400).json({ success: false, message: 'Invalid event ID' });
@@ -184,6 +344,10 @@ router.get('/events/:id', async (req, res) => {
 
 router.put('/events/:id', async (req, res) => {
   try {
+    // Permission check: canEditEvent
+    const perm = await checkPermission(req, req.params.id, 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     const { description, location, rules, guidelines, contactDetails, venueInstructions, organizerId } = req.body;
     const oldEvent = await Event.findById(req.params.id);
     if (!oldEvent) return res.status(404).json({ success: false, message: 'Event not found' });
@@ -221,6 +385,10 @@ router.put('/events/:id/lifecycle', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    // Permission check: canEditEvent
+    const perm = await checkPermission(req, id, 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({
@@ -276,6 +444,10 @@ router.put('/events/:id/lifecycle', async (req, res) => {
 router.get('/participants/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canViewParticipants
+    const perm = await checkPermission(req, eventId, 'canViewParticipants');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const { filter, search } = req.query;
     let query = { event: eventId };
@@ -309,6 +481,10 @@ router.get('/participants/:eventId', async (req, res) => {
 router.post('/participants/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canViewParticipants (covers add/manage)
+    const perm = await checkPermission(req, eventId, 'canViewParticipants');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const { name, email, phone, college, year, branch, organizerId } = req.body;
     const event = await Event.findById(eventId);
@@ -347,6 +523,10 @@ router.post('/participants/:eventId', async (req, res) => {
 router.put('/participants/:eventId/:participantId', async (req, res) => {
   try {
     const { eventId, participantId } = req.params;
+    // Permission check: canViewParticipants (covers edit)
+    const perm = await checkPermission(req, eventId, 'canViewParticipants');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId) || !isValidObjectId(participantId)) return res.status(400).json({ success: false, message: 'Invalid ID format' });
     const { name, email, phone, organizerId } = req.body;
     const oldParticipant = await Participant.findOne({ _id: participantId, event: eventId });
@@ -389,6 +569,10 @@ router.delete('/participants/:eventId/:participantId', async (req, res) => {
   try {
     const { eventId, participantId } = req.params;
     const { organizerId } = req.body;
+    // Permission check: canViewParticipants (covers remove)
+    const perm = await checkPermission(req, eventId, 'canViewParticipants');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId) || !isValidObjectId(participantId)) return res.status(400).json({ success: false, message: 'Invalid ID format' });
     const participant = await Participant.findOne({ _id: participantId, event: eventId });
     if (!participant) return res.status(404).json({ success: false, message: 'Participant not found' });
@@ -429,6 +613,10 @@ router.delete('/participants/:eventId/:participantId', async (req, res) => {
 router.post('/attendance/:eventId/generate-qr', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canManageAttendance
+    const perm = await checkPermission(req, eventId, 'canManageAttendance');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const organizerId = req.body.organizerId || 'system';
     const event = await Event.findById(eventId);
@@ -468,6 +656,10 @@ router.post('/attendance/:eventId/generate-qr', async (req, res) => {
 router.post('/attendance/mark', async (req, res) => {
   try {
     const { eventId, sessionId, participantId, organizerId } = req.body;
+    // Permission check: canManageAttendance
+    const perm = await checkPermission(req, eventId, 'canManageAttendance');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     const session = activeSessions.get(sessionId);
     if (!session) return res.status(400).json({ success: false, message: 'Invalid or expired QR code' });
     if (Date.now() > session.expiresAt) { activeSessions.delete(sessionId); return res.status(400).json({ success: false, message: 'QR code has expired' }); }
@@ -509,6 +701,10 @@ router.post('/attendance/:eventId/manual/:participantId', async (req, res) => {
   try {
     const { eventId, participantId } = req.params;
     const { organizerId } = req.body;
+    // Permission check: canManageAttendance
+    const perm = await checkPermission(req, eventId, 'canManageAttendance');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId) || !isValidObjectId(participantId)) return res.status(400).json({ success: false, message: 'Invalid ID format' });
     const participant = await Participant.findOne({ _id: participantId, event: eventId });
     if (!participant) return res.status(404).json({ success: false, message: 'Participant not found for this event' });
@@ -563,6 +759,10 @@ router.post('/attendance/:eventId/manual/:participantId', async (req, res) => {
 router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => {
   try {
     const { eventId, participantId } = req.params;
+    // Permission check: canManageAttendance
+    const perm = await checkPermission(req, eventId, 'canManageAttendance');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId) || !isValidObjectId(participantId)) return res.status(400).json({ success: false, message: 'Invalid ID format' });
 
     const participant = await Participant.findById(participantId);
@@ -606,6 +806,10 @@ router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => 
 router.get('/attendance/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canManageAttendance
+    const perm = await checkPermission(req, eventId, 'canManageAttendance');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const attendance = await Attendance.find({ event: eventId }).populate('participant', 'name email phone').populate('markedBy', 'name email').sort({ scannedAt: -1 });
     const totalRegistered = await Participant.countDocuments({ event: eventId });
@@ -619,6 +823,10 @@ router.get('/attendance/:eventId', async (req, res) => {
 router.get('/attendance/:eventId/live', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canManageAttendance
+    const perm = await checkPermission(req, eventId, 'canManageAttendance');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const attendanceCount = await Attendance.countDocuments({ event: eventId });
     const registeredCount = await Participant.countDocuments({ event: eventId });
@@ -641,6 +849,10 @@ router.get('/attendance/:eventId/live', async (req, res) => {
 router.get('/certificates/:eventId/stats', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canGenerateCertificates
+    const perm = await checkPermission(req, eventId, 'canGenerateCertificates');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) {
       return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     }
@@ -695,6 +907,10 @@ router.get('/certificates/:eventId/stats', async (req, res) => {
 router.post('/certificates/:eventId/generate', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canGenerateCertificates
+    const perm = await checkPermission(req, eventId, 'canGenerateCertificates');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
 
     const { organizerId, template = 'default', achievement = 'Participation', competitionName } = req.body;
@@ -935,6 +1151,12 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
 router.post('/certificates/:eventId/send', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canGenerateCertificates + canSendEmails
+    const perm = await checkPermission(req, eventId, 'canGenerateCertificates');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+    const permEmail = await checkPermission(req, eventId, 'canSendEmails');
+    if (!permEmail.allowed) return res.status(permEmail.status).json({ success: false, message: permEmail.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
 
     console.log('📧 [Bulk Send] Sending certificates for event:', eventId);
@@ -1117,6 +1339,10 @@ router.post('/certificates/:eventId/send', async (req, res) => {
 router.get('/certificates/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canGenerateCertificates
+    const perm = await checkPermission(req, eventId, 'canGenerateCertificates');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     const certificates = await Certificate.find({ event: eventId })
       .populate('participant', 'name email')
       .populate('issuedBy', 'name')
@@ -1154,6 +1380,15 @@ router.get('/certificates/:eventId', async (req, res) => {
 router.post('/certificates/:certificateId/resend', async (req, res) => {
   try {
     const { certificateId } = req.params;
+
+    // Look up certificate to find event for permission check
+    const certForPerm = await Certificate.findById(certificateId);
+    if (certForPerm) {
+      const perm = await checkPermission(req, certForPerm.event.toString(), 'canGenerateCertificates');
+      if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+      const permEmail = await checkPermission(req, certForPerm.event.toString(), 'canSendEmails');
+      if (!permEmail.allowed) return res.status(permEmail.status).json({ success: false, message: permEmail.message });
+    }
 
     console.log('📧 [Resend] Attempting to resend certificate:', certificateId);
 
@@ -1289,6 +1524,10 @@ router.get('/updates/:eventId', async (req, res) => {
 router.post('/updates', async (req, res) => {
   try {
     const { eventId, message, type = 'INFO', isPinned = false, organizerId } = req.body;
+    // Permission check: canEditEvent
+    const perm = await checkPermission(req, eventId, 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
     const update = await EventUpdate.create({ event: eventId, message, type, isPinned, createdBy: organizerId });
@@ -1325,6 +1564,10 @@ router.delete('/updates/:updateId', async (req, res) => {
     const update = await EventUpdate.findById(updateId);
     if (!update) return res.status(404).json({ success: false, message: 'Update not found' });
 
+    // Permission check: canEditEvent
+    const perm = await checkPermission(req, update.event.toString(), 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     const event = await Event.findById(update.event);
     await EventUpdate.findByIdAndDelete(updateId);
 
@@ -1358,6 +1601,11 @@ router.patch('/updates/:updateId/pin', async (req, res) => {
     const { organizerId } = req.body;
     const update = await EventUpdate.findById(updateId);
     if (!update) return res.status(404).json({ success: false, message: 'Update not found' });
+
+    // Permission check: canEditEvent
+    const perm = await checkPermission(req, update.event.toString(), 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     const wasPinned = update.isPinned;
     update.isPinned = !update.isPinned;
     await update.save();
@@ -1393,6 +1641,10 @@ router.patch('/updates/:updateId/pin', async (req, res) => {
 router.get('/certificates/:eventId/requests', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canGenerateCertificates
+    const perm = await checkPermission(req, eventId, 'canGenerateCertificates');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) {
       return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     }
@@ -1447,6 +1699,10 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
     if (!request) {
       return res.status(404).json({ success: false, message: 'Request not found' });
     }
+
+    // Permission check: canGenerateCertificates
+    const perm = await checkPermission(req, request.event._id.toString(), 'canGenerateCertificates');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
     if (request.status !== 'PENDING') {
       return res.status(400).json({
@@ -1567,11 +1823,15 @@ router.post('/certificates/request/:requestId/reject', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid request ID' });
     }
 
-    const request = await CertificateRequest.findById(requestId);
+    const request = await CertificateRequest.findById(requestId).populate('event');
 
     if (!request) {
       return res.status(404).json({ success: false, message: 'Request not found' });
     }
+
+    // Permission check: canGenerateCertificates
+    const perm = await checkPermission(req, request.event._id.toString(), 'canGenerateCertificates');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
     if (request.status !== 'PENDING') {
       return res.status(400).json({
@@ -1699,6 +1959,10 @@ router.get('/communication/debug-participants/:eventId', async (req, res) => {
 router.get('/communication/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
+    // Permission check: canSendEmails
+    const perm = await checkPermission(req, eventId, 'canSendEmails');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const communications = await Communication.find({ event: eventId }).populate('sentBy', 'name email').sort({ sentAt: -1 });
     res.json({ success: true, count: communications.length, data: communications });
@@ -1711,6 +1975,10 @@ router.get('/communication/:eventId', async (req, res) => {
 router.post('/communication/email', async (req, res) => {
   try {
     const { eventId, subject, message, recipientFilter = 'ALL', template = 'CUSTOM', organizerId } = req.body;
+    // Permission check: canSendEmails
+    const perm = await checkPermission(req, eventId, 'canSendEmails');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     console.log('\n📧 Email Send Request:');
     console.log('Event ID:', eventId);
     console.log('Subject:', subject);
@@ -1837,6 +2105,10 @@ router.post('/communication/email', async (req, res) => {
 router.post('/communication/announcement', async (req, res) => {
   try {
     const { eventId, message, type = 'INFO', organizerId } = req.body;
+    // Permission check: canSendEmails
+    const perm = await checkPermission(req, eventId, 'canSendEmails');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
@@ -1886,9 +2158,28 @@ router.get('/team/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
+
+    // Team Lead only: check if user is the event's team lead
+    const userId = req.user._id.toString();
+    const eventCheck = await Event.findById(eventId);
+    if (!eventCheck) return res.status(404).json({ success: false, message: 'Event not found' });
+    const isLead = (eventCheck.teamLead && eventCheck.teamLead.toString() === userId) ||
+      eventCheck.teamMembers?.some(m => m.user.toString() === userId && m.role === 'TEAM_LEAD' && m.status === 'active') ||
+      req.user.role === 'ADMIN';
+    if (!isLead) return res.status(403).json({ success: false, message: 'Only Team Leads can manage team members' });
+
     const event = await Event.findById(eventId).populate('teamMembers.user', 'name email role').select('teamMembers');
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
-    const teamMembers = event.teamMembers.map(member => ({ _id: member._id || member.user._id, user: member.user, role: member.role || 'TEAM_MEMBER', permissions: member.permissions || { canViewParticipants: true, canManageAttendance: true, canSendEmails: false, canGenerateCertificates: false, canEditEvent: false }, addedAt: member.addedAt || new Date() }));
+    const teamMembers = event.teamMembers.map(member => ({ 
+      _id: member._id || member.user._id, 
+      user: member.user, 
+      role: member.role || 'TEAM_MEMBER', 
+      permissions: member.permissions || { canViewParticipants: true, canManageAttendance: true, canSendEmails: false, canGenerateCertificates: false, canEditEvent: false }, 
+      addedAt: member.addedAt || new Date(),
+      startTime: member.startTime || null,
+      endTime: member.endTime || null,
+      status: member.status || 'active'
+    }));
     res.json({ success: true, data: teamMembers });
   } catch (error) {
     console.error('Error fetching team members:', error);
@@ -1900,23 +2191,80 @@ router.post('/team/:eventId', async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
-    const { email, name, password, permissions } = req.body;
+
+    // Team Lead only
+    const userId = req.user._id.toString();
+    const eventCheck = await Event.findById(eventId);
+    if (!eventCheck) return res.status(404).json({ success: false, message: 'Event not found' });
+    const isLead = (eventCheck.teamLead && eventCheck.teamLead.toString() === userId) ||
+      eventCheck.teamMembers?.some(m => m.user.toString() === userId && m.role === 'TEAM_LEAD' && m.status === 'active') ||
+      req.user.role === 'ADMIN';
+    if (!isLead) return res.status(403).json({ success: false, message: 'Only Team Leads can add team members' });
+
+    const { email, name, password, permissions, startTime, endTime } = req.body;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return res.status(400).json({ success: false, message: 'Invalid email format' });
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+    
     let user = await User.findOne({ email });
+    
     if (user) {
-      const existingMember = event.teamMembers?.find(m => m.user.toString() === user._id.toString());
-      if (existingMember) return res.status(400).json({ success: false, message: 'User is already a team member for this event' });
+      // Check for existing active members with overlapping time periods
+      const existingActiveMembers = event.teamMembers?.filter(
+        m => m.user.toString() === user._id.toString() && m.status === 'active'
+      ) || [];
+      
+      if (existingActiveMembers.length > 0) {
+        const newStart = startTime && typeof startTime === 'string' && startTime.trim() !== '' 
+          ? new Date(startTime) 
+          : new Date(); // If no start time, starts now
+        const newEnd = endTime && typeof endTime === 'string' && endTime.trim() !== '' 
+          ? new Date(endTime) 
+          : null; // null means no end
+        
+        // Check if there's any overlap with existing assignments
+        const hasOverlap = existingActiveMembers.some(existing => {
+          const existingStart = existing.startTime ? new Date(existing.startTime) : new Date(existing.addedAt);
+          const existingEnd = existing.endTime ? new Date(existing.endTime) : null;
+          
+          // If either has no end date, they overlap if new starts before existing ends
+          if (!newEnd || !existingEnd) {
+            // Check if they overlap in any way
+            if (!existingEnd && !newEnd) return true; // Both ongoing indefinitely - overlap
+            if (!existingEnd) return newStart < existingStart ? false : true; // Existing ongoing
+            if (!newEnd) return existingStart < newStart ? existingEnd > newStart : true; // New ongoing
+          }
+          
+          // Both have end dates - check for any overlap
+          return (newStart < existingEnd && newEnd > existingStart);
+        });
+        
+        if (hasOverlap) {
+          return res.status(400).json({ 
+            success: false, 
+            message: 'User already has an active assignment that overlaps with this time period. Please remove the existing assignment or set non-overlapping time bounds.'
+          });
+        }
+      }
     }
+    
     if (!user) {
       const memberPassword = password || '12345678';
       const hashedPassword = await bcrypt.hash(memberPassword, 10);
       user = await User.create({ email, name: name || email.split('@')[0], password: hashedPassword, role: 'EVENT_STAFF', isActive: true, phone: '' });
       console.log(`User created: ${email}, password: ${memberPassword}`);
     }
-    const newMember = { user: user._id, role: 'TEAM_MEMBER', permissions: permissions || { canViewParticipants: true, canManageAttendance: true, canSendEmails: false, canGenerateCertificates: false, canEditEvent: false }, addedAt: new Date() };
+    
+    const newMember = { 
+      user: user._id, 
+      role: 'TEAM_MEMBER', 
+      permissions: permissions || { canViewParticipants: true, canManageAttendance: true, canSendEmails: false, canGenerateCertificates: false, canEditEvent: false }, 
+      addedAt: new Date(),
+      startTime: (startTime && typeof startTime === 'string' && startTime.trim() !== '') ? new Date(startTime) : null,
+      endTime: (endTime && typeof endTime === 'string' && endTime.trim() !== '') ? new Date(endTime) : null,
+      status: 'active'
+    };
     if (!event.teamMembers) event.teamMembers = [];
     event.teamMembers.push(newMember);
     await event.save();
@@ -1939,7 +2287,24 @@ router.post('/team/:eventId', async (req, res) => {
       newState: { memberName: user.name, memberEmail: user.email, role: 'TEAM_MEMBER', permissions: newMember.permissions }
     });
 
-    res.status(201).json({ success: true, message: 'Team member added successfully', data: { _id: newMember.user, user: { _id: user._id, name: user.name, email: user.email }, role: newMember.role, permissions: newMember.permissions, addedAt: newMember.addedAt } });
+    res.status(201).json({ 
+      success: true, 
+      message: 'Team member added successfully', 
+      data: { 
+        _id: newMember.user, 
+        user: { 
+          _id: user._id, 
+          name: user.name, 
+          email: user.email 
+        }, 
+        role: newMember.role, 
+        permissions: newMember.permissions, 
+        addedAt: newMember.addedAt,
+        startTime: newMember.startTime,
+        endTime: newMember.endTime,
+        status: newMember.status
+      } 
+    });
   } catch (error) {
     console.error('Error adding team member:', error);
     res.status(500).json({ success: false, message: 'Error adding team member', error: error.message });
@@ -1950,6 +2315,16 @@ router.delete('/team/:eventId/:memberId', async (req, res) => {
   try {
     const { eventId, memberId } = req.params;
     const { organizerId } = req.body;
+
+    // Team Lead only
+    const userId = req.user._id.toString();
+    const checkEvent = await Event.findById(eventId);
+    if (!checkEvent) return res.status(404).json({ success: false, message: 'Event not found' });
+    const isLead = (checkEvent.teamLead && checkEvent.teamLead.toString() === userId) ||
+      checkEvent.teamMembers?.some(m => m.user.toString() === userId && m.role === 'TEAM_LEAD' && m.status === 'active') ||
+      req.user.role === 'ADMIN';
+    if (!isLead) return res.status(403).json({ success: false, message: 'Only Team Leads can remove team members' });
+
     const event = await Event.findById(eventId).populate('teamMembers.user', 'name email');
     if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
     const memberIndex = event.teamMembers?.findIndex(m => m.user._id.toString() === memberId || m._id?.toString() === memberId);
@@ -1989,6 +2364,15 @@ router.put('/team/:eventId/:memberId/permissions', async (req, res) => {
   try {
     const { eventId, memberId } = req.params;
     const { permissions, organizerId } = req.body;
+
+    // Team Lead only
+    const userId = req.user._id.toString();
+    const checkEvent = await Event.findById(eventId);
+    if (!checkEvent) return res.status(404).json({ success: false, message: 'Event not found' });
+    const isLead = (checkEvent.teamLead && checkEvent.teamLead.toString() === userId) ||
+      checkEvent.teamMembers?.some(m => m.user.toString() === userId && m.role === 'TEAM_LEAD' && m.status === 'active') ||
+      req.user.role === 'ADMIN';
+    if (!isLead) return res.status(403).json({ success: false, message: 'Only Team Leads can update permissions' });
 
     console.log('🔧 [Team Permissions] Update request received:', {
       eventId,
@@ -2210,6 +2594,10 @@ router.post('/sessions', async (req, res) => {
   try {
     const { eventId, speakerId, title, description, time, room, track } = req.body;
 
+    // Permission check: canEditEvent (speaker/session management)
+    const perm = await checkPermission(req, eventId, 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (!eventId || !speakerId || !title) {
       return res.status(400).json({ success: false, message: 'Event, speaker, and title are required' });
     }
@@ -2283,6 +2671,10 @@ router.put('/sessions/:sessionId', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Session not found' });
     }
 
+    // Permission check: canEditEvent
+    const perm = await checkPermission(req, session.event.toString(), 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
     if (title !== undefined) session.title = title;
     if (description !== undefined) session.description = description;
     if (time !== undefined) session.time = time;
@@ -2313,10 +2705,16 @@ router.put('/sessions/:sessionId', async (req, res) => {
 // @route   DELETE /api/organizer/sessions/:sessionId
 router.delete('/sessions/:sessionId', async (req, res) => {
   try {
-    const session = await Session.findByIdAndDelete(req.params.sessionId);
+    const session = await Session.findById(req.params.sessionId);
     if (!session) {
       return res.status(404).json({ success: false, message: 'Session not found' });
     }
+
+    // Permission check: canEditEvent
+    const perm = await checkPermission(req, session.event.toString(), 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
+    await Session.findByIdAndDelete(req.params.sessionId);
 
     res.json({
       success: true,
@@ -2330,7 +2728,7 @@ router.delete('/sessions/:sessionId', async (req, res) => {
 
 // @desc    Approve/reject a session update from speaker
 // @route   PUT /api/organizer/sessions/:sessionId/updates/:updateIndex
-router.put('/sessions/:sessionId/updates/:updateIndex', verifyToken, isOrganizer, async (req, res) => {
+router.put('/sessions/:sessionId/updates/:updateIndex', async (req, res) => {
   try {
     const { status } = req.body; // 'approved' or 'rejected'
 
@@ -2342,6 +2740,10 @@ router.put('/sessions/:sessionId/updates/:updateIndex', verifyToken, isOrganizer
     if (!session) {
       return res.status(404).json({ success: false, message: 'Session not found' });
     }
+
+    // Permission check: canEditEvent
+    const perm = await checkPermission(req, session.event.toString(), 'canEditEvent');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
     const updateIndex = parseInt(req.params.updateIndex);
     if (updateIndex < 0 || updateIndex >= session.updates.length) {

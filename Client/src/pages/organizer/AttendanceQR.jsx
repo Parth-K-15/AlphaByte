@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { usePermissions } from "../../context/PermissionContext";
 import {
   QrCode,
   RefreshCw,
@@ -57,6 +58,7 @@ const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
 
 const AttendanceQR = () => {
   const [searchParams] = useSearchParams();
+  const { setSelectedEventId } = usePermissions();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(
     searchParams.get("event") || "",
@@ -84,6 +86,7 @@ const AttendanceQR = () => {
       fetchAttendanceLogs();
       fetchLiveCount();
       fetchParticipants();
+      setSelectedEventId(selectedEvent);
     }
   }, [selectedEvent]);
 

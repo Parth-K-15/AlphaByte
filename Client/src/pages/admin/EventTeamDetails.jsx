@@ -29,6 +29,8 @@ const EventTeamDetails = () => {
   const [showAddTeamLeadModal, setShowAddTeamLeadModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [selectedTeamLeadId, setSelectedTeamLeadId] = useState('');
+  const [memberStartTime, setMemberStartTime] = useState('');
+  const [memberEndTime, setMemberEndTime] = useState('');
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [editingPermissions, setEditingPermissions] = useState({});
 
@@ -158,13 +160,17 @@ const EventTeamDetails = () => {
     }
 
     try {
-      // Add member with default permissions
+      // Add member with default permissions and time bounds
       await eventsApi.addTeamMember(eventId, {
         userId: selectedMemberId,
         permissions: teamMemberPermissions,
+        startTime: memberStartTime || null,
+        endTime: memberEndTime || null,
       });
       setShowAddMemberModal(false);
       setSelectedMemberId('');
+      setMemberStartTime('');
+      setMemberEndTime('');
       fetchEventDetails();
     } catch (error) {
       console.error('Error adding team member:', error);
@@ -677,22 +683,62 @@ const EventTeamDetails = () => {
             {availableMembers.length === 0 ? (
               <p className="text-gray-500 mb-4">No available members to add</p>
             ) : (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Member
-                </label>
-                <select
-                  value={selectedMemberId}
-                  onChange={(e) => setSelectedMemberId(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">Choose a member...</option>
-                  {availableMembers.map((member) => (
-                    <option key={member._id} value={member._id}>
-                      {member.name} - {member.email}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Member
+                  </label>
+                  <select
+                    value={selectedMemberId}
+                    onChange={(e) => setSelectedMemberId(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">Choose a member...</option>
+                    {availableMembers.map((member) => (
+                      <option key={member._id} value={member._id}>
+                        {member.name} - {member.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Time Bounds */}
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Role Time Period (Optional)
+                  </h4>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Set specific start and end times for this role. Leave empty for immediate start and no expiration.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Start Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={memberStartTime}
+                        onChange={(e) => setMemberStartTime(e.target.value)}
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        End Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={memberEndTime}
+                        onChange={(e) => setMemberEndTime(e.target.value)}
+                        min={memberStartTime}
+                        className="input-field"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -701,6 +747,8 @@ const EventTeamDetails = () => {
                 onClick={() => {
                   setShowAddMemberModal(false);
                   setSelectedMemberId('');
+                  setMemberStartTime('');
+                  setMemberEndTime('');
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >

@@ -10,3 +10,5 @@ export { default as Speakers } from './Speakers';
 export { default as SpeakerProfile } from './SpeakerProfile';
 export { default as SessionAssignment } from './SessionAssignment';
 export { default as Logs } from './Logs';
+export { default as RoleHistory } from './RoleHistory';
+

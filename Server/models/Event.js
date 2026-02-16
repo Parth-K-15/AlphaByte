@@ -72,6 +72,30 @@ const eventSchema = new mongoose.Schema(
         addedAt: {
           type: Date,
           default: Date.now
+        },
+        // Time-bound role assignment
+        startTime: {
+          type: Date,
+          default: null // null means active immediately
+        },
+        endTime: {
+          type: Date,
+          default: null // null means no end date (ongoing)
+        },
+        // Track if the role period has ended
+        status: {
+          type: String,
+          enum: ['active', 'completed', 'removed'],
+          default: 'active'
+        },
+        // Reason for removal if status is 'removed'
+        removalReason: {
+          type: String,
+          default: ''
+        },
+        removedAt: {
+          type: Date,
+          default: null
         }
       },
     ],

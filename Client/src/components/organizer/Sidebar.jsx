@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
+import { usePermissions } from "../../context/PermissionContext";
 import {
   LayoutDashboard,
   Calendar,
@@ -17,6 +18,7 @@ import {
   Moon,
   Mic,
   FileText,
+  Clock,
 } from "lucide-react";
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -25,6 +27,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { hasPermission, canManageTeam, canManageSpeakers, canViewLogs, permissions } = usePermissions();
 
   // Auto-open menus based on current path
   const getInitialOpenMenus = () => {
@@ -70,15 +73,15 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       key: "events",
       submenu: [
         { title: "My Events", path: "/organizer/events" },
-        { title: "Attendance", path: "/organizer/attendance/qr" },
+        ...(hasPermission('canManageAttendance') ? [{ title: "Attendance", path: "/organizer/attendance/qr" }] : []),
       ],
     },
-    {
+    ...(hasPermission('canViewParticipants') ? [{
       title: "Participants",
       icon: Users,
       path: "/organizer/participants",
-    },
-    {
+    }] : []),
+    ...(hasPermission('canSendEmails') ? [{
       title: "Communication",
       icon: Mail,
       submenu: [
@@ -89,8 +92,8 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         },
       ],
       key: "communication",
-    },
-    {
+    }] : []),
+    ...(hasPermission('canGenerateCertificates') ? [{
       title: "Certificates",
       icon: Award,
       submenu: [
@@ -98,18 +101,23 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         { title: "Distribution", path: "/organizer/certificates/distribution" },
       ],
       key: "certificates",
-    },
-    {
+    }] : []),
+    ...(canViewLogs ? [{
       title: "Logs",
       icon: FileText,
       path: "/organizer/logs",
-    },
-    {
+    }] : []),
+    ...(canManageTeam ? [{
       title: "Team Access",
       icon: UserCog,
       path: "/organizer/team",
-    },
+    }] : []),
     {
+      title: "Role History",
+      icon: Clock,
+      path: "/organizer/role-history",
+    },
+    ...(canManageSpeakers ? [{
       title: "Speakers",
       icon: Mic,
       key: "speakers",
@@ -117,7 +125,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         { title: "All Speakers", path: "/organizer/speakers" },
         { title: "Assign Sessions", path: "/organizer/sessions/assign" },
       ],
-    },
+    }] : []),
   ];
 
   const isActive = (path) => location.pathname === path;

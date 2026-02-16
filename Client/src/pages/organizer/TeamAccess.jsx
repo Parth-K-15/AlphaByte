@@ -13,6 +13,7 @@ import {
   Edit,
   AlertTriangle,
   Calendar,
+  Clock,
 } from "lucide-react";
 import {
   getTeamMembers,
@@ -21,11 +22,13 @@ import {
   updateTeamMemberPermissions,
   getAssignedEvents,
 } from "../../services/organizerApi";
+import { usePermissions } from "../../context/PermissionContext";
 
 // Helper to check if ID is a valid MongoDB ObjectId
 const isValidObjectId = (id) => /^[a-fA-F0-9]{24}$/.test(id);
 
 const TeamAccess = () => {
+  const { setSelectedEventId } = usePermissions();
   const [searchParams] = useSearchParams();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(
@@ -41,6 +44,8 @@ const TeamAccess = () => {
     email: "",
     name: "",
     password: "12345678",
+    startTime: "",
+    endTime: "",
     permissions: {
       canViewParticipants: true,
       canManageAttendance: true,
@@ -57,6 +62,7 @@ const TeamAccess = () => {
   useEffect(() => {
     if (selectedEvent && isValidObjectId(selectedEvent)) {
       fetchTeamMembers();
+      setSelectedEventId(selectedEvent);
     } else {
       setLoading(false);
     }
@@ -98,6 +104,53 @@ const TeamAccess = () => {
       alert("Please select an event first.");
       return;
     }
+
+    // Validate email is provided
+    if (!newMember.email || newMember.email.trim() === '') {
+      alert("Please enter an email address.");
+      return;
+    }
+
+    // Check for overlapping time periods with existing active assignments
+    const existingActiveMembers = teamMembers.filter(
+      (m) => m.user?.email?.toLowerCase() === newMember.email.toLowerCase() && m.status === 'active'
+    );
+    
+    if (existingActiveMembers.length > 0) {
+      const newStart = newMember.startTime && newMember.startTime.trim() !== '' 
+        ? new Date(newMember.startTime) 
+        : new Date(); // If no start time, starts now
+      const newEnd = newMember.endTime && newMember.endTime.trim() !== '' 
+        ? new Date(newMember.endTime) 
+        : null; // null means no end
+      
+      // Check if there's any overlap with existing assignments
+      const hasOverlap = existingActiveMembers.some(existing => {
+        const existingStart = existing.startTime ? new Date(existing.startTime) : new Date(existing.addedAt);
+        const existingEnd = existing.endTime ? new Date(existing.endTime) : null;
+        
+        // If either has no end date, they overlap
+        if (!newEnd || !existingEnd) {
+          if (!existingEnd && !newEnd) return true; // Both ongoing indefinitely
+          if (!existingEnd) return newStart < existingStart ? false : true; // Existing ongoing
+          if (!newEnd) return existingStart < newStart ? existingEnd > newStart : true; // New ongoing
+        }
+        
+        // Both have end dates - check for overlap
+        return (newStart < existingEnd && newEnd > existingStart);
+      });
+      
+      if (hasOverlap) {
+        const currentRole = existingActiveMembers[0].role === 'TEAM_LEAD' ? 'Team Lead' : 'Team Member';
+        const message = `${newMember.email} already has an active ${currentRole} assignment that overlaps with this time period.\n\n` +
+          `To add them:\n` +
+          `• Remove their current assignment first, OR\n` +
+          `• Set non-overlapping time bounds (e.g., start after current role ends)`;
+        alert(message);
+        return;
+      }
+    }
+
     try {
       const organizerId = localStorage.getItem("userId");
       const response = await addTeamMember(selectedEvent, {
@@ -111,6 +164,8 @@ const TeamAccess = () => {
           email: "",
           name: "",
           password: "12345678",
+          startTime: "",
+          endTime: "",
           permissions: {
             canViewParticipants: true,
             canManageAttendance: true,
@@ -123,7 +178,8 @@ const TeamAccess = () => {
       }
     } catch (error) {
       console.error("Error adding team member:", error);
-      alert(error.response?.data?.message || "Failed to add team member.");
+      const errorMessage = error.response?.data?.message || error.message || "Failed to add team member.";
+      alert(errorMessage);
     }
   };
 
@@ -447,9 +503,48 @@ const TeamAccess = () => {
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-800 dark:text-white">
-                          {member.user?.name}
-                        </h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-800 dark:text-white">
+                            {member.user?.name}
+                          </h3>
+                          {/* Status Badge */}
+                          {(() => {
+                            const now = new Date();
+                            const startTime = member.startTime ? new Date(member.startTime) : null;
+                            const endTime = member.endTime ? new Date(member.endTime) : null;
+                            
+                            // Future scheduled role
+                            if (startTime && startTime > now) {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                  <Clock size={10} />
+                                  Scheduled
+                                </span>
+                              );
+                            }
+                            
+                            // Expired role
+                            if (endTime && endTime < now) {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                                  Expired
+                                </span>
+                              );
+                            }
+                            
+                            // Currently active
+                            if (member.status === 'active') {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                  <CheckCircle size={10} />
+                                  Active
+                                </span>
+                              );
+                            }
+                            
+                            return null;
+                          })()}
+                        </div>
                         <p className="text-sm text-gray-500 dark:text-zinc-400">
                           {member.user?.email}
                         </p>
@@ -498,6 +593,43 @@ const TeamAccess = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Time Bounds */}
+                  {(member.startTime || member.endTime) && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/5">
+                      <p className="text-xs text-gray-500 dark:text-zinc-500 font-medium uppercase mb-2">
+                        Role Period
+                      </p>
+                      <div className="space-y-1 text-xs text-gray-600 dark:text-zinc-400">
+                        {member.startTime && (
+                          <div className="flex items-center gap-2">
+                            <Calendar size={12} className="text-blue-500" />
+                            <span>
+                              Start: {new Date(member.startTime).toLocaleString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                        )}
+                        {member.endTime && (
+                          <div className="flex items-center gap-2">
+                            <Calendar size={12} className="text-orange-500" />
+                            <span>
+                              End: {new Date(member.endTime).toLocaleString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <p className="text-xs text-gray-400 mt-4">
                     Added {new Date(member.addedAt).toLocaleDateString()}
@@ -567,6 +699,48 @@ const TeamAccess = () => {
                 <p className="text-xs text-gray-500 dark:text-zinc-500 mt-1">
                   Default: 12345678 - Member will use this password to login
                 </p>
+              </div>
+
+              {/* Time Bounds */}
+              <div className="border-t border-gray-200 dark:border-white/10 pt-4">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-3 flex items-center gap-2">
+                  <Calendar size={16} />
+                  Role Time Period (Optional)
+                </h4>
+                <p className="text-xs text-gray-500 dark:text-zinc-500 mb-3">
+                  Set specific start and end times for this role. Leave empty for immediate start and no expiration.
+                </p>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                      Start Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={newMember.startTime}
+                      onChange={(e) =>
+                        setNewMember({ ...newMember, startTime: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#B9FF66]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                      End Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={newMember.endTime}
+                      onChange={(e) =>
+                        setNewMember({ ...newMember, endTime: e.target.value })
+                      }
+                      min={newMember.startTime}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#B9FF66]"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>

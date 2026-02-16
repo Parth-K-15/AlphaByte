@@ -129,6 +129,9 @@ export const getLogs = (params = {}) => {
   return fetchApi(`/organizer/logs${query ? `?${query}` : ''}`);
 };
 
+// Permissions
+export const getMyPermissions = (eventId) => fetchApi(`/organizer/my-permissions/${eventId}`);
+
 export default {
   getDashboardStats,
   getAssignedEvents,
@@ -160,4 +163,5 @@ export default {
   removeTeamMember,
   updateTeamMemberPermissions,
   getLogs,
+  getMyPermissions,
 };
