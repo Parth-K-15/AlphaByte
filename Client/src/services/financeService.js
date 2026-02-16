@@ -37,6 +37,10 @@ const financeService = {
 
   getBudget: (eventId) => fetchFinanceApi(`/finance/budget/${eventId}`),
 
+  getAllPendingBudgets: () => fetchFinanceApi("/finance/budgets/pending"),
+
+  getAllBudgets: () => fetchFinanceApi("/finance/budgets/all"),
+
   approveBudget: (eventId, data) =>
     fetchFinanceApi(`/finance/budget/${eventId}/approval`, {
       method: "PUT",
@@ -51,11 +55,77 @@ const financeService = {
 
   getAllPendingExpenses: () => fetchFinanceApi("/finance/expenses/pending/all"),
 
+  getExpenseDetail: (expenseId) => fetchFinanceApi(`/finance/expense/${expenseId}`),
+
   updateExpenseStatus: (expenseId, data) =>
     fetchFinanceApi(`/finance/expense/${expenseId}/status`, {
       method: "PUT",
       body: data,
     }),
+
+  bulkUpdateExpenses: (data) =>
+    fetchFinanceApi("/finance/expenses/bulk-update", {
+      method: "PUT",
+      body: data,
+    }),
+
+  // Budget Amendments
+  requestAmendment: (eventId, data) =>
+    fetchFinanceApi(`/finance/budget/${eventId}/amendment`, {
+      method: "POST",
+      body: data,
+    }),
+
+  reviewAmendment: (eventId, amendmentId, data) =>
+    fetchFinanceApi(`/finance/budget/${eventId}/amendment/${amendmentId}`, {
+      method: "PUT",
+      body: data,
+    }),
+
+  getPendingAmendments: () => fetchFinanceApi("/finance/amendments/pending"),
+
+  // Financial Reports
+  getEventWiseReport: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.startDate) params.append("startDate", filters.startDate);
+    if (filters.endDate) params.append("endDate", filters.endDate);
+    if (filters.status) params.append("status", filters.status);
+    const query = params.toString();
+    return fetchFinanceApi(`/finance/reports/event-wise${query ? `?${query}` : ""}`);
+  },
+
+  getCategoryWiseReport: (filters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.eventId) params.append("eventId", filters.eventId);
+    if (filters.startDate) params.append("startDate", filters.startDate);
+    if (filters.endDate) params.append("endDate", filters.endDate);
+    const query = params.toString();
+    return fetchFinanceApi(`/finance/reports/category-wise${query ? `?${query}` : ""}`);
+  },
+
+  getOverBudgetAlerts: () => fetchFinanceApi("/finance/reports/over-budget"),
+
+  exportToCSV: async (type, filters = {}) => {
+    const params = new URLSearchParams();
+    params.append("type", type);
+    if (filters.eventId) params.append("eventId", filters.eventId);
+    if (filters.startDate) params.append("startDate", filters.startDate);
+    if (filters.endDate) params.append("endDate", filters.endDate);
+    
+    const response = await fetch(
+      `${API_BASE_URL}/finance/reports/export?${params.toString()}`,
+      {
+        headers: getAuthHeader(),
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error("Export failed");
+    }
+    
+    return await response.blob();
+  },
 };
 
+export { financeService };
 export default financeService;

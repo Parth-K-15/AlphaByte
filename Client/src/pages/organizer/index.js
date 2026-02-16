@@ -9,3 +9,4 @@ export { default as TeamAccess } from "./TeamAccess";
 export { default as FinanceDashboard } from "./finance/FinanceDashboard";
 export { default as BudgetRequest } from "./finance/BudgetRequest";
 export { default as ExpenseLog } from "./finance/ExpenseLog";
+export { default as BudgetAmendment } from "./finance/BudgetAmendment";

@@ -8,9 +8,11 @@ import {
   Loader2,
   FileText,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import financeService from "../../../services/financeService";
+import ReceiptUpload from "../../../components/organizer/ReceiptUpload";
 
 const CATEGORIES = [
   "Food",
@@ -49,6 +51,8 @@ const ExpenseLog = () => {
     receiptUrl: "",
   });
   const [recentExpenses, setRecentExpenses] = useState([]);
+  const [ocrData, setOcrData] = useState(null);
+  const [showOcrSuggestion, setShowOcrSuggestion] = useState(false);
 
   useEffect(() => {
     fetchBudgetAndExpenses();
@@ -69,6 +73,46 @@ const ExpenseLog = () => {
     }
   };
 
+  const handleOCRComplete = (data) => {
+    if (data) {
+      setOcrData(data);
+      setShowOcrSuggestion(true);
+      
+      // Auto-fill only if form is empty
+      if (!form.amount && !form.description) {
+        applyOCRData(data);
+      }
+    }
+  };
+
+  const applyOCRData = (data) => {
+    const updatedForm = { ...form };
+    
+    if (data.amount && !form.amount) {
+      updatedForm.amount = data.amount.toString();
+    }
+    
+    if (data.description && !form.description) {
+      updatedForm.description = data.description;
+    }
+    
+    if (data.vendor && !form.vendor) {
+      updatedForm.vendor = data.vendor;
+    }
+    
+    if (data.suggestedCategory) {
+      updatedForm.category = data.suggestedCategory;
+    }
+    
+    setForm(updatedForm);
+    setShowOcrSuggestion(false);
+  };
+
+  const dismissOCRSuggestion = () => {
+    setShowOcrSuggestion(false);
+    setOcrData(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -76,19 +120,38 @@ const ExpenseLog = () => {
     if (!form.amount || !form.description) {
       setError("Please fill in the amount and description.");
       return;
+    }setOcrData(null);
+      setShowOcrSuggestion(false);
+      
+
+    if (!budget) {
+      setError("No approved budget found for this event.");
+      return;
     }
+
+    // Get user ID from multiple sources
+    const userId = user?.id || user?.userId || user?._id || localStorage.getItem('userId');
+    
+    if (!userId) {
+      setError("User authentication error. Please log in again.");
+      console.error("User object:", user);
+      return;
+    }
+
+    console.log("Submitting expense with userId:", userId);
 
     try {
       setLoading(true);
       await financeService.logExpense({
         eventId,
-        budgetId: budget?._id,
+        budgetId: budget._id,
         category: form.category,
         amount: Number(form.amount),
         description: form.description,
-        vendor: form.vendor,
-        receiptUrl: form.receiptUrl,
-        incurredBy: user?._id || user?.id,
+        vendor: form.vendor || undefined,
+        receiptUrl: form.receiptUrl || undefined,
+        type: "PERSONAL_SPEND",
+        incurredBy: userId,
       });
 
       // Reset form and refresh
@@ -265,29 +328,24 @@ const ExpenseLog = () => {
                 />
               </div>
 
-              {/* Receipt URL */}
+              {/* Receipt Upload */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
-                  Receipt URL (Optional)
+                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-3">
+                  <span className="flex items-center gap-2">
+                    Receipt / Bill
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-400 text-[10px] font-bold rounded">
+                      <Sparkles size={10} />
+                      AI-Powered
+                    </span>
+                  </span>
                 </label>
-                <div className="relative">
-                  <Upload
-                    size={14}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    type="url"
-                    value={form.receiptUrl}
-                    onChange={(e) =>
-                      setForm({ ...form, receiptUrl: e.target.value })
-                    }
-                    placeholder="https://drive.google.com/receipt-image"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-semibold text-[#191A23] dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all"
-                  />
-                </div>
-                <p className="text-xs text-gray-400 dark:text-zinc-600 mt-1">
-                  Upload receipt to Google Drive and paste the link
-                </p>
+                <ReceiptUpload
+                  onUpload={(url) => setForm({ ...form, receiptUrl: url })}
+                  onOCRComplete={handleOCRComplete}
+                  existingReceipt={form.receiptUrl ? { url: form.receiptUrl } : null}
+                  disabled={loading}
+                  enableOCR={true}
+                />
               </div>
 
               {/* Submit */}
