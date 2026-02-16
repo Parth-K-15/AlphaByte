@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import ParticipantAuth from '../models/ParticipantAuth.js';
+import SpeakerAuth from '../models/SpeakerAuth.js';
 
 const router = express.Router();
 
@@ -104,6 +105,108 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+// @desc    Speaker Signup
+// @route   POST /api/auth/speaker/signup
+router.post('/speaker/signup', async (req, res) => {
+  try {
+    const { name, email, password, phone, bio, specializations } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and password are required',
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address',
+      });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long',
+      });
+    }
+
+    // Check if speaker already exists
+    const existingSpeaker = await SpeakerAuth.findOne({ email: email.toLowerCase() });
+    if (existingSpeaker) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists',
+      });
+    }
+
+    // Also check User and ParticipantAuth collections
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already registered as a staff member.',
+      });
+    }
+
+    const existingParticipant = await ParticipantAuth.findOne({ email: email.toLowerCase() });
+    if (existingParticipant) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already registered as a participant.',
+      });
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create new speaker
+    const speaker = await SpeakerAuth.create({
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      phone,
+      bio: bio || '',
+      specializations: specializations || [],
+    });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: speaker._id, role: 'SPEAKER', isSpeaker: true },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Speaker account created successfully',
+      data: {
+        token,
+        user: {
+          id: speaker._id,
+          name: speaker.name,
+          email: speaker.email,
+          role: 'SPEAKER',
+        },
+        redirectPath: '/speaker',
+      },
+    });
+  } catch (error) {
+    console.error('Speaker signup error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error creating speaker account',
+      error: error.message,
+    });
+  }
+});
+
 // @desc    Login for all roles
 // @route   POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -121,10 +224,24 @@ router.post('/login', async (req, res) => {
     // First check User collection (Admin, Team Lead, Event Staff)
     let user = await User.findOne({ email: email.toLowerCase() });
     let isParticipant = false;
+    let isSpeaker = false;
     let role = null;
 
     console.log('Login attempt for:', email.toLowerCase());
     console.log('Found in User collection:', !!user);
+
+    if (!user) {
+      // Check SpeakerAuth collection
+      user = await SpeakerAuth.findOne({ email: email.toLowerCase() });
+      if (user) {
+        isSpeaker = true;
+        role = 'SPEAKER';
+        console.log('User is speaker:', user.name);
+      }
+    } else {
+      role = user.role;
+      console.log('User role from User collection:', role);
+    }
 
     if (!user) {
       // Check ParticipantAuth collection
@@ -135,9 +252,6 @@ router.post('/login', async (req, res) => {
         role = 'PARTICIPANT';
         console.log('User is participant:', user.name);
       }
-    } else {
-      role = user.role;
-      console.log('User role from User collection:', role);
     }
 
     if (!user) {
@@ -179,7 +293,7 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, role: role, isParticipant },
+      { id: user._id, role: role, isParticipant, isSpeaker },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
@@ -195,6 +309,9 @@ router.post('/login', async (req, res) => {
         break;
       case 'EVENT_STAFF':
         redirectPath = '/organizer';
+        break;
+      case 'SPEAKER':
+        redirectPath = '/speaker';
         break;
       case 'PARTICIPANT':
         redirectPath = '/participant';
@@ -262,6 +379,11 @@ router.get('/me', async (req, res) => {
       user = await ParticipantAuth.findById(decoded.id).select('-password');
       if (user) {
         user = { ...user.toObject(), role: 'PARTICIPANT' };
+      }
+    } else if (decoded.isSpeaker) {
+      user = await SpeakerAuth.findById(decoded.id).select('-password');
+      if (user) {
+        user = { ...user.toObject(), role: 'SPEAKER' };
       }
     } else {
       user = await User.findById(decoded.id).select('-password');
@@ -341,6 +463,11 @@ router.put('/profile', async (req, res) => {
         email: email.toLowerCase(),
         _id: { $ne: decoded.id }
       });
+    } else if (decoded.isSpeaker) {
+      existingUser = await SpeakerAuth.findOne({
+        email: email.toLowerCase(),
+        _id: { $ne: decoded.id }
+      });
     } else {
       existingUser = await User.findOne({
         email: email.toLowerCase(),
@@ -370,6 +497,12 @@ router.put('/profile', async (req, res) => {
 
     if (decoded.isParticipant) {
       updatedUser = await ParticipantAuth.findByIdAndUpdate(
+        decoded.id,
+        updateData,
+        { new: true, runValidators: true }
+      ).select('-password');
+    } else if (decoded.isSpeaker) {
+      updatedUser = await SpeakerAuth.findByIdAndUpdate(
         decoded.id,
         updateData,
         { new: true, runValidators: true }
@@ -453,6 +586,8 @@ router.put('/password', async (req, res) => {
     let user;
     if (decoded.isParticipant) {
       user = await ParticipantAuth.findById(decoded.id);
+    } else if (decoded.isSpeaker) {
+      user = await SpeakerAuth.findById(decoded.id);
     } else {
       user = await User.findById(decoded.id);
     }

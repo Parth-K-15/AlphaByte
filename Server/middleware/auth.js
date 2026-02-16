@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import ParticipantAuth from '../models/ParticipantAuth.js';
+import SpeakerAuth from '../models/SpeakerAuth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'alphabyte_jwt_secret_key_2026';
 
@@ -21,10 +22,15 @@ export const verifyToken = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Check if user is a participant or staff
+    // Check if user is a participant, speaker, or staff
     let user;
     if (decoded.isParticipant) {
       user = await ParticipantAuth.findById(decoded.id).select('-password');
+    } else if (decoded.isSpeaker) {
+      user = await SpeakerAuth.findById(decoded.id).select('-password');
+      if (user) {
+        user = { ...user.toObject(), role: 'SPEAKER' };
+      }
     } else {
       user = await User.findById(decoded.id).select('-password');
     }
@@ -56,6 +62,7 @@ export const verifyToken = async (req, res, next) => {
     req.user = user;
     req.userId = user._id;
     req.isParticipant = decoded.isParticipant || false;
+    req.isSpeaker = decoded.isSpeaker || false;
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -111,6 +118,9 @@ export const isOrganizer = authorizeRoles('TEAM_LEAD', 'EVENT_STAFF');
 // Participant only middleware
 export const isParticipant = authorizeRoles('PARTICIPANT');
 
+// Speaker only middleware
+export const isSpeaker = authorizeRoles('SPEAKER');
+
 export default {
   verifyToken,
   authorizeRoles,
@@ -118,4 +128,5 @@ export default {
   isTeamLead,
   isOrganizer,
   isParticipant,
+  isSpeaker,
 };

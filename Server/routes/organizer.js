@@ -7,6 +7,9 @@ import Certificate from '../models/Certificate.js';
 import CertificateRequest from '../models/CertificateRequest.js';
 import Communication from '../models/Communication.js';
 import EventUpdate from '../models/EventUpdate.js';
+import SpeakerAuth from '../models/SpeakerAuth.js';
+import Session from '../models/Session.js';
+import SpeakerReview from '../models/SpeakerReview.js';
 import Log from '../models/Log.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
@@ -14,6 +17,7 @@ import bcrypt from 'bcrypt';
 import { sendBulkEmails, testEmailConnection, sendCertificateEmail } from '../utils/emailService.js';
 import certificateGenerator from '../utils/certificateGenerator.js';
 import activeSessions from '../utils/sessionStore.js';
+import { verifyToken, isOrganizer } from '../middleware/auth.js';
 
 const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
@@ -2060,6 +2064,301 @@ router.put('/team/:eventId/:memberId/permissions', async (req, res) => {
   } catch (error) {
     console.error('Error updating permissions:', error);
     res.status(500).json({ success: false, message: 'Error updating permissions', error: error.message });
+  }
+});
+
+// ===== SPEAKER MANAGEMENT ROUTES =====
+
+// @desc    Get all registered speakers
+// @route   GET /api/organizer/speakers
+router.get('/speakers', async (req, res) => {
+  try {
+    const { search } = req.query;
+    const filter = { isActive: true };
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { specializations: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const speakers = await SpeakerAuth.find(filter)
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    // Get review stats for each speaker
+    const speakersWithStats = await Promise.all(
+      speakers.map(async (speaker) => {
+        const reviews = await SpeakerReview.find({ speaker: speaker._id });
+        const avgRating = reviews.length > 0
+          ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+          : 0;
+        const sessionCount = await Session.countDocuments({ speaker: speaker._id });
+
+        return {
+          ...speaker.toObject(),
+          avgRating: parseFloat(avgRating),
+          totalReviews: reviews.length,
+          totalSessions: sessionCount,
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: speakersWithStats,
+    });
+  } catch (error) {
+    console.error('Get speakers error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching speakers', error: error.message });
+  }
+});
+
+// @desc    Get single speaker profile with past records and reviews
+// @route   GET /api/organizer/speakers/:id
+router.get('/speakers/:id', async (req, res) => {
+  try {
+    const speaker = await SpeakerAuth.findById(req.params.id).select('-password');
+
+    if (!speaker) {
+      return res.status(404).json({ success: false, message: 'Speaker not found' });
+    }
+
+    const sessions = await Session.find({ speaker: speaker._id })
+      .populate('event', 'title startDate endDate status')
+      .sort({ 'time.start': -1 });
+
+    const reviews = await SpeakerReview.find({ speaker: speaker._id })
+      .populate('organizer', 'name')
+      .populate('event', 'title')
+      .populate('session', 'title')
+      .sort({ createdAt: -1 });
+
+    const avgRating = reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        ...speaker.toObject(),
+        sessions,
+        reviews,
+        avgRating: parseFloat(avgRating),
+        totalReviews: reviews.length,
+      },
+    });
+  } catch (error) {
+    console.error('Get speaker profile error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching speaker profile', error: error.message });
+  }
+});
+
+// @desc    Add a review/rating for a speaker
+// @route   POST /api/organizer/speakers/:id/review
+router.post('/speakers/:id/review', async (req, res) => {
+  try {
+    const { rating, review, eventId, sessionId } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    }
+
+    const speaker = await SpeakerAuth.findById(req.params.id);
+    if (!speaker) {
+      return res.status(404).json({ success: false, message: 'Speaker not found' });
+    }
+
+    // Get organizer ID from query param or request user
+    const organizerId = req.query.organizerId || req.body.organizerId;
+    if (!organizerId) {
+      return res.status(400).json({ success: false, message: 'Organizer ID is required' });
+    }
+
+    const reviewData = {
+      speaker: req.params.id,
+      organizer: organizerId,
+      rating,
+      review: review || '',
+    };
+    if (eventId) reviewData.event = eventId;
+    if (sessionId) reviewData.session = sessionId;
+
+    // Upsert — one review per organizer per session
+    const newReview = await SpeakerReview.findOneAndUpdate(
+      { organizer: organizerId, session: sessionId || null },
+      reviewData,
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Review submitted successfully',
+      data: newReview,
+    });
+  } catch (error) {
+    console.error('Add review error:', error);
+    res.status(500).json({ success: false, message: 'Error adding review', error: error.message });
+  }
+});
+
+// @desc    Create a session and assign to a speaker
+// @route   POST /api/organizer/sessions
+router.post('/sessions', async (req, res) => {
+  try {
+    const { eventId, speakerId, title, description, time, room, track } = req.body;
+
+    if (!eventId || !speakerId || !title) {
+      return res.status(400).json({ success: false, message: 'Event, speaker, and title are required' });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    const speaker = await SpeakerAuth.findById(speakerId);
+    if (!speaker) {
+      return res.status(404).json({ success: false, message: 'Speaker not found' });
+    }
+
+    const session = await Session.create({
+      event: eventId,
+      speaker: speakerId,
+      title,
+      description: description || '',
+      time: time || {},
+      room: room || '',
+      track: track || '',
+      status: 'pending',
+      assignment: {
+        requestedAt: new Date(),
+        rejectionReason: '',
+      },
+    });
+
+    const populated = await Session.findById(session._id)
+      .populate('event', 'title startDate endDate')
+      .populate('speaker', 'name email');
+
+    res.status(201).json({
+      success: true,
+      message: 'Session created and sent to speaker for confirmation',
+      data: populated,
+    });
+  } catch (error) {
+    console.error('Create session error:', error);
+    res.status(500).json({ success: false, message: 'Error creating session', error: error.message });
+  }
+});
+
+// @desc    Get all sessions for an event
+// @route   GET /api/organizer/sessions/:eventId
+router.get('/sessions/:eventId', async (req, res) => {
+  try {
+    const sessions = await Session.find({ event: req.params.eventId })
+      .populate('speaker', 'name email headshot specializations')
+      .sort({ 'time.start': 1 });
+
+    res.json({
+      success: true,
+      data: sessions,
+    });
+  } catch (error) {
+    console.error('Get sessions error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching sessions', error: error.message });
+  }
+});
+
+// @desc    Update session status or details (organizer)
+// @route   PUT /api/organizer/sessions/:sessionId
+router.put('/sessions/:sessionId', async (req, res) => {
+  try {
+    const { title, description, time, room, track, status, registeredCount, checkedInCount } = req.body;
+
+    const session = await Session.findById(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    if (title !== undefined) session.title = title;
+    if (description !== undefined) session.description = description;
+    if (time !== undefined) session.time = time;
+    if (room !== undefined) session.room = room;
+    if (track !== undefined) session.track = track;
+    if (status !== undefined) session.status = status;
+    if (registeredCount !== undefined) session.registeredCount = registeredCount;
+    if (checkedInCount !== undefined) session.checkedInCount = checkedInCount;
+
+    await session.save();
+
+    const populated = await Session.findById(session._id)
+      .populate('speaker', 'name email')
+      .populate('event', 'title');
+
+    res.json({
+      success: true,
+      message: 'Session updated successfully',
+      data: populated,
+    });
+  } catch (error) {
+    console.error('Update session error:', error);
+    res.status(500).json({ success: false, message: 'Error updating session', error: error.message });
+  }
+});
+
+// @desc    Delete a session
+// @route   DELETE /api/organizer/sessions/:sessionId
+router.delete('/sessions/:sessionId', async (req, res) => {
+  try {
+    const session = await Session.findByIdAndDelete(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Session deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete session error:', error);
+    res.status(500).json({ success: false, message: 'Error deleting session', error: error.message });
+  }
+});
+
+// @desc    Approve/reject a session update from speaker
+// @route   PUT /api/organizer/sessions/:sessionId/updates/:updateIndex
+router.put('/sessions/:sessionId/updates/:updateIndex', verifyToken, isOrganizer, async (req, res) => {
+  try {
+    const { status } = req.body; // 'approved' or 'rejected'
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Status must be approved or rejected' });
+    }
+
+    const session = await Session.findById(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    const updateIndex = parseInt(req.params.updateIndex);
+    if (updateIndex < 0 || updateIndex >= session.updates.length) {
+      return res.status(400).json({ success: false, message: 'Invalid update index' });
+    }
+
+    session.updates[updateIndex].status = status;
+    await session.save();
+
+    res.json({
+      success: true,
+      message: `Update ${status} successfully`,
+      data: session,
+    });
+  } catch (error) {
+    console.error('Approve/reject update error:', error);
+    res.status(500).json({ success: false, message: 'Error updating status', error: error.message });
   }
 });
 

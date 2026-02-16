@@ -6,3 +6,4 @@ export { default as Certificates } from './Certificates';
 export { default as History } from './History';
 export { default as Profile } from './Profile';
 export { default as Calendar } from './Calendar';
+export { default as Transcript } from './Transcript';

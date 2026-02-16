@@ -103,10 +103,10 @@ const SignUp = () => {
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                Create an account
+                Create Participant Account
               </h1>
               <p className="text-gray-600">
-                Signup and get started with event management
+                Register to browse and attend events
               </p>
             </div>
 
@@ -131,6 +131,16 @@ const SignUp = () => {
                   <div className="text-gray-600 mt-1">participant@alphabyte.com / part123</div>
                 </div>
               </div>
+            </div>
+
+            {/* Link to Speaker Registration */}
+            <div className="mb-6 text-center p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <p className="text-sm text-gray-700">
+                Want to present sessions as a speaker?{' '}
+                <Link to="/speaker-auth" className="text-emerald-600 hover:text-emerald-700 font-semibold underline">
+                  Register as Speaker
+                </Link>
+              </p>
             </div>
 
             {/* Form */}

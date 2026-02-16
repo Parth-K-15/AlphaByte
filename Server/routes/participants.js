@@ -7,6 +7,7 @@ import Certificate from '../models/Certificate.js';
 import CertificateRequest from '../models/CertificateRequest.js';
 import EventUpdate from '../models/EventUpdate.js';
 import User from '../models/User.js';
+import EventRole from '../models/EventRole.js';
 import Log from '../models/Log.js';
 import activeSessions from '../utils/sessionStore.js';
 
@@ -220,6 +221,34 @@ router.post('/register', async (req, res) => {
     });
     
     await participant.save();
+
+    // Auto-create EventRole for transcript
+    try {
+      const existingRole = await EventRole.findOne({
+        email: email.toLowerCase(),
+        event: eventId,
+        role: 'participant',
+      });
+      if (!existingRole) {
+        await EventRole.create({
+          email: email.toLowerCase(),
+          name: fullName,
+          event: eventId,
+          role: 'participant',
+          startTime: event.startDate || new Date(),
+          endTime: event.endDate || undefined,
+          durationMinutes: event.startDate && event.endDate
+            ? Math.round((new Date(event.endDate) - new Date(event.startDate)) / 60000)
+            : 0,
+          status: 'active',
+          source: 'auto',
+          details: { notes: 'Registered' },
+        });
+      }
+    } catch (roleErr) {
+      console.error('EventRole auto-create error (non-blocking):', roleErr);
+    }
+
     
     // Create log entry for registration
     await Log.create({
