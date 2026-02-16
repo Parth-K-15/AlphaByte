@@ -33,6 +33,7 @@ import reportsRoutes from './routes/reports.js';
 import logsRoutes from './routes/logs.js';
 import transcriptRoutes from './routes/transcript.js';
 import chatbotRoutes from './routes/chatbot.js';
+import reconciliationRoutes from './routes/reconciliation.js';
 
 // Import email service
 import { testEmailConnection } from "./utils/emailService.js";
@@ -85,9 +86,30 @@ const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ MongoDB Connected Successfully");
+    
+    // Initialize reconciliation hooks after models are loaded
+    await initializeReconciliationHooks();
   } catch (error) {
     console.error("❌ MongoDB Connection Error:", error.message);
     process.exit(1);
+  }
+};
+
+// Initialize reconciliation hooks (after models are loaded)
+const initializeReconciliationHooks = async () => {
+  try {
+    const { addReconciliationHooks } = await import('./middleware/reconciliation.js');
+    const Participant = (await import('./models/Participant.js')).default;
+    const Attendance = (await import('./models/Attendance.js')).default;
+    const Certificate = (await import('./models/Certificate.js')).default;
+    
+    addReconciliationHooks(Participant.schema, 'participant');
+    addReconciliationHooks(Attendance.schema, 'attendance');
+    addReconciliationHooks(Certificate.schema, 'certificate');
+    
+    console.log("✅ Reconciliation hooks initialized");
+  } catch (error) {
+    console.error("⚠️  Failed to initialize reconciliation hooks:", error.message);
   }
 };
 
@@ -107,6 +129,7 @@ app.use('/api/participant', participantProfileRoutes); // Must be before partici
 app.use('/api/participant', participantRoutes);
 app.use('/api/transcript', transcriptRoutes);
 app.use("/api/finance", financeRoutes);
+app.use('/api/reconciliation', reconciliationRoutes);
 
 // Health check route
 app.get("/api/health", (req, res) => {
