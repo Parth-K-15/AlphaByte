@@ -107,6 +107,8 @@ export const AuthProvider = ({ children }) => {
       case 'TEAM_LEAD':
       case 'EVENT_STAFF':
         return '/organizer';
+      case 'SPEAKER':
+        return '/speaker';
       case 'PARTICIPANT':
         return '/participant';
       default:

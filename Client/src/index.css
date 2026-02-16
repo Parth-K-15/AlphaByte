@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,52 +6,256 @@
 
 @layer base {
   body {
-    @apply font-sans bg-gray-100 text-gray-800 antialiased;
+    font-family: "Space Grotesk", sans-serif;
+    background-color: #f3f3f3;
+    color: #191a23;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  .dark body,
+  html.dark body {
+    background-color: #0f0f14;
+    color: #e4e4e7;
   }
 }
 
 @layer components {
+  /* Buttons */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-xl transition-colors duration-200;
+    background-color: #b9ff66;
+    color: #191a23;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s;
   }
-  
+
+  .btn-primary:hover {
+    box-shadow: 0 4px 24px 0 rgba(185, 255, 102, 0.25);
+    transform: scale(1.02);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-dark {
+    background-color: #191a23;
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+  }
+
+  .btn-dark:hover {
+    background-color: #22232e;
+  }
+
+  .btn-dark:active {
+    transform: scale(0.98);
+  }
+
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-xl transition-colors duration-200;
+    background-color: #e8e8e8;
+    color: #191a23;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    transition: background-color 0.2s;
   }
-  
+
+  .btn-secondary:hover {
+    background-color: #d9d9d9;
+  }
+
+  :is(.dark .btn-secondary) {
+    background-color: #1e1e2a;
+    color: #e4e4e7;
+  }
+
+  :is(.dark .btn-secondary):hover {
+    background-color: #2a2a3a;
+  }
+
+  /* Cards */
   .card {
-    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6;
+    background-color: white;
+    border-radius: 1.5rem;
+    box-shadow: 0 2px 16px 0 rgba(25, 26, 35, 0.06);
+    border: 1px solid rgba(232, 232, 232, 0.5);
+    padding: 1.5rem;
+    transition: all 0.3s;
   }
-  
+
+  :is(.dark .card) {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 2px 16px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  .card-dark {
+    background-color: #191a23;
+    color: white;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    transition: all 0.3s;
+  }
+
+  .card-lime {
+    background-color: #b9ff66;
+    color: #191a23;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    transition: all 0.3s;
+  }
+
+  /* Form inputs */
   .input-field {
-    @apply w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+    width: 100%;
+    padding: 0.625rem 1rem;
+    background-color: white;
+    border: 1px solid #e8e8e8;
+    border-radius: 0.75rem;
+    color: #191a23;
+    transition: all 0.2s;
   }
-  
+
+  .input-field:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(185, 255, 102, 0.5);
+    border-color: #b9ff66;
+  }
+
+  .input-field::placeholder {
+    color: #757580;
+  }
+
+  :is(.dark .input-field) {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e4e4e7;
+  }
+
+  :is(.dark .input-field)::placeholder {
+    color: #71717a;
+  }
+
+  :is(.dark .input-field):focus {
+    box-shadow: 0 0 0 2px rgba(185, 255, 102, 0.3);
+    border-color: rgba(185, 255, 102, 0.5);
+  }
+
+  /* Badges */
+  .badge-lime {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: #b9ff66;
+    color: #191a23;
+  }
+
+  .badge-dark {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: #191a23;
+    color: white;
+  }
+
+  /* Sidebar */
   .sidebar-item {
-    @apply flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-sidebar-light hover:text-white rounded-xl transition-all duration-200 cursor-pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #d1d1d5;
+    border-radius: 0.75rem;
+    transition: all 0.2s;
+    cursor: pointer;
   }
-  
+
+  .sidebar-item:hover {
+    background-color: #334155;
+    color: white;
+  }
+
   .sidebar-item-active {
-    @apply bg-primary-600 text-white;
+    background-color: #2563eb;
+    color: white;
+  }
+
+  /* Theme Toggle */
+  .theme-toggle {
+    position: relative;
+    width: 3.25rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    outline: none;
+    padding: 0;
+  }
+
+  .theme-toggle-light {
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  }
+
+  .theme-toggle-dark {
+    background: linear-gradient(135deg, #1e1b4b, #312e81);
+  }
+
+  .theme-toggle-knob {
+    position: absolute;
+    top: 0.175rem;
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 9999px;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+  }
+
+  .theme-toggle-knob-light {
+    left: 0.175rem;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+  }
+
+  .theme-toggle-knob-dark {
+    left: 1.675rem;
+    background: linear-gradient(135deg, #818cf8, #6366f1);
+    box-shadow: 0 0 8px rgba(129, 140, 248, 0.5);
   }
 }
 
 @layer utilities {
-  /* Smooth horizontal scroll for mobile */
   .overflow-x-auto {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
-  
+
   .overflow-x-auto::-webkit-scrollbar {
-    display: none; /* WebKit */
+    display: none;
   }
-  
-  /* Scroll snap for better mobile experience */
+
   .snap-x {
     scroll-snap-type: x mandatory;
   }
-  
+
   .snap-center {
     scroll-snap-align: center;
   }

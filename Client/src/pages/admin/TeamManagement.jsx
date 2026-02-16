@@ -10,37 +10,29 @@ import {
   UsersRound,
   Loader2,
   ChevronRight,
-  Shield,
 } from 'lucide-react';
-import { eventsApi, teamsApi } from '../../services/api';
+import { eventsApi } from '../../services/api';
 
 const TeamManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [events, setEvents] = useState([]);
-  const [teamLeads, setTeamLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchData();
+    fetchEvents();
   }, []);
 
-  const fetchData = async () => {
+  const fetchEvents = async () => {
     try {
       setLoading(true);
-      const [eventsRes, teamLeadsRes] = await Promise.all([
-        eventsApi.getAll(),
-        teamsApi.getTeamLeads()
-      ]);
-      if (eventsRes.success) {
-        setEvents(eventsRes.data);
-      }
-      if (teamLeadsRes.data) {
-        setTeamLeads(teamLeadsRes.data);
+      const response = await eventsApi.getAll();
+      if (response.success) {
+        setEvents(response.data);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching events:', error);
     } finally {
       setLoading(false);
     }
@@ -84,89 +76,6 @@ const TeamManagement = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Team Management</h1>
           <p className="text-gray-500 mt-1">Manage teams, roles, and permissions for each event</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => navigate('/admin/team/leads')}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <UserCog size={20} />
-            Team Leads
-          </button>
-          <button
-            onClick={() => navigate('/admin/team/members')}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <UsersRound size={20} />
-            Members
-          </button>
-          <button
-            onClick={() => navigate('/admin/team/permissions')}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <Shield size={20} />
-            Permissions
-          </button>
-        </div>
-      </div>
-
-      {/* Quick Access Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div 
-          onClick={() => navigate('/admin/team/leads')}
-          className="card hover:shadow-lg transition-shadow cursor-pointer group"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-3 bg-primary-100 rounded-xl group-hover:bg-primary-200 transition-colors">
-              <UserCog size={24} className="text-primary-600" />
-            </div>
-            <ChevronRight size={20} className="text-gray-400 group-hover:text-primary-600 transition-colors" />
-          </div>
-          <h3 className="font-semibold text-gray-800 mb-1">Team Leads</h3>
-          <p className="text-sm text-gray-600">Manage team leads and their access levels</p>
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <span className="text-sm font-medium text-primary-600">
-              {teamLeads.length || 0} Active Lead{teamLeads.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </div>
-
-        <div 
-          onClick={() => navigate('/admin/team/members')}
-          className="card hover:shadow-lg transition-shadow cursor-pointer group"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-3 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
-              <UsersRound size={24} className="text-blue-600" />
-            </div>
-            <ChevronRight size={20} className="text-gray-400 group-hover:text-blue-600 transition-colors" />
-          </div>
-          <h3 className="font-semibold text-gray-800 mb-1">Team Members</h3>
-          <p className="text-sm text-gray-600">Manage event staff and organizers</p>
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <span className="text-sm font-medium text-blue-600">
-              View All Members
-            </span>
-          </div>
-        </div>
-
-        <div 
-          onClick={() => navigate('/admin/team/permissions')}
-          className="card hover:shadow-lg transition-shadow cursor-pointer group"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-3 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
-              <Shield size={24} className="text-purple-600" />
-            </div>
-            <ChevronRight size={20} className="text-gray-400 group-hover:text-purple-600 transition-colors" />
-          </div>
-          <h3 className="font-semibold text-gray-800 mb-1">Permissions</h3>
-          <p className="text-sm text-gray-600">Configure role-based access control</p>
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <span className="text-sm font-medium text-purple-600">
-              Manage Roles
-            </span>
-          </div>
         </div>
       </div>
 

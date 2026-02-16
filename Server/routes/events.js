@@ -4,9 +4,8 @@ import User from '../models/User.js';
 import Participant from '../models/Participant.js';
 import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
+import Log from '../models/Log.js';
 import mongoose from 'mongoose';
-import { verifyToken, authorizeRoles } from '../middleware/auth.js';
-import { logEvent } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -18,17 +17,17 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F
 router.get('/', async (req, res) => {
   try {
     const { status, search, teamLead } = req.query;
-    
+
     let query = {};
-    
+
     if (status && status !== 'all') {
       query.status = status;
     }
-    
+
     if (teamLead && isValidObjectId(teamLead)) {
       query.teamLead = teamLead;
     }
-    
+
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -121,7 +120,7 @@ router.get('/:id', async (req, res) => {
 
 // @desc    Create new event (Admin)
 // @route   POST /api/events
-router.post('/', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const {
       title,
@@ -179,7 +178,7 @@ router.post('/', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
       bannerImage,
       tags: tags || [],
       teamLead,
-      createdBy: req.user._id, // Use authenticated user
+      createdBy,
       teamMembers: [],
       participants: []
     });
@@ -188,8 +187,29 @@ router.post('/', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
       .populate('teamLead', 'name email')
       .populate('createdBy', 'name email');
 
-    // Log event creation
-    await logEvent('Event Created', req.user, populatedEvent, `Created new event: ${title}`, 'success');
+    // Create log entry for event creation
+    console.log('📝 [Event Creation] Creating log for event:', event._id, event.title);
+    const logEntry = await Log.create({
+      eventId: event._id,
+      eventName: event.title,
+      actionType: 'EVENT_CREATED',
+      entityType: 'EVENT',
+      action: 'Event created',
+      details: `Event "${event.title}" was created`,
+      actorType: 'ADMIN',
+      actorId: createdBy,
+      actorName: populatedEvent.createdBy?.name || 'Admin',
+      actorEmail: populatedEvent.createdBy?.email || '',
+      severity: 'INFO',
+      newState: {
+        title: event.title,
+        status: event.status,
+        startDate: event.startDate,
+        location: event.location,
+        teamLead: event.teamLead
+      }
+    });
+    console.log('✅ [Event Creation] Log created:', logEntry._id);
 
     res.status(201).json({
       success: true,
@@ -208,7 +228,7 @@ router.post('/', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
 
 // @desc    Update event (Admin)
 // @route   PUT /api/events/:id
-router.put('/:id', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -220,11 +240,14 @@ router.put('/:id', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
     }
 
     const updateData = { ...req.body, updatedAt: Date.now() };
-    
+
     // Remove fields that shouldn't be directly updated
     delete updateData._id;
     delete updateData.createdAt;
     delete updateData.__v;
+
+    // Get old event data before update
+    const oldEvent = await Event.findById(id);
 
     const event = await Event.findByIdAndUpdate(
       id,
@@ -241,8 +264,28 @@ router.put('/:id', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
       });
     }
 
-    // Log event update
-    await logEvent('Event Updated', req.user, event, `Updated event: ${event.title}`, 'info');
+    // Create log entry for event update
+    const changedFields = Object.keys(updateData).filter(key =>
+      JSON.stringify(oldEvent[key]) !== JSON.stringify(updateData[key])
+    );
+
+    if (changedFields.length > 0) {
+      await Log.create({
+        eventId: event._id,
+        eventName: event.title,
+        actionType: 'EVENT_UPDATED',
+        entityType: 'EVENT',
+        action: 'Event information updated',
+        details: `Event "${event.title}" was updated. Changed fields: ${changedFields.join(', ')}`,
+        actorType: 'ADMIN',
+        actorId: req.user?._id || event.createdBy,
+        actorName: req.user?.name || event.createdBy?.name || 'Admin',
+        actorEmail: req.user?.email || event.createdBy?.email || '',
+        severity: 'INFO',
+        oldState: changedFields.reduce((acc, field) => ({ ...acc, [field]: oldEvent[field] }), {}),
+        newState: changedFields.reduce((acc, field) => ({ ...acc, [field]: updateData[field] }), {})
+      });
+    }
 
     res.json({
       success: true,
@@ -261,7 +304,7 @@ router.put('/:id', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
 
 // @desc    Delete event (Admin)
 // @route   DELETE /api/events/:id
-router.delete('/:id', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -280,9 +323,6 @@ router.delete('/:id', verifyToken, authorizeRoles('ADMIN'), async (req, res) => 
         message: 'Event not found'
       });
     }
-
-    // Log event deletion
-    await logEvent('Event Deleted', req.user, event, `Deleted event: ${event.title}`, 'warning');
 
     // Clean up related data
     await Participant.deleteMany({ event: id });
@@ -325,6 +365,9 @@ router.put('/:id/assign-lead', async (req, res) => {
       });
     }
 
+    const oldEvent = await Event.findById(id);
+    const oldTeamLead = oldEvent.teamLead;
+
     const event = await Event.findByIdAndUpdate(
       id,
       { teamLead: teamLeadId },
@@ -337,6 +380,25 @@ router.put('/:id/assign-lead', async (req, res) => {
         message: 'Event not found'
       });
     }
+
+    // Create log entry for team lead assignment
+    console.log('👔 [Team Lead] Assigning team lead:', user.name, 'to event:', event.title);
+    const logEntry = await Log.create({
+      eventId: event._id,
+      eventName: event.title,
+      actionType: oldTeamLead ? 'ROLE_CHANGED' : 'ROLE_ASSIGNED',
+      entityType: 'ROLE',
+      action: oldTeamLead ? 'Team lead changed' : 'Team lead assigned',
+      details: `Team lead ${oldTeamLead ? 'changed to' : 'assigned:'} ${user.name} (${user.email})`,
+      actorType: 'ADMIN',
+      actorId: req.user?._id,
+      actorName: req.user?.name || 'Admin',
+      actorEmail: req.user?.email || '',
+      severity: 'INFO',
+      oldState: oldTeamLead ? { teamLead: oldTeamLead } : null,
+      newState: { teamLead: teamLeadId, teamLeadName: user.name }
+    });
+    console.log('✅ [Team Lead] Log created:', logEntry._id);
 
     res.json({
       success: true,
@@ -414,10 +476,32 @@ router.post('/:id/team-leads', async (req, res) => {
     }
 
     await event.save();
-    
+
     const updatedEvent = await Event.findById(id)
       .populate('teamLead', 'name email')
       .populate('teamMembers.user', 'name email');
+
+    // Log team lead addition
+    await Log.create({
+      eventId: event._id,
+      eventName: event.title,
+      actionType: 'TEAM_MEMBER_ADDED',
+      entityType: 'TEAM',
+      action: 'Team lead added to event',
+      details: `${user.name} (${user.email}) added as team lead by admin`,
+      actorType: 'ADMIN',
+      actorId: req.user?._id,
+      actorName: req.user?.name || 'Admin',
+      actorEmail: req.user?.email || '',
+      severity: 'INFO',
+      newState: {
+        userId: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        role: 'TEAM_LEAD',
+        permissions
+      }
+    });
 
     res.json({
       success: true,
@@ -447,7 +531,7 @@ router.delete('/:id/team-leads/:userId', async (req, res) => {
       });
     }
 
-    const event = await Event.findById(id);
+    const event = await Event.findById(id).populate('teamMembers.user', 'name email');
     if (!event) {
       return res.status(404).json({
         success: false,
@@ -455,22 +539,49 @@ router.delete('/:id/team-leads/:userId', async (req, res) => {
       });
     }
 
+    // Find the member being removed for logging
+    const removedMember = event.teamMembers.find(m => m.user._id.toString() === userId);
+    const removedUser = removedMember?.user;
+
     // Remove team lead from team members
     event.teamMembers = event.teamMembers.filter(
-      (m) => m.user.toString() !== userId
+      (m) => m.user._id.toString() !== userId
     );
 
     // If removing the primary team lead, set new primary if other team leads exist
     if (event.teamLead?.toString() === userId) {
       const remainingTeamLead = event.teamMembers.find(m => m.role === 'TEAM_LEAD');
-      event.teamLead = remainingTeamLead ? remainingTeamLead.user : null;
+      event.teamLead = remainingTeamLead ? remainingTeamLead.user._id : null;
     }
 
     await event.save();
-    
+
     const updatedEvent = await Event.findById(id)
       .populate('teamLead', 'name email')
       .populate('teamMembers.user', 'name email');
+
+    // Log team lead removal
+    if (removedUser) {
+      await Log.create({
+        eventId: event._id,
+        eventName: event.title,
+        actionType: 'TEAM_MEMBER_REMOVED',
+        entityType: 'TEAM',
+        action: 'Team lead removed from event',
+        details: `${removedUser.name} (${removedUser.email}) removed as team lead by admin`,
+        actorType: 'ADMIN',
+        actorId: req.user?._id,
+        actorName: req.user?.name || 'Admin',
+        actorEmail: req.user?.email || '',
+        severity: 'WARNING',
+        oldState: {
+          userId: removedUser._id,
+          userName: removedUser.name,
+          userEmail: removedUser.email,
+          role: 'TEAM_LEAD'
+        }
+      });
+    }
 
     res.json({
       success: true,
@@ -489,7 +600,7 @@ router.delete('/:id/team-leads/:userId', async (req, res) => {
 
 // @desc    Update event lifecycle status
 // @route   PUT /api/events/:id/lifecycle
-router.put('/:id/lifecycle', verifyToken, authorizeRoles('ADMIN'), async (req, res) => {
+router.put('/:id/lifecycle', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -509,6 +620,9 @@ router.put('/:id/lifecycle', verifyToken, authorizeRoles('ADMIN'), async (req, r
       });
     }
 
+    const oldEvent = await Event.findById(id);
+    const oldStatus = oldEvent.status;
+
     const event = await Event.findByIdAndUpdate(
       id,
       { status },
@@ -524,10 +638,24 @@ router.put('/:id/lifecycle', verifyToken, authorizeRoles('ADMIN'), async (req, r
       });
     }
 
-    const participantCount = await Participant.countDocuments({ event: event._id });
+    // Create log entry for status change
+    await Log.create({
+      eventId: event._id,
+      eventName: event.title,
+      actionType: 'EVENT_STATE_CHANGED',
+      entityType: 'EVENT',
+      action: 'Event status changed',
+      details: `Event "${event.title}" status changed from ${oldStatus} to ${status}`,
+      actorType: req.user?.role === 'ADMIN' ? 'ADMIN' : 'ORGANIZER',
+      actorId: req.user?._id,
+      actorName: req.user?.name || 'System',
+      actorEmail: req.user?.email || '',
+      severity: status === 'cancelled' ? 'WARNING' : 'INFO',
+      oldState: { status: oldStatus },
+      newState: { status: status }
+    });
 
-    // Log lifecycle change
-    await logEvent('Event Lifecycle Updated', req.user, event, `Changed status to: ${status}`, 'info');
+    const participantCount = await Participant.countDocuments({ event: event._id });
 
     res.json({
       success: true,
@@ -588,25 +716,49 @@ router.post('/:id/team-members', async (req, res) => {
       });
     }
 
+    const memberPermissions = permissions || {
+      canViewParticipants: true,
+      canManageAttendance: true,
+      canSendEmails: false,
+      canGenerateCertificates: false,
+      canEditEvent: false,
+    };
+
     // Add team member with permissions
     event.teamMembers.push({
       user: userId,
       role: 'TEAM_MEMBER',
-      permissions: permissions || {
-        canViewParticipants: true,
-        canManageAttendance: true,
-        canSendEmails: false,
-        canGenerateCertificates: false,
-        canEditEvent: false,
-      },
+      permissions: memberPermissions,
       addedAt: Date.now()
     });
 
     await event.save();
-    
+
     const updatedEvent = await Event.findById(id)
       .populate('teamLead', 'name email')
       .populate('teamMembers.user', 'name email');
+
+    // Log team member addition
+    await Log.create({
+      eventId: event._id,
+      eventName: event.title,
+      actionType: 'TEAM_MEMBER_ADDED',
+      entityType: 'TEAM',
+      action: 'Team member added to event',
+      details: `${user.name} (${user.email}) added as team member by admin`,
+      actorType: 'ADMIN',
+      actorId: req.user?._id,
+      actorName: req.user?.name || 'Admin',
+      actorEmail: req.user?.email || '',
+      severity: 'INFO',
+      newState: {
+        userId: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        role: 'TEAM_MEMBER',
+        permissions: memberPermissions
+      }
+    });
 
     res.json({
       success: true,
@@ -636,7 +788,7 @@ router.delete('/:id/team-members/:userId', async (req, res) => {
       });
     }
 
-    const event = await Event.findById(id);
+    const event = await Event.findById(id).populate('teamMembers.user', 'name email');
     if (!event) {
       return res.status(404).json({
         success: false,
@@ -644,16 +796,43 @@ router.delete('/:id/team-members/:userId', async (req, res) => {
       });
     }
 
+    // Find the member being removed for logging
+    const removedMember = event.teamMembers.find(m => m.user._id.toString() === userId);
+    const removedUser = removedMember?.user;
+
     // Remove team member
     event.teamMembers = event.teamMembers.filter(
-      (m) => m.user.toString() !== userId
+      (m) => m.user._id.toString() !== userId
     );
 
     await event.save();
-    
+
     const updatedEvent = await Event.findById(id)
       .populate('teamLead', 'name email')
       .populate('teamMembers.user', 'name email');
+
+    // Log team member removal
+    if (removedUser) {
+      await Log.create({
+        eventId: event._id,
+        eventName: event.title,
+        actionType: 'TEAM_MEMBER_REMOVED',
+        entityType: 'TEAM',
+        action: 'Team member removed from event',
+        details: `${removedUser.name} (${removedUser.email}) removed as team member by admin`,
+        actorType: 'ADMIN',
+        actorId: req.user?._id,
+        actorName: req.user?.name || 'Admin',
+        actorEmail: req.user?.email || '',
+        severity: 'WARNING',
+        oldState: {
+          userId: removedUser._id,
+          userName: removedUser.name,
+          userEmail: removedUser.email,
+          role: removedMember.role
+        }
+      });
+    }
 
     res.json({
       success: true,
@@ -727,7 +906,7 @@ router.put('/:id/permissions', async (req, res) => {
     }
 
     await event.save();
-    
+
     const updatedEvent = await Event.findById(id)
       .populate('teamLead', 'name email')
       .populate('teamMembers.user', 'name email');
@@ -780,6 +959,9 @@ router.put('/:id/team-members/:userId/permissions', async (req, res) => {
       });
     }
 
+    const member = event.teamMembers[memberIndex];
+    const oldPermissions = { ...member.permissions };
+
     // Update individual member's permissions
     event.teamMembers[memberIndex].permissions = {
       ...event.teamMembers[memberIndex].permissions,
@@ -787,21 +969,46 @@ router.put('/:id/team-members/:userId/permissions', async (req, res) => {
     };
 
     await event.save();
-    
+
     const updatedEvent = await Event.findById(id)
       .populate('teamLead', 'name email')
       .populate('teamMembers.user', 'name email');
 
+    // Log permission update
+    await Log.create({
+      eventId: event._id,
+      eventName: event.title,
+      actionType: 'TEAM_PERMISSIONS_UPDATED',
+      entityType: 'TEAM',
+      action: 'Team member permissions updated',
+      details: `Permissions updated for ${member.user.name} (${member.user.email}) by admin`,
+      actorType: 'ADMIN',
+      actorId: req.user?._id,
+      actorName: req.user?.name || 'Admin',
+      actorEmail: req.user?.email || '',
+      severity: 'INFO',
+      oldState: {
+        userId: member.user._id,
+        userName: member.user.name,
+        permissions: oldPermissions
+      },
+      newState: {
+        userId: member.user._id,
+        userName: member.user.name,
+        permissions: event.teamMembers[memberIndex].permissions
+      }
+    });
+
     res.json({
       success: true,
-      message: 'Member permissions updated successfully',
+      message: 'Permissions updated successfully',
       data: updatedEvent
     });
   } catch (error) {
-    console.error('Error updating member permissions:', error);
+    console.error('Error updating team member permissions:', error);
     res.status(500).json({
       success: false,
-      message: 'Error updating member permissions',
+      message: 'Error updating permissions',
       error: error.message
     });
   }

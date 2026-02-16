@@ -64,7 +64,7 @@ const SignIn = () => {
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                Welcome back
+                Welcome back, Participant
               </h1>
               <p className="text-gray-600">
                 Sign in to access your events and dashboard
@@ -92,6 +92,16 @@ const SignIn = () => {
                   <div className="text-gray-600 mt-1">participant@alphabyte.com / part123</div>
                 </div>
               </div>
+            </div>
+
+            {/* Link to Speaker Login */}
+            <div className="mb-6 text-center p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <p className="text-sm text-gray-700">
+                Are you a speaker?{' '}
+                <Link to="/speaker-auth" className="text-emerald-600 hover:text-emerald-700 font-semibold underline">
+                  Sign in as Speaker
+                </Link>
+              </p>
             </div>
 
             {/* Form */}

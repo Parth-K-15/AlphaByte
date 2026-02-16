@@ -7,6 +7,8 @@ import Certificate from '../models/Certificate.js';
 import CertificateRequest from '../models/CertificateRequest.js';
 import EventUpdate from '../models/EventUpdate.js';
 import User from '../models/User.js';
+import EventRole from '../models/EventRole.js';
+import Log from '../models/Log.js';
 import activeSessions from '../utils/sessionStore.js';
 
 const router = express.Router();
@@ -219,6 +221,57 @@ router.post('/register', async (req, res) => {
     });
     
     await participant.save();
+
+    // Auto-create EventRole for transcript
+    try {
+      const existingRole = await EventRole.findOne({
+        email: email.toLowerCase(),
+        event: eventId,
+        role: 'participant',
+      });
+      if (!existingRole) {
+        await EventRole.create({
+          email: email.toLowerCase(),
+          name: fullName,
+          event: eventId,
+          role: 'participant',
+          startTime: event.startDate || new Date(),
+          endTime: event.endDate || undefined,
+          durationMinutes: event.startDate && event.endDate
+            ? Math.round((new Date(event.endDate) - new Date(event.startDate)) / 60000)
+            : 0,
+          status: 'active',
+          source: 'auto',
+          details: { notes: 'Registered' },
+        });
+      }
+    } catch (roleErr) {
+      console.error('EventRole auto-create error (non-blocking):', roleErr);
+    }
+
+    
+    // Create log entry for registration
+    await Log.create({
+      eventId,
+      eventName: event.title,
+      participantId: participant._id,
+      participantName: fullName,
+      participantEmail: email.toLowerCase(),
+      actionType: 'STUDENT_REGISTERED',
+      entityType: 'PARTICIPATION',
+      action: 'Student registered for event',
+      details: `${fullName} registered for "${event.title}" (${event.registrationFee === 0 ? 'Free' : 'Paid'} event)`,
+      actorType: 'STUDENT',
+      actorId: participant._id,
+      actorName: fullName,
+      actorEmail: email.toLowerCase(),
+      severity: 'INFO',
+      newState: {
+        registrationStatus: participant.registrationStatus,
+        registrationType: 'ONLINE',
+        fee: event.registrationFee
+      }
+    });
     
     res.status(201).json({
       success: true,
@@ -367,57 +420,56 @@ router.delete('/registration/:eventId', async (req, res) => {
 // POST /api/participant/attendance/scan - Scan QR to mark attendance
 router.post('/attendance/scan', async (req, res) => {
   try {
-    const { eventId, email, qrCode, sessionId } = req.body;
+    const { eventId, email, sessionId } = req.body;
     
     if (!eventId || !email) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Event ID and email are required',
-        code: 'MISSING_FIELDS'
+        message: 'Event ID and email are required' 
       });
     }
     
     if (!isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID', code: 'INVALID_EVENT' });
+      return res.status(400).json({ success: false, message: 'Invalid event ID' });
     }
 
     // Validate QR session if sessionId provided (from dynamic QR)
     if (sessionId) {
       const session = activeSessions.get(sessionId);
       if (!session) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid or expired QR code. Please ask the organizer to generate a new QR code.',
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired QR code. Ask the organizer to generate a new one.',
           code: 'INVALID_SESSION'
         });
       }
       if (Date.now() > session.expiresAt) {
         activeSessions.delete(sessionId);
-        return res.status(400).json({ 
-          success: false, 
-          message: 'QR code has expired. Please ask the organizer to refresh the QR code.',
+        return res.status(400).json({
+          success: false,
+          message: 'QR code has expired. Ask the organizer to generate a new one.',
           code: 'SESSION_EXPIRED'
         });
       }
       if (session.eventId !== eventId) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'QR code does not match the event.',
+        return res.status(400).json({
+          success: false,
+          message: 'QR code does not match this event.',
           code: 'EVENT_MISMATCH'
         });
       }
     }
-    
+
     // Verify event exists and is active
     const event = await Event.findById(eventId);
     if (!event) {
-      return res.status(404).json({ 
-        success: false, 
+      return res.status(404).json({
+        success: false,
         message: 'Event not found',
         code: 'EVENT_NOT_FOUND'
       });
     }
-
+    
     // Find the participant
     const participant = await Participant.findOne({ 
       event: eventId, 
@@ -427,7 +479,7 @@ router.post('/attendance/scan', async (req, res) => {
     if (!participant) {
       return res.status(404).json({ 
         success: false, 
-        message: 'You are not registered for this event. Please register first.',
+        message: 'You are not registered for this event',
         code: 'NOT_REGISTERED'
       });
     }
@@ -450,30 +502,27 @@ router.post('/attendance/scan', async (req, res) => {
     if (existingAttendance) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Your attendance is already marked for this event!',
+        message: 'Attendance already marked',
         code: 'ALREADY_MARKED',
         scannedAt: existingAttendance.scannedAt
       });
     }
     
-    // Determine who marked attendance
-    let markedById = participant._id;
-    if (sessionId) {
-      const session = activeSessions.get(sessionId);
-      if (session && isValidObjectId(session.organizerId)) {
-        markedById = session.organizerId;
-      }
-    }
-
     // Mark attendance
-    const attendance = new Attendance({
+    const attendanceData = {
       event: eventId,
       participant: participant._id,
       scannedAt: new Date(),
-      markedBy: markedById,
-      sessionId: sessionId || 'self-scan',
       status: 'PRESENT'
-    });
+    };
+    if (sessionId) {
+      attendanceData.sessionId = sessionId;
+    }
+    // markedBy expects a User ObjectId – look up the linked user, else skip
+    if (participant.user) {
+      attendanceData.markedBy = participant.user;
+    }
+    const attendance = new Attendance(attendanceData);
     
     await attendance.save();
     
@@ -486,12 +535,12 @@ router.post('/attendance/scan', async (req, res) => {
     
     res.json({
       success: true,
-      message: `Attendance marked successfully for ${event.title}!`,
+      message: 'Attendance marked successfully!',
       code: 'SUCCESS',
       data: {
-        participantName: participant.fullName || participant.name,
-        eventTitle: event.title,
+        participantName: participant.fullName,
         eventId,
+        eventTitle: event.title,
         scannedAt: attendance.scannedAt
       }
     });
