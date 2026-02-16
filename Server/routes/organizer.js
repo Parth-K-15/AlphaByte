@@ -626,7 +626,7 @@ router.post('/attendance/:eventId/generate-qr', async (req, res) => {
     const sessionId = crypto.randomBytes(16).toString('hex');
     const timestamp = Date.now();
     const expiresAt = timestamp + (5 * 60 * 1000);
-    activeSessions.set(sessionId, { eventId, organizerId, createdAt: timestamp, expiresAt });
+    await activeSessions.set(sessionId, { eventId, organizerId, createdAt: timestamp, expiresAt });
     const qrData = { eventId, sessionId, timestamp, expiresAt };
 
     // Log QR generation
@@ -662,9 +662,9 @@ router.post('/attendance/mark', async (req, res) => {
     const perm = await checkPermission(req, eventId, 'canManageAttendance');
     if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
-    const session = activeSessions.get(sessionId);
+    const session = await activeSessions.get(sessionId);
     if (!session) return res.status(400).json({ success: false, message: 'Invalid or expired QR code' });
-    if (Date.now() > session.expiresAt) { activeSessions.delete(sessionId); return res.status(400).json({ success: false, message: 'QR code has expired' }); }
+    if (Date.now() > session.expiresAt) { await activeSessions.delete(sessionId); return res.status(400).json({ success: false, message: 'QR code has expired' }); }
     if (session.eventId !== eventId) return res.status(400).json({ success: false, message: 'QR code does not match event' });
     const participant = await Participant.findOne({ _id: participantId, event: eventId });
     if (!participant) return res.status(404).json({ success: false, message: 'Participant not registered for this event' });
@@ -772,7 +772,7 @@ router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => 
     if (!attendance) return res.status(404).json({ success: false, message: 'Attendance record not found' });
 
     await Participant.findByIdAndUpdate(participantId, {
-      attendanceStatus: 'NOT_ATTENDED',
+      attendanceStatus: 'ABSENT',
       attendedAt: null
     });
 
@@ -795,7 +795,7 @@ router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => 
       severity: 'WARNING',
       reason: 'Attendance record removed by organizer',
       oldState: { attendanceStatus: 'ATTENDED' },
-      newState: { attendanceStatus: 'NOT_ATTENDED' }
+      newState: { attendanceStatus: 'ABSENT' }
     });
 
     res.json({ success: true, message: 'Attendance unmarked successfully' });
@@ -1011,12 +1011,14 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
         }
 
         // Prepare certificate data with all required fields
+        const certVerificationId = `${Date.now().toString(16)}-${Math.random().toString(16).substring(2, 10)}-${Math.random().toString(16).substring(2, 10)}`;
         const certificateData = {
           template,
           participantName: participant.name || participant.fullName || 'Participant',
           eventName: event.title || event.name || 'Event',
           eventDate: event.startDate || event.createdAt || new Date(),
           certificateId: `CERT-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
+          verificationId: certVerificationId,
           organizationName: event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
           departmentName: event.departmentName || 'Department of Computer Science & Engineering',
           competitionName: competitionName || event.title || event.name || 'Competition',
@@ -1059,6 +1061,7 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
               event: eventId,
               participant: participant._id,
               certificateId: certificateData.certificateId,
+              verificationId: certVerificationId,
               issuedBy: organizerId,
               template,
               achievement,
@@ -1727,12 +1730,14 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
     }
 
     // Generate certificate
+    const certVerificationId = `${Date.now().toString(16)}-${Math.random().toString(16).substring(2, 10)}-${Math.random().toString(16).substring(2, 10)}`;
     const certificateData = {
       template,
       participantName: request.participant.name || request.participant.fullName,
       eventName: request.event.title || request.event.name,
       eventDate: request.event.startDate || request.event.createdAt,
       certificateId: `CERT-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
+      verificationId: certVerificationId,
       organizationName: request.event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
       departmentName: request.event.departmentName || 'Department of Computer Science & Engineering',
       competitionName: competitionName || request.event.title || request.event.name,
@@ -1749,6 +1754,7 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
         event: request.event._id,
         participant: request.participant._id,
         certificateId: certificateData.certificateId,
+        verificationId: certVerificationId,
         issuedBy: organizerId,
         template,
         achievement: achievement || 'Participation',

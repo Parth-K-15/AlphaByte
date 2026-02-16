@@ -9,238 +9,339 @@
       size: A4 landscape;
       margin: 0;
     }
-    
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
-      font-family: 'Arial', sans-serif;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      background: #e8edf3;
       width: 297mm;
       height: 210mm;
       position: relative;
     }
-    
+
     .certificate-container {
       width: 100%;
       height: 100%;
       background: #ffffff;
-      margin: 20px;
-      padding: 0;
       position: relative;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      overflow: hidden;
     }
-    
+
     /* Header section with colored banner */
     .header-banner {
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      background: linear-gradient(135deg, #1a325a 0%, #1e3c72 40%, #2a5298 100%);
       color: white;
-      padding: 30px 60px;
+      padding: 28px 60px;
       text-align: center;
       position: relative;
     }
-    
+
     .header-banner::after {
       content: '';
       position: absolute;
-      bottom: -20px;
+      bottom: -24px;
       left: 0;
       right: 0;
-      height: 20px;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 60%, 0 100%);
+      height: 24px;
+      background: linear-gradient(135deg, #1a325a 0%, #1e3c72 40%, #2a5298 100%);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
     }
-    
+
     .organization-name {
-      font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 5px;
+      font-size: 20px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 4px;
     }
-    
+
     .department-name {
-      font-size: 14px;
-      opacity: 0.9;
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 4px;
+      letter-spacing: 1.5px;
+      font-weight: 300;
     }
-    
+
     /* Main content */
     .content {
-      padding: 60px 80px 40px 80px;
+      padding: 50px 80px 30px 80px;
       text-align: center;
     }
-    
+
     .certificate-title {
-      font-size: 42px;
-      font-weight: bold;
+      font-size: 38px;
+      font-weight: 700;
       color: #1e3c72;
-      margin-bottom: 30px;
-      letter-spacing: 3px;
+      margin-bottom: 4px;
+      letter-spacing: 4px;
       text-transform: uppercase;
     }
-    
+
+    .title-underline {
+      display: block;
+      width: 200px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #d4af37 30%, #d4af37 70%, transparent);
+      margin: 8px auto 20px;
+    }
+
     .presented-to {
-      font-size: 16px;
-      color: #666;
-      margin-bottom: 15px;
+      font-size: 14px;
+      color: #888;
       font-style: italic;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
     }
-    
+
     .participant-name {
-      font-size: 48px;
-      font-weight: bold;
-      color: #2a5298;
-      margin: 20px 0;
+      font-size: 46px;
+      font-weight: 700;
+      color: #1e3c72;
+      margin: 14px 0;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
       border-bottom: 3px solid #2a5298;
       display: inline-block;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
     }
-    
+
     .description {
-      font-size: 16px;
-      color: #444;
-      line-height: 1.8;
-      max-width: 750px;
-      margin: 30px auto;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.85;
+      max-width: 700px;
+      margin: 22px auto;
     }
-    
+
     .event-name-highlight {
-      font-weight: bold;
+      font-weight: 700;
       color: #1e3c72;
     }
-    
+
     .achievement-badge {
       display: inline-block;
-      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-      color: #1e3c72;
-      padding: 8px 20px;
+      background: linear-gradient(135deg, #d4af37 0%, #f0d060 50%, #d4af37 100%);
+      color: #1a325a;
+      padding: 8px 28px;
       border-radius: 25px;
-      font-weight: bold;
+      font-weight: 700;
+      font-size: 13px;
       margin: 10px 0;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      box-shadow: 0 3px 10px rgba(212, 175, 55, 0.35);
     }
-    
+
     /* Signatures */
     .signatures {
       display: flex;
       justify-content: space-around;
-      margin-top: 50px;
-      padding: 0 100px;
+      margin-top: 34px;
+      padding: 0 90px;
     }
-    
+
     .signature-block {
       text-align: center;
-      width: 180px;
+      width: 170px;
     }
-    
+
     .signature-line {
-      border-top: 2px solid #1e3c72;
-      margin-bottom: 8px;
-      padding-top: 40px;
+      border-top: 1.5px solid #1e3c72;
+      margin-bottom: 6px;
+      padding-top: 30px;
     }
-    
+
     .signature-name {
-      font-size: 13px;
-      font-weight: bold;
-      color: #1e3c72;
-    }
-    
-    .signature-title {
       font-size: 11px;
-      color: #666;
+      font-weight: 700;
+      color: #1e3c72;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
-    
-    /* Footer with date */
+
+    .signature-title {
+      font-size: 9px;
+      color: #888;
+      margin-top: 2px;
+      font-weight: 300;
+    }
+
+    /* Footer */
     .footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
       text-align: center;
-      margin-top: 30px;
-      padding: 20px;
-      background: #f8f9fa;
-      border-top: 2px solid #1e3c72;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #1a325a 0%, #1e3c72 40%, #2a5298 100%);
     }
-    
+
     .date {
-      font-size: 14px;
-      color: #666;
-      font-weight: 600;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+      letter-spacing: 1.5px;
     }
-    
+
     /* Decorative elements */
     .corner-logo {
       position: absolute;
-      width: 60px;
-      height: 60px;
+      width: 50px;
+      height: 50px;
       background: #2a5298;
-      opacity: 0.1;
+      opacity: 0.06;
       border-radius: 50%;
     }
-    
+
     .top-left-logo {
-      top: 120px;
-      left: 40px;
+      top: 110px;
+      left: 35px;
     }
-    
+
     .top-right-logo {
-      top: 120px;
-      right: 40px;
+      top: 110px;
+      right: 35px;
     }
-    
+
+    /* Side accent lines */
+    .side-accent-left {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, #d4af37 0%, transparent 30%, transparent 70%, #d4af37 100%);
+    }
+
+    .side-accent-right {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, #d4af37 0%, transparent 30%, transparent 70%, #d4af37 100%);
+    }
+
+    /* Official seal */
     .seal {
       position: absolute;
-      bottom: 100px;
-      right: 80px;
-      width: 90px;
-      height: 90px;
-      border: 4px solid #1e3c72;
+      bottom: 68px;
+      right: 70px;
+      width: 82px;
+      height: 82px;
+      border: 3px solid #1e3c72;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-direction: column;
       background: white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+      z-index: 20;
     }
-    
+
+    .seal::before {
+      content: '';
+      position: absolute;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 1px dashed rgba(30, 60, 114, 0.3);
+    }
+
     .seal-text {
-      font-size: 10px;
-      font-weight: bold;
+      font-size: 8px;
+      font-weight: 700;
       color: #1e3c72;
       text-align: center;
+      letter-spacing: 1.5px;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .qr-section {
+      position: absolute;
+      bottom: 68px;
+      left: 70px;
+      text-align: center;
+      z-index: 20;
+    }
+
+    .qr-section img {
+      width: 82px;
+      height: 82px;
+      border: 2px solid #1e3c72;
+      border-radius: 6px;
+      padding: 4px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .qr-section .qr-label {
+      font-size: 7px;
+      color: #888;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+    }
+
+    /* Watermark */
+    .watermark {
+      position: absolute;
+      top: 55%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-20deg);
+      font-size: 100px;
+      font-weight: 700;
+      color: rgba(30, 60, 114, 0.02);
+      letter-spacing: 15px;
+      text-transform: uppercase;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 1;
     }
   </style>
 </head>
 <body>
   <div class="certificate-container">
+    <!-- Side accents -->
+    <div class="side-accent-left"></div>
+    <div class="side-accent-right"></div>
+    <div class="watermark">EXCELLENCE</div>
+
     <!-- Header Banner -->
     <div class="header-banner">
       <div class="organization-name">{{organizationName}}</div>
       <div class="department-name">{{departmentName}}</div>
     </div>
-    
+
     <!-- Decorative elements -->
     <div class="corner-logo top-left-logo"></div>
     <div class="corner-logo top-right-logo"></div>
-    
+
     <!-- Main Content -->
     <div class="content">
       <div class="certificate-title">Certificate of Excellence</div>
+      <span class="title-underline"></span>
       <div class="presented-to">This certificate is proudly presented to</div>
       <div class="participant-name">{{participantName}}</div>
-      
+
       <div class="achievement-badge">{{achievement}}</div>
-      
+
       <div class="description">
-        For outstanding performance and successful participation in 
+        For outstanding performance and successful participation in
         <span class="event-name-highlight">"{{competitionName}}"</span>,
         held as part of <strong>{{eventName}}</strong>,
         organized by {{organizerName}}, {{organizationName}}.
       </div>
-      
+
       <!-- Signatures -->
       <div class="signatures">
         <div class="signature-block">
@@ -260,12 +361,18 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Seal -->
     <div class="seal">
       <div class="seal-text">OFFICIALLY<br>CERTIFIED</div>
     </div>
-    
+
+    <!-- QR Code -->
+    <div class="qr-section">
+      <img src="{{qrCodeDataUri}}" alt="QR Verify" />
+      <div class="qr-label">Scan to Verify</div>
+    </div>
+
     <!-- Footer -->
     <div class="footer">
       <div class="date">Date: {{eventDate}}</div>

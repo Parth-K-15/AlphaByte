@@ -237,7 +237,7 @@ const MyRegistrations = () => {
         body: JSON.stringify({
           eventId: qrCodeData.eventId || selectedEvent._id,
           email: email,
-          qrData: qrCodeData.qrData || qrCodeData.sessionId,
+          sessionId: qrCodeData.sessionId,
         }),
       });
 

@@ -33,6 +33,7 @@ import reportsRoutes from './routes/reports.js';
 import logsRoutes from './routes/logs.js';
 import transcriptRoutes from './routes/transcript.js';
 import chatbotRoutes from './routes/chatbot.js';
+import verifyRoutes from './routes/verify.js';
 import reconciliationRoutes from './routes/reconciliation.js';
 
 // Import email service
@@ -125,6 +126,7 @@ app.use('/api/speaker', speakerRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/verify', verifyRoutes);
 app.use('/api/participant', participantProfileRoutes); // Must be before participantRoutes
 app.use('/api/participant', participantRoutes);
 app.use('/api/transcript', transcriptRoutes);

@@ -371,15 +371,22 @@ router.get("/my-events", async (req, res) => {
       )
       .sort({ createdAt: -1 });
 
-    // Enrich with certificate info
+    // Enrich with attendance (source of truth) and certificate info
     const enrichedRegistrations = await Promise.all(
       registrations.map(async (reg) => {
+        const attendance = await Attendance.findOne({
+          event: reg.event?._id || reg.event,
+          participant: reg._id,
+        });
         const certificate = await Certificate.findOne({
           participant: reg._id,
         });
 
         return {
           ...reg.toObject(),
+          // Use Attendance collection as the source of truth
+          attendanceStatus: attendance ? 'ATTENDED' : (reg.attendanceStatus === 'ATTENDED' ? 'ABSENT' : reg.attendanceStatus),
+          attendedAt: attendance?.scannedAt || null,
           certificate: certificate
             ? {
                 certificateId: certificate.certificateId,
@@ -525,7 +532,7 @@ router.post("/attendance/scan", async (req, res) => {
       });
     }
 
-    const session = activeSessions.get(sessionId);
+    const session = await activeSessions.get(sessionId);
     if (!session) {
       return res.status(400).json({
         success: false,
@@ -534,7 +541,7 @@ router.post("/attendance/scan", async (req, res) => {
       });
     }
     if (Date.now() > session.expiresAt) {
-      activeSessions.delete(sessionId);
+      await activeSessions.delete(sessionId);
       return res.status(400).json({
         success: false,
         message: 'QR code has expired. Ask the organizer to generate a new one.',
@@ -1200,6 +1207,10 @@ router.get("/certificates", async (req, res) => {
         };
       });
 
+    
+    // Calculate total attended events (WITH or WITHOUT certificates)
+    const totalAttendedEvents = allEvents.filter(e => e.hasAttendance).length;
+    
     res.json({
       success: true,
       data: {
@@ -1208,10 +1219,10 @@ router.get("/certificates", async (req, res) => {
         allEvents,
         stats: {
           total: certificates.length,
-          attended: attendedEvents.length,
-          registered: allEvents.length,
-        },
-      },
+          attended: totalAttendedEvents,
+          registered: allEvents.length
+        }
+      }
     });
   } catch (error) {
     console.error("Error fetching certificates:", error);
