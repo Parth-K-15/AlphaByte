@@ -142,8 +142,7 @@ router.post('/', async (req, res) => {
       tags,
       teamLead,
       createdBy,
-      rulebook
-      createdBy,
+      rulebook,
       enableCertificates,
       certificateTemplate
     } = req.body;

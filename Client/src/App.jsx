@@ -114,50 +114,17 @@ function App() {
               }
             />
 
-          {/* Admin Routes - Protected */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          
-          {/* Events Management */}
-          <Route path="events" element={<Events />} />
-          <Route path="events/create" element={<CreateEvent />} />
-          <Route path="events/:id" element={<AdminEventDetails />} />
-          <Route path="events/:id/edit" element={<CreateEvent />} />
-          <Route path="events/lifecycle" element={<EventLifecycle />} />
-          <Route path="events/:id/lifecycle" element={<EventLifecycle />} />
-          
-          {/* Team Management */}
-          <Route path="team" element={<TeamManagement />} />
-          <Route path="team/events/:eventId" element={<EventTeamDetails />} />
-          <Route path="team/leads" element={<TeamLeads />} />
-          <Route path="team/members" element={<Members />} />
-          <Route path="team/permissions" element={<Permissions />} />
-          
-          {/* Access Control */}
-          <Route path="access" element={<AccessControl />} />
-          <Route path="access/restrict" element={<AccessControl />} />
-          <Route path="access/suspended" element={<AccessControl />} />
-          
-          {/* Analytics & Reports */}
-          <Route path="reports" element={<Reports />} />
-          
-          {/* AI Participation Intelligence (Test/Demo) */}
-          <Route path="ai-test" element={<AIParticipationTest />} />
-          
-          {/* System Logs */}
-          <Route path="logs" element={<Logs />} />
-          
-          {/* Settings */}
-          <Route path="settings" element={<Settings />} />
-        </Route>
+            {/* Admin Routes - Protected */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
 
               {/* Events Management */}
               <Route path="events" element={<Events />} />
@@ -167,44 +134,6 @@ function App() {
               <Route path="events/lifecycle" element={<EventLifecycle />} />
               <Route path="events/:id/lifecycle" element={<EventLifecycle />} />
 
-        {/* Participant Routes - Protected */}
-        <Route
-          path="/participant"
-          element={
-            <ProtectedRoute allowedRoles={['PARTICIPANT']}>
-              <ParticipantLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<EventsHome />} />
-          
-          {/* Event Discovery */}
-          <Route path="event/:eventId" element={<ParticipantEventDetails />} />
-          
-          {/* Calendar */}
-          <Route path="calendar" element={<Calendar />} />
-          
-          {/* My Registrations */}
-          <Route path="registrations" element={<MyRegistrations />} />
-          
-          {/* QR Scanner for Attendance */}
-          <Route path="scan" element={<QRScanner />} />
-          
-          {/* History */}
-          <Route path="history" element={<History />} />
-          
-          {/* Certificates */}
-          <Route path="certificates" element={<ParticipantCertificates />} />
-          
-          {/* Profile */}
-          <Route path="profile" element={<Profile />} />
-          
-          {/* AI Chatbot Test */}
-          <Route path="chatbot-test" element={<ChatbotTest />} />
-        </Route>
-      </Routes>
-      </Router>
-    </AuthProvider>
               {/* Team Management */}
               <Route path="team" element={<TeamManagement />} />
               <Route
@@ -222,6 +151,9 @@ function App() {
 
               {/* Analytics & Reports */}
               <Route path="reports" element={<Reports />} />
+
+              {/* AI Participation Intelligence (Test/Demo) */}
+              <Route path="ai-test" element={<AIParticipationTest />} />
 
               {/* System Logs */}
               <Route path="logs" element={<Logs />} />
@@ -320,6 +252,9 @@ function App() {
 
               {/* Transcript */}
               <Route path="transcript" element={<Transcript />} />
+
+              {/* AI Chatbot Test */}
+              <Route path="chatbot-test" element={<ChatbotTest />} />
             </Route>
 
             {/* Speaker Routes - Protected */}
