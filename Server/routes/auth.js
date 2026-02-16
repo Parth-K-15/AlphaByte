@@ -3,6 +3,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import ParticipantAuth from "../models/ParticipantAuth.js";
+import { cache } from "../middleware/cache.js";
+import { CacheKeys, CacheTTL } from "../utils/cacheKeys.js";
 //
 
 const router = express.Router();
@@ -244,7 +246,24 @@ router.post("/logout", (req, res) => {
 
 // @desc    Get current user profile
 // @route   GET /api/auth/me
-router.get("/me", async (req, res) => {
+router.get(
+  "/me",
+  cache(CacheTTL.VERY_LONG, (req) => {
+    // Extract user ID from JWT for cache key
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        return CacheKeys.user(decoded.id);
+      }
+    } catch (err) {
+      // If token is invalid, use a generic key that won't match any cache
+      return `auth:me:invalid:${Date.now()}`;
+    }
+    return `auth:me:notoken:${Date.now()}`;
+  }),
+  async (req, res) => {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;

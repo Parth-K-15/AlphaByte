@@ -10,6 +10,8 @@ import User from "../models/User.js";
 import activeSessions from "../utils/sessionStore.js";
 import { cache } from "../middleware/cache.js";
 import { CacheKeys, CacheTTL } from "../utils/cacheKeys.js";
+import { invalidateEventCache, invalidateParticipantCache } from "../utils/cacheInvalidation.js";
+import { CachePatterns } from "../utils/cacheKeys.js";
 
 const router = express.Router();
 
@@ -271,6 +273,9 @@ router.post("/register", async (req, res) => {
     });
 
     await participant.save();
+
+    // Invalidate caches for event and event lists
+    await invalidateEventCache(eventId);
 
     res.status(201).json({
       success: true,

@@ -3,13 +3,6 @@ import { createClient } from "redis";
 let redisClient = null;
 let isConnected = false;
 
-const REDIS_CONFIG = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-  password: process.env.REDIS_PASSWORD || undefined,
-  database: parseInt(process.env.REDIS_DB || "0"),
-};
-
 /**
  * Initialize Redis client
  */
@@ -21,18 +14,53 @@ export const initRedis = async () => {
       return null;
     }
 
-    redisClient = createClient({
-      socket: {
-        host: REDIS_CONFIG.host,
-        port: REDIS_CONFIG.port,
-      },
-      password: REDIS_CONFIG.password,
-      database: REDIS_CONFIG.database,
-    });
+    // Read config at runtime (after dotenv has loaded)
+    const host = process.env.REDIS_HOST || "localhost";
+    const port = parseInt(process.env.REDIS_PORT || "6379");
+    const password = process.env.REDIS_PASSWORD || undefined;
+    const database = parseInt(process.env.REDIS_DB || "0");
+    const isRemote = host !== "localhost" && host !== "127.0.0.1";
+
+    console.log(`🔧 Redis Config: host=${host}, port=${port}, tls=${isRemote}`);
+
+    // Use URL-based connection for remote Redis (Upstash)
+    // rediss:// = Redis over TLS
+    if (isRemote) {
+      const redisUrl = `rediss://default:${password}@${host}:${port}`;
+      redisClient = createClient({
+        url: redisUrl,
+        socket: {
+          reconnectStrategy: (retries) => {
+            if (retries > 3) {
+              console.log("⚠️  Redis reconnection attempts exhausted. Continuing without cache.");
+              return false;
+            }
+            return Math.min(retries * 100, 3000);
+          },
+        },
+      });
+    } else {
+      // Local Redis (no TLS)
+      redisClient = createClient({
+        socket: {
+          host: host,
+          port: port,
+          reconnectStrategy: (retries) => {
+            if (retries > 3) {
+              console.log("⚠️  Redis reconnection attempts exhausted. Continuing without cache.");
+              return false;
+            }
+            return Math.min(retries * 100, 3000);
+          },
+        },
+        password: password,
+        database: database,
+      });
+    }
 
     // Error handling
     redisClient.on("error", (err) => {
-      console.error("❌ Redis Client Error:", err.message);
+      console.error("❌ Redis Client Error:", err.code || err.message || err);
       isConnected = false;
     });
 
@@ -42,8 +70,9 @@ export const initRedis = async () => {
 
     redisClient.on("ready", () => {
       console.log("✅ Redis connected successfully");
-      console.log(`   Host: ${REDIS_CONFIG.host}:${REDIS_CONFIG.port}`);
-      console.log(`   DB: ${REDIS_CONFIG.database}`);
+      console.log(`   Host: ${host}:${port}`);
+      console.log(`   TLS: ${isRemote ? "enabled" : "disabled"}`);
+      console.log(`   DB: ${database}`);
       isConnected = true;
     });
 
@@ -52,13 +81,31 @@ export const initRedis = async () => {
       isConnected = false;
     });
 
-    // Connect to Redis
-    await redisClient.connect();
+    // Connect to Redis with timeout
+    const connectPromise = redisClient.connect();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Connection timeout')), 5000)
+    );
+
+    await Promise.race([connectPromise, timeoutPromise]);
 
     return redisClient;
   } catch (error) {
-    console.error("❌ Failed to initialize Redis:", error.message);
+    console.error("❌ Failed to initialize Redis:", error.code || error.message || 'Unknown error');
     console.log("⚠️  Application will continue without caching");
+    console.log("💡 To disable caching, set CACHE_ENABLED=false in .env");
+    
+    // Clean up failed client
+    if (redisClient) {
+      try {
+        await redisClient.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+      redisClient = null;
+    }
+    
+    isConnected = false;
     return null;
   }
 };

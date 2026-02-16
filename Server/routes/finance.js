@@ -4,6 +4,9 @@ import Expense from "../models/Expense.js";
 import Event from "../models/Event.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
+import { cache } from "../middleware/cache.js";
+import { CacheKeys, CacheTTL } from "../utils/cacheKeys.js";
+import { invalidateFinanceCache } from "../utils/cacheInvalidation.js";
 
 const router = express.Router();
 
@@ -91,6 +94,9 @@ router.post("/budget/request", async (req, res) => {
       0,
     );
 
+    // Invalidate finance cache
+    await invalidateFinanceCache(eventId);
+
     res.json({
       success: true,
       message: "Budget request submitted successfully",
@@ -108,7 +114,10 @@ router.post("/budget/request", async (req, res) => {
  * @desc    Get Budget Details
  * @route   GET /api/finance/budget/:eventId
  */
-router.get("/budget/:eventId", async (req, res) => {
+router.get(
+  "/budget/:eventId",
+  cache(CacheTTL.MEDIUM, (req) => CacheKeys.budget(req.params.eventId)),
+  async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId))
@@ -206,6 +215,9 @@ router.put("/budget/:eventId/approval", async (req, res) => {
 
     await budget.save();
 
+    // Invalidate finance cache
+    await invalidateFinanceCache(eventId);
+
     res.json({
       success: true,
       message: `Budget ${status.toLowerCase()} successfully`,
@@ -284,6 +296,9 @@ router.post("/expense", async (req, res) => {
 
     await expense.save();
 
+    // Invalidate finance cache
+    await invalidateFinanceCache(eventId);
+
     res.status(201).json({
       success: true,
       message: "Expense logged successfully",
@@ -301,7 +316,10 @@ router.post("/expense", async (req, res) => {
  * @desc    Get All Expenses for Event
  * @route   GET /api/finance/expenses/:eventId
  */
-router.get("/expenses/:eventId", async (req, res) => {
+router.get(
+  "/expenses/:eventId",
+  cache(CacheTTL.SHORT, (req) => CacheKeys.expenses(req.params.eventId)),
+  async (req, res) => {
   try {
     const { eventId } = req.params;
     if (!isValidObjectId(eventId))
@@ -327,7 +345,10 @@ router.get("/expenses/:eventId", async (req, res) => {
  * @desc    Get All Expenses requiring action (Admin Dashboard)
  * @route   GET /api/finance/expenses/pending/all
  */
-router.get("/expenses/pending/all", async (req, res) => {
+router.get(
+  "/expenses/pending/all",
+  cache(CacheTTL.SHORT, () => CacheKeys.expensesPending()),
+  async (req, res) => {
   try {
     const expenses = await Expense.find({ status: "PENDING" })
       .populate("event", "title")
@@ -374,6 +395,9 @@ router.put("/expense/:expenseId/status", async (req, res) => {
     }
 
     await expense.save();
+
+    // Invalidate finance cache
+    await invalidateFinanceCache(expense.event.toString());
 
     res.json({
       success: true,

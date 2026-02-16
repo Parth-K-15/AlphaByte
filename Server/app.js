@@ -2,6 +2,21 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Get current directory in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load env variables with explicit path
+dotenv.config({ path: join(__dirname, '.env') });
+
+// Debug: Verify env variables are loaded
+console.log('🔍 Environment Check:');
+console.log('   REDIS_HOST:', process.env.REDIS_HOST || 'NOT SET');
+console.log('   CACHE_ENABLED:', process.env.CACHE_ENABLED || 'NOT SET');
+console.log('   PORT:', process.env.PORT || 'NOT SET');
 
 // Import routes
 import dashboardRoutes from "./routes/dashboard.js";
@@ -22,9 +37,6 @@ import financeRoutes from "./routes/finance.js";
 
 // Import Redis
 import { initRedis, closeRedis } from "./config/redis.js";
-
-// Load env variables
-dotenv.config();
 
 const app = express();
 

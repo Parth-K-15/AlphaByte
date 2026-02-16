@@ -5,6 +5,8 @@ import Participant from '../models/Participant.js';
 import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
 import mongoose from 'mongoose';
+import { invalidateEventCache, invalidateDashboardCache, invalidateMultiple } from '../utils/cacheInvalidation.js';
+import { CachePatterns } from '../utils/cacheKeys.js';
 
 const router = express.Router();
 
@@ -186,6 +188,9 @@ router.post('/', async (req, res) => {
       .populate('teamLead', 'name email')
       .populate('createdBy', 'name email');
 
+    // Invalidate caches
+    await invalidateMultiple(CachePatterns.allEventLists, CachePatterns.allDashboards);
+
     res.status(201).json({
       success: true,
       message: 'Event created successfully',
@@ -236,6 +241,10 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    // Invalidate caches
+    await invalidateEventCache(id);
+    await invalidateDashboardCache();
+
     res.json({
       success: true,
       message: 'Event updated successfully',
@@ -277,6 +286,10 @@ router.delete('/:id', async (req, res) => {
     await Participant.deleteMany({ event: id });
     await Attendance.deleteMany({ event: id });
     await Certificate.deleteMany({ event: id });
+
+    // Invalidate caches
+    await invalidateEventCache(id);
+    await invalidateDashboardCache();
 
     res.json({
       success: true,
