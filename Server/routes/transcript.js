@@ -38,11 +38,22 @@ router.post("/sync", verifyToken, async (req, res) => {
       registrationStatus: { $in: ["PENDING", "CONFIRMED"] },
     }).populate("event", "title startDate endDate status");
 
+    // Track processed events to avoid duplicates
+    const processedEvents = new Set();
+
     for (const reg of registrations) {
       if (!reg.event) continue;
 
+      const eventId = reg.event._id.toString();
+      
+      // Skip if we already processed this event for this user
+      if (processedEvents.has(eventId)) {
+        console.log(`Skipping duplicate participant role for event ${eventId}`);
+        continue;
+      }
+
       const exists = await EventRole.findOne({
-        email,
+        email: { $regex: new RegExp(`^${email}$`, "i") },
         event: reg.event._id,
         role: "participant",
       });
@@ -64,7 +75,7 @@ router.post("/sync", verifyToken, async (req, res) => {
         }
 
         await EventRole.create({
-          email,
+          email: email.toLowerCase(),
           name: reg.fullName || reg.name || name,
           event: reg.event._id,
           role: "participant",
@@ -83,6 +94,9 @@ router.post("/sync", verifyToken, async (req, res) => {
           },
         });
         created++;
+        processedEvents.add(eventId);
+      } else {
+        processedEvents.add(eventId);
       }
     }
 
@@ -101,7 +115,7 @@ router.post("/sync", verifyToken, async (req, res) => {
         if (!session.event) continue;
 
         const exists = await EventRole.findOne({
-          email,
+          email: { $regex: new RegExp(`^${email}$`, "i") },
           event: session.event._id,
           role: "speaker",
           "details.sessionId": session._id,
@@ -118,7 +132,7 @@ router.post("/sync", verifyToken, async (req, res) => {
           }
 
           await EventRole.create({
-            email,
+            email: email.toLowerCase(),
             name: speakerAccount.name || name,
             event: session.event._id,
             role: "speaker",
@@ -155,7 +169,7 @@ router.post("/sync", verifyToken, async (req, res) => {
 
       for (const event of events) {
         const exists = await EventRole.findOne({
-          email,
+          email: { $regex: new RegExp(`^${email}$`, "i") },
           event: event._id,
           role: "organizer",
         });
@@ -174,7 +188,7 @@ router.post("/sync", verifyToken, async (req, res) => {
           }
 
           await EventRole.create({
-            email,
+            email: email.toLowerCase(),
             name: userAccount.name || name,
             event: event._id,
             role: "organizer",

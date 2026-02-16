@@ -15,8 +15,7 @@ import {
   ChevronUp,
   Download,
 } from "lucide-react";
-
-const API_BASE = "http://localhost:5000/api";
+import participantApi from "../../services/participantApi";
 
 const ROLE_CONFIG = {
   participant: {
@@ -59,57 +58,46 @@ const Transcript = () => {
     syncAndFetch();
   }, []);
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem("token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
-
   const syncAndFetch = async () => {
     try {
       setLoading(true);
       setError("");
 
       // Sync first
-      await fetch(`${API_BASE}/transcript/sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-      });
+      await participantApi.syncTranscript();
 
       // Then fetch
       await fetchTranscript();
     } catch (err) {
       console.error("Transcript sync/fetch error:", err);
-      setError("Failed to load transcript. Please try again.");
+      setError(err.message || "Failed to load transcript. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const fetchTranscript = async () => {
-    const response = await fetch(`${API_BASE}/transcript`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...getAuthHeaders(),
-      },
-    });
-    const data = await response.json();
+    try {
+      const response = await participantApi.getTranscript();
+      const data = response.data;
 
-    if (data.success) {
-      setTranscript(data.data.transcript || []);
-      setSummary(data.data.summary || null);
-      setStudent(data.data.student || null);
+      if (data.success) {
+        setTranscript(data.data.transcript || []);
+        setSummary(data.data.summary || null);
+        setStudent(data.data.student || null);
 
-      // Auto-expand all events
-      const expanded = {};
-      (data.data.transcript || []).forEach((item, idx) => {
-        expanded[idx] = true;
-      });
-      setExpandedEvents(expanded);
-    } else {
-      setError(data.message || "Failed to load transcript");
+        // Auto-expand all events
+        const expanded = {};
+        (data.data.transcript || []).forEach((item, idx) => {
+          expanded[idx] = true;
+        });
+        setExpandedEvents(expanded);
+      } else {
+        setError(data.message || "Failed to load transcript");
+      }
+    } catch (err) {
+      console.error("Fetch transcript error:", err);
+      setError(err.message || "Failed to load transcript");
     }
   };
 
