@@ -36,6 +36,9 @@ import {
   Communication,
   Certificates,
   TeamAccess,
+  FinanceDashboard,
+  BudgetRequest,
+  ExpenseLog,
 } from "./pages/organizer";
 import {
   EventsHome,
@@ -175,6 +178,20 @@ function App() {
 
               {/* Team Access (Team Lead Only) */}
               <Route path="team" element={<TeamAccess />} />
+
+              {/* Finance Routes */}
+              <Route
+                path="events/:eventId/finance"
+                element={<FinanceDashboard />}
+              />
+              <Route
+                path="events/:eventId/finance/request"
+                element={<BudgetRequest />}
+              />
+              <Route
+                path="events/:eventId/finance/expense"
+                element={<ExpenseLog />}
+              />
             </Route>
 
             {/* Participant Routes - Protected */}

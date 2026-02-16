@@ -15,6 +15,7 @@ import {
   X,
   Sun,
   Moon,
+  Banknote,
 } from "lucide-react";
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -68,6 +69,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
         { title: "My Events", path: "/organizer/events" },
         { title: "Attendance", path: "/organizer/attendance/qr" },
       ],
+    },
+    {
+      title: "Finance",
+      icon: Banknote,
+      path: "/organizer/events",
     },
     {
       title: "Participants",

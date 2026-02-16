@@ -424,9 +424,9 @@ const Dashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-7 gap-1 mb-2">
-                  {dayNames.map((day) => (
+                  {dayNames.map((day, i) => (
                     <div
-                      key={day}
+                      key={i}
                       className="text-center text-xs text-gray-400 p-2"
                     >
                       {day}
@@ -682,7 +682,9 @@ const Dashboard = () => {
             {/* Progress Overview */}
             <div className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 shadow-sm dark:shadow-none border border-gray-200 dark:border-white/5">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-[#191A23] dark:text-white">Event Progress</h3>
+                <h3 className="font-semibold text-[#191A23] dark:text-white">
+                  Event Progress
+                </h3>
                 <span className="text-xs text-gray-500 dark:text-zinc-500">
                   {stats.totalEvents > 0
                     ? Math.round(
@@ -696,7 +698,9 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600 dark:text-zinc-400">Total Events</span>
+                    <span className="text-gray-600 dark:text-zinc-400">
+                      Total Events
+                    </span>
                     <span className="font-semibold text-[#191A23] dark:text-white">
                       {stats.totalEvents}/5
                     </span>
@@ -713,7 +717,9 @@ const Dashboard = () => {
 
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600 dark:text-zinc-400">Attendance Rate</span>
+                    <span className="text-gray-600 dark:text-zinc-400">
+                      Attendance Rate
+                    </span>
                     <span className="font-semibold text-[#191A23] dark:text-white">
                       {stats.totalAttendance}%
                     </span>
