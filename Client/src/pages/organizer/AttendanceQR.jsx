@@ -467,34 +467,8 @@ const AttendanceQR = () => {
                 </div>
               ) : selectedEvent && events.length > 0 ? (
                 <div className="text-center">
-                  {/* Static QR Code for Selected Event */}
-                  <div className="mb-8">
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <span className="w-1.5 h-6 bg-[#B9FF66] rounded-full"></span>
-                      Event QR Code
-                    </h3>
-                    <div className="inline-block bg-white rounded-3xl shadow-2xl p-8 border-4 border-[#B9FF66]/30">
-                      <QRCodeCanvas
-                        value={JSON.stringify({
-                          eventId: selectedEvent,
-                          type: "event_static",
-                          eventName:
-                            events.find((e) => e._id === selectedEvent)
-                              ?.title || "Event",
-                        })}
-                        size={240}
-                      />
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-zinc-400 font-bold mt-4">
-                      Static QR code for{" "}
-                      <span className="text-[#191A23] font-black">
-                        {events.find((e) => e._id === selectedEvent)?.title}
-                      </span>
-                    </p>
-                  </div>
-
                   {/* Generate Dynamic QR Section */}
-                  <div className="border-t border-gray-200 pt-8">
+                  <div>
                     <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                       <QrCode
                         size={64}
@@ -502,13 +476,12 @@ const AttendanceQR = () => {
                         strokeWidth={2}
                       />
                     </div>
-                    <h3 className="text-2xl font-black text-gray-900 mb-2">
-                      Generate Dynamic QR Code
+                    <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
+                      Generate Attendance QR Code
                     </h3>
-                    <p className="text-gray-600 font-semibold mb-6 max-w-md mx-auto">
-                      Click the button below to generate a time-limited QR code
-                      for attendance. Participants can scan this code to mark
-                      their attendance.
+                    <p className="text-gray-600 dark:text-zinc-400 font-semibold mb-6 max-w-md mx-auto">
+                      Generate a secure, time-limited QR code (expires in 5 minutes).
+                      Participants must scan this code in real-time to mark their attendance.
                     </p>
                     <button
                       onClick={handleGenerateQR}
@@ -528,7 +501,7 @@ const AttendanceQR = () => {
                           className="group-hover:scale-110 transition-transform"
                         />
                       )}
-                      Generate Dynamic QR Code
+                      Generate QR Code
                     </button>
                   </div>
                 </div>

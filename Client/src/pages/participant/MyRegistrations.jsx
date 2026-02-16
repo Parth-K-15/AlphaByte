@@ -7,6 +7,7 @@ import {
   Camera,
   Mail,
   ArrowUpRight,
+  RefreshCw,
 } from "lucide-react";
 import jsQR from "jsqr";
 
@@ -15,6 +16,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://eventsync-blue.ve
 const MyRegistrations = () => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [email, setEmail] = useState(
     localStorage.getItem("participantEmail") || "",
   );
@@ -33,6 +36,17 @@ const MyRegistrations = () => {
   useEffect(() => {
     if (email) {
       fetchRegistrations();
+      
+      // Auto-refresh when window gains focus
+      const handleFocus = () => {
+        fetchRegistrations(true);
+      };
+      
+      window.addEventListener('focus', handleFocus);
+      
+      return () => {
+        window.removeEventListener('focus', handleFocus);
+      };
     } else {
       setLoading(false);
     }
@@ -49,9 +63,13 @@ const MyRegistrations = () => {
     };
   }, []);
 
-  const fetchRegistrations = async () => {
+  const fetchRegistrations = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       const response = await fetch(
         `${API_BASE}/participant/my-events?email=${encodeURIComponent(email)}`,
       );
@@ -59,6 +77,7 @@ const MyRegistrations = () => {
 
       if (data.success) {
         setRegistrations(data.data);
+        setLastUpdated(new Date());
       } else {
         setMessage({ type: "error", text: data.message });
       }
@@ -67,7 +86,12 @@ const MyRegistrations = () => {
       setMessage({ type: "error", text: "Failed to load registrations" });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchRegistrations(true);
   };
 
   const handleEmailSubmit = (e) => {
@@ -345,13 +369,32 @@ const MyRegistrations = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-dark rounded-3xl p-8 text-white">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">
-          My Registrations
-        </h1>
-        <p className="text-dark-200 text-base">
-          Track your event registrations and attendance status
-        </p>
-        <div className="mt-4 inline-flex items-center gap-2 bg-lime/10 border border-lime/20 px-4 py-2 rounded-xl">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              My Registrations
+            </h1>
+            <p className="text-dark-200 text-base">
+              Track your event registrations and attendance status
+            </p>
+            {lastUpdated && (
+              <p className="text-dark-200 text-xs mt-1">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-lime/10 border border-lime/20 rounded-xl text-lime hover:bg-lime/20 transition-all disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+            <span className="text-sm font-bold hidden sm:inline">
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </span>
+          </button>
+        </div>
+        <div className="inline-flex items-center gap-2 bg-lime/10 border border-lime/20 px-4 py-2 rounded-xl">
           <Mail size={16} className="text-lime" />
           <span className="font-medium text-lime text-sm">{email}</span>
         </div>

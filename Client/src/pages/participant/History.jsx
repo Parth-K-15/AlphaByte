@@ -6,6 +6,7 @@ import {
   CheckCircle,
   XCircle,
   ArrowUpRight,
+  RefreshCw,
 } from "lucide-react";
 
 const API_BASE = "http://localhost:5000/api";
@@ -13,16 +14,33 @@ const API_BASE = "http://localhost:5000/api";
 const History = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [lastUpdated, setLastUpdated] = useState(null);
   const email = localStorage.getItem("participantEmail") || "";
 
   useEffect(() => {
     fetchHistory();
+    
+    // Auto-refresh when window gains focus
+    const handleFocus = () => {
+      fetchHistory(true);
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       const token = localStorage.getItem("token");
       const response = await fetch(
         `${API_BASE}/participant/history${email ? `?email=${encodeURIComponent(email)}` : ""}`,
@@ -34,12 +52,18 @@ const History = () => {
 
       if (data.success) {
         setHistory(data.data || []);
+        setLastUpdated(new Date());
       }
     } catch (error) {
       console.error("Error fetching history:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchHistory(true);
   };
 
   const formatDate = (dateString) => {
@@ -68,8 +92,27 @@ const History = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-dark rounded-3xl p-8 text-white">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">Event History</h1>
-        <p className="text-dark-200">Your past events and attendance records</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Event History</h1>
+            <p className="text-dark-200">Your past events and attendance records</p>
+            {lastUpdated && (
+              <p className="text-dark-200 text-xs mt-1">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-lime/10 border border-lime/20 rounded-xl text-lime hover:bg-lime/20 transition-all disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+            <span className="text-sm font-bold hidden sm:inline">
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </span>
+          </button>
+        </div>
         <div className="mt-4 flex items-center gap-3">
           <div className="bg-lime/10 border border-lime/20 px-4 py-2 rounded-xl">
             <span className="text-lime font-bold text-sm">
