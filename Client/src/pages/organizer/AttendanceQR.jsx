@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
-  generateQRCode,
   getAttendanceLogs,
   getLiveAttendanceCount,
   markManualAttendance,
@@ -67,16 +66,13 @@ const AttendanceQR = () => {
   const [selectedEvent, setSelectedEvent] = useState(
     searchParams.get("event") || "",
   );
-  const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [liveCount, setLiveCount] = useState({ present: 0, total: 0 });
-  const [timeRemaining, setTimeRemaining] = useState(0);
   const [activeTab, setActiveTab] = useState("qr");
   const [searchQuery, setSearchQuery] = useState("");
   const [participants, setParticipants] = useState([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
-  const intervalRef = useRef(null);
 
   // Retroactive Change & Audit Trail states
   const [showInvalidateModal, setShowInvalidateModal] = useState(false);
@@ -85,9 +81,6 @@ const AttendanceQR = () => {
 
   useEffect(() => {
     fetchEvents();
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
   }, []);
 
   useEffect(() => {
@@ -99,21 +92,7 @@ const AttendanceQR = () => {
     }
   }, [selectedEvent]);
 
-  useEffect(() => {
-    if (timeRemaining > 0) {
-      const timer = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setQrData(null);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [qrData]);
+
 
   const fetchEvents = async () => {
     try {
@@ -172,37 +151,7 @@ const AttendanceQR = () => {
     }
   };
 
-  const handleGenerateQR = async () => {
-    if (!selectedEvent || !isValidObjectId(selectedEvent)) {
-      alert("Please select an event first.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await generateQRCode(selectedEvent);
-      if (response.data.success) {
-        setQrData(response.data.data);
-        setTimeRemaining(300); // 5 minutes
 
-        // Start polling for live count
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        intervalRef.current = setInterval(() => {
-          fetchLiveCount();
-          fetchAttendanceLogs();
-        }, 5000);
-      }
-    } catch (error) {
-      console.error("Error generating QR:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const handleManualAttendance = async (participantId) => {
     if (!selectedEvent || !isValidObjectId(selectedEvent)) {
@@ -425,85 +374,45 @@ const AttendanceQR = () => {
         <div className="p-6">
           {activeTab === "qr" && (
             <div className="flex flex-col items-center">
-              {qrData ? (
+              {selectedEvent && events.length > 0 ? (
                 <div className="text-center">
-                  {/* QR Code Display */}
+                  <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6">
+                    Scan QR Code for Attendance
+                  </h3>
+
+                  {/* Static QR Code Display */}
                   <div className="relative inline-block">
                     <div className="w-80 h-80 bg-white rounded-3xl shadow-2xl p-8 flex items-center justify-center border-4 border-[#B9FF66]/30">
-                      <QRCodeCanvas value={qrData.qrData} size={240} />
+                      <QRCodeCanvas
+                        value={JSON.stringify({
+                          eventId: selectedEvent,
+                          type: "event_static",
+                          eventName:
+                            events.find((e) => e._id === selectedEvent)
+                              ?.title || "Event",
+                        })}
+                        size={240}
+                      />
                     </div>
 
-                    {/* Timer Badge */}
-                    <div className="absolute -top-4 -right-4 bg-[#191A23] text-[#B9FF66] px-4 py-2 rounded-2xl shadow-xl animate-pulse">
-                      <span className="font-mono font-black text-lg">
-                        {formatTime(timeRemaining)}
+                    {/* Static Badge */}
+                    <div className="absolute -top-4 -right-4 bg-[#191A23] text-[#B9FF66] px-4 py-2 rounded-2xl shadow-xl">
+                      <span className="font-mono font-black text-sm">
+                        STATIC QR
                       </span>
                     </div>
                   </div>
 
                   <p className="text-gray-700 dark:text-zinc-300 font-bold mt-6 mb-2">
-                    Session ID:{" "}
+                    Event:{" "}
                     <span className="font-black text-[#191A23] dark:text-white">
-                      {qrData.sessionId}
+                      {events.find((e) => e._id === selectedEvent)
+                        ?.title || "Unknown"}
                     </span>
                   </p>
                   <p className="text-sm text-gray-600 dark:text-zinc-400 font-semibold">
-                    QR code will expire in {formatTime(timeRemaining)}
+                    This QR code never expires. Participants can scan anytime to mark attendance.
                   </p>
-
-                  <div className="flex items-center justify-center gap-4 mt-6">
-                    <button
-                      onClick={handleGenerateQR}
-                      className="group flex items-center gap-2 px-8 py-3 bg-[#191A23] text-[#B9FF66] rounded-xl hover:shadow-xl transition-all font-bold hover:scale-105"
-                    >
-                      <RefreshCw
-                        size={18}
-                        strokeWidth={2.5}
-                        className="group-hover:rotate-180 transition-transform duration-300"
-                      />
-                      Refresh QR
-                    </button>
-                  </div>
-                </div>
-              ) : selectedEvent && events.length > 0 ? (
-                <div className="text-center">
-                  {/* Generate Dynamic QR Section */}
-                  <div>
-                    <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                      <QrCode
-                        size={64}
-                        className="text-gray-500"
-                        strokeWidth={2}
-                      />
-                    </div>
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
-                      Generate Attendance QR Code
-                    </h3>
-                    <p className="text-gray-600 dark:text-zinc-400 font-semibold mb-6 max-w-md mx-auto">
-                      Generate a secure, time-limited QR code (expires in 5 minutes).
-                      Participants must scan this code in real-time to mark their attendance.
-                    </p>
-                    <button
-                      onClick={handleGenerateQR}
-                      disabled={loading}
-                      className="group flex items-center gap-2 px-8 py-3 bg-[#191A23] text-[#B9FF66] rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold mx-auto disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg"
-                    >
-                      {loading ? (
-                        <RefreshCw
-                          size={18}
-                          strokeWidth={2.5}
-                          className="animate-spin"
-                        />
-                      ) : (
-                        <QrCode
-                          size={18}
-                          strokeWidth={2.5}
-                          className="group-hover:scale-110 transition-transform"
-                        />
-                      )}
-                      Generate QR Code
-                    </button>
-                  </div>
                 </div>
               ) : (
                 <div className="text-center py-16">
@@ -524,13 +433,13 @@ const AttendanceQR = () => {
                 </div>
               )}
 
-              {/* Live Feed */}
-              {qrData && (
-                <div className="w-full max-w-2xl mt-8 border-t border-gray-200 pt-8">
+              {/* Recent Check-ins */}
+              {selectedEvent && events.length > 0 && (
+                <div className="w-full max-w-2xl mt-8 border-t border-gray-200 dark:border-zinc-700 pt-8">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
                       <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                      Live Check-ins
+                      Recent Check-ins
                     </h3>
                   </div>
                   <div className="space-y-3 max-h-64 overflow-y-auto">

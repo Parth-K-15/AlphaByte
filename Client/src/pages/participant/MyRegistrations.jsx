@@ -208,24 +208,32 @@ const MyRegistrations = () => {
   };
 
   const handleQRCodeScanned = async (qrData) => {
+    console.log('[QR Scan] Raw QR data:', qrData);
     try {
       const parsedData = JSON.parse(qrData);
+      console.log('[QR Scan] Parsed data:', parsedData);
 
-      if (parsedData.eventId || parsedData.qrData) {
+      // Accept either static QR (eventId only) or dynamic QR (eventId + sessionId)
+      if (parsedData.eventId) {
+        console.log('[QR Scan] Valid QR detected, marking attendance...');
         await markAttendanceFromQR(parsedData);
       } else {
-        setScannedData({ success: false, message: "Invalid QR code format" });
+        console.error('[QR Scan] Invalid QR format - missing eventId:', parsedData);
+        setScannedData({ success: false, message: "Invalid QR code format. Missing event information." });
       }
     } catch (error) {
-      await markAttendanceFromQR({
-        sessionId: qrData,
-        eventId: selectedEvent._id,
-      });
+      console.error('[QR Scan] JSON parse failed:', error);
+      setScannedData({ success: false, message: "Invalid QR code format. Please scan a valid event QR code." });
     }
   };
 
   const markAttendanceFromQR = async (qrCodeData) => {
     setMarkingAttendance(true);
+    console.log('[QR Scan] Sending attendance request:', {
+      eventId: qrCodeData.eventId || selectedEvent._id,
+      email: email,
+      sessionId: qrCodeData.sessionId,
+    });
     try {
       const response = await fetch(`${API_BASE}/participant/attendance/scan`, {
         method: "POST",
