@@ -19,6 +19,7 @@ import {
   Settings,
   X,
   Loader2,
+  Banknote,
 } from "lucide-react";
 import {
   getAssignedEvents,
@@ -180,6 +181,16 @@ const EventCard = ({ event }) => {
           >
             <QrCode size={16} />
             Attendance
+          </Link>
+
+          <Link
+            to={`/organizer/events/${event._id || event.id}/finance`}
+            className="flex items-center justify-center gap-2 px-4 py-2.5
+               border-2 border-gray-300 dark:border-white/10 text-[#191A23] dark:text-zinc-300 rounded-xl font-semibold text-sm
+               hover:bg-gray-50 dark:hover:bg-white/5 hover:border-[#191A23] dark:hover:border-white/30 transition-all"
+          >
+            <Banknote size={16} />
+            Finance
           </Link>
         </div>
 

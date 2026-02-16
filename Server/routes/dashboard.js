@@ -2,12 +2,17 @@ import express from 'express';
 import User from '../models/User.js';
 import Event from '../models/Event.js';
 import Participant from '../models/Participant.js';
+import { cache } from '../middleware/cache.js';
+import { CacheKeys, CacheTTL } from '../utils/cacheKeys.js';
 
 const router = express.Router();
 
 // @desc    Get dashboard stats
 // @route   GET /api/dashboard/stats
-router.get('/stats', async (req, res) => {
+router.get(
+  '/stats',
+  cache(CacheTTL.SHORT, () => CacheKeys.dashboardStats()),
+  async (req, res) => {
   try {
     const totalEvents = await Event.countDocuments();
     const totalParticipants = await Participant.countDocuments();
@@ -151,7 +156,10 @@ router.get('/stats', async (req, res) => {
 
 // @desc    Get recent activity
 // @route   GET /api/dashboard/activity
-router.get('/activity', async (req, res) => {
+router.get(
+  '/activity',
+  cache(CacheTTL.SHORT, () => 'dashboard:activity'),
+  async (req, res) => {
   try {
     const recentEvents = await Event.find()
       .sort({ createdAt: -1 })

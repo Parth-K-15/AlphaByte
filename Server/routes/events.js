@@ -6,6 +6,8 @@ import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
 import Log from '../models/Log.js';
 import mongoose from 'mongoose';
+import { invalidateEventCache, invalidateDashboardCache, invalidateMultiple } from '../utils/cacheInvalidation.js';
+import { CachePatterns } from '../utils/cacheKeys.js';
 
 const router = express.Router();
 
@@ -216,6 +218,8 @@ router.post('/', async (req, res) => {
       }
     });
     console.log('✅ [Event Creation] Log created:', logEntry._id);
+    // Invalidate caches
+    await invalidateMultiple(CachePatterns.allEventLists, CachePatterns.allDashboards);
 
     res.status(201).json({
       success: true,
@@ -292,6 +296,9 @@ router.put('/:id', async (req, res) => {
         newState: changedFields.reduce((acc, field) => ({ ...acc, [field]: updateData[field] }), {})
       });
     }
+    // Invalidate caches
+    await invalidateEventCache(id);
+    await invalidateDashboardCache();
 
     res.json({
       success: true,
@@ -334,6 +341,10 @@ router.delete('/:id', async (req, res) => {
     await Participant.deleteMany({ event: id });
     await Attendance.deleteMany({ event: id });
     await Certificate.deleteMany({ event: id });
+
+    // Invalidate caches
+    await invalidateEventCache(id);
+    await invalidateDashboardCache();
 
     res.json({
       success: true,

@@ -13,3 +13,8 @@ export { default as AccessControl } from './AccessControl';
 export { default as Reports } from './Reports';
 export { default as Settings } from './Settings';
 export { default as Logs } from './Logs';
+export { default as FinanceDashboard } from './finance/FinanceDashboard';
+export { default as BudgetApproval } from './finance/BudgetApproval';
+export { default as ExpenseDetail } from './finance/ExpenseDetail';
+export { default as FinancialReports } from './finance/FinancialReports';
+export { default as AmendmentReview } from './finance/AmendmentReview';

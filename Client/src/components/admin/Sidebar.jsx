@@ -21,6 +21,7 @@ import {
   UserX,
   Ban,
   FileText,
+  IndianRupee,
 } from 'lucide-react';
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -72,6 +73,15 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       title: 'Access Control',
       icon: Lock,
       path: '/admin/access/restrict'
+    },
+    {
+      title: 'Finance',
+      icon: IndianRupee,
+      key: 'finance',
+      children: [
+        { title: 'Budgets', path: '/admin/finance/budgets', badge: null },
+        { title: 'Reports', path: '/admin/finance/reports', badge: null },
+      ],
     },
     {
       title: 'Reports',

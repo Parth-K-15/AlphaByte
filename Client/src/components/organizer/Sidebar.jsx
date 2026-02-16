@@ -19,6 +19,7 @@ import {
   Mic,
   FileText,
   Clock,
+  Banknote,
 } from "lucide-react";
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -66,6 +67,12 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       title: "Dashboard",
       icon: LayoutDashboard,
       path: "/organizer",
+    },
+    
+    {
+      title: "Finance",
+      icon: Banknote,
+      path: "/organizer/events",
     },
     {
       title: "Events",

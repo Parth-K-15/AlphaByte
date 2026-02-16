@@ -4,12 +4,22 @@ import Event from '../models/Event.js';
 import Participant from '../models/Participant.js';
 import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
+import { cache } from '../middleware/cache.js';
+import { CacheKeys, CacheTTL } from '../utils/cacheKeys.js';
 
 const router = express.Router();
 
 // @desc    Get comprehensive analytics and reports
 // @route   GET /api/reports/analytics
-router.get('/analytics', async (req, res) => {
+router.get(
+  '/analytics',
+  cache(CacheTTL.MEDIUM, (req) => 
+    CacheKeys.analytics({
+      period: req.query.period,
+      eventId: req.query.eventId
+    })
+  ),
+  async (req, res) => {
   try {
     const { period = 'monthly', eventId } = req.query;
 
@@ -321,7 +331,10 @@ router.get('/analytics', async (req, res) => {
 
 // @desc    Get events list for filter dropdown
 // @route   GET /api/reports/events
-router.get('/events', async (req, res) => {
+router.get(
+  '/events',
+  cache(CacheTTL.MEDIUM, () => 'reports:events:list'),
+  async (req, res) => {
   try {
     const events = await Event.find()
       .select('_id title')

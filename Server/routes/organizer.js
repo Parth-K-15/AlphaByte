@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import Event from '../models/Event.js';
 import User from '../models/User.js';
 import Participant from '../models/Participant.js';
@@ -18,6 +18,8 @@ import { sendBulkEmails, testEmailConnection, sendCertificateEmail } from '../ut
 import certificateGenerator from '../utils/certificateGenerator.js';
 import activeSessions from '../utils/sessionStore.js';
 import { verifyToken, isOrganizer } from '../middleware/auth.js';
+import { cache } from '../middleware/cache.js';
+import { CacheKeys, CacheTTL } from '../utils/cacheKeys.js';
 
 const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);

@@ -27,6 +27,11 @@ import {
   Reports,
   Settings,
   Logs,
+  FinanceDashboard as AdminFinanceDashboard,
+  BudgetApproval,
+  ExpenseDetail,
+  FinancialReports,
+  AmendmentReview,
 } from "./pages/admin";
 import {
   Dashboard as OrganizerDashboard,
@@ -42,6 +47,10 @@ import {
   SpeakerProfile as OrganizerSpeakerProfile,
   SessionAssignment,
   RoleHistory,
+  FinanceDashboard as OrganizerFinanceDashboard,
+  BudgetRequest,
+  ExpenseLog,
+  BudgetAmendment,
 } from "./pages/organizer";
 import {
   EventsHome,
@@ -155,6 +164,24 @@ function App() {
 
               {/* AI Participation Intelligence (Test/Demo) */}
               <Route path="ai-test" element={<AIParticipationTest />} />
+              {/* Finance */}
+              <Route path="finance/budgets" element={<AdminFinanceDashboard />} />
+              <Route
+                path="finance/budgets/:eventId"
+                element={<BudgetApproval />}
+              />
+              <Route
+                path="finance/expenses/:expenseId"
+                element={<ExpenseDetail />}
+              />
+              <Route
+                path="finance/reports"
+                element={<FinancialReports />}
+              />
+              <Route
+                path="finance/amendments/:eventId/:amendmentId"
+                element={<AmendmentReview />}
+              />
 
               {/* System Logs */}
               <Route path="logs" element={<Logs />} />
@@ -214,6 +241,23 @@ function App() {
 
               {/* Role History */}
               <Route path="role-history" element={<RoleHistory />} />
+              {/* Finance Routes */}
+              <Route
+                path="events/:eventId/finance"
+                element={<OrganizerFinanceDashboard />}
+              />
+              <Route
+                path="events/:eventId/finance/request"
+                element={<BudgetRequest />}
+              />
+              <Route
+                path="events/:eventId/finance/expense"
+                element={<ExpenseLog />}
+              />
+              <Route
+                path="events/:eventId/finance/amendment"
+                element={<BudgetAmendment />}
+              />
             </Route>
 
             {/* Participant Routes - Protected */}

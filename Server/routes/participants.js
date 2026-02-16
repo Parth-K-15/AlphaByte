@@ -9,7 +9,11 @@ import EventUpdate from '../models/EventUpdate.js';
 import User from '../models/User.js';
 import EventRole from '../models/EventRole.js';
 import Log from '../models/Log.js';
-import activeSessions from '../utils/sessionStore.js';
+import activeSessions from "../utils/sessionStore.js";
+import { cache } from "../middleware/cache.js";
+import { CacheKeys, CacheTTL } from "../utils/cacheKeys.js";
+import { invalidateEventCache, invalidateParticipantCache } from "../utils/cacheInvalidation.js";
+import { CachePatterns } from "../utils/cacheKeys.js";
 
 const router = express.Router();
 
@@ -21,189 +25,239 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 // =====================
 
 // GET /api/participant/events - Browse all available events
-router.get('/events', async (req, res) => {
-  try {
-    const { search, status, category, type } = req.query;
-    
-    // Build filter - only show upcoming, ongoing events (not draft/cancelled)
-    const filter = {
-      status: { $in: ['upcoming', 'ongoing'] }
-    };
-    
-    // Apply status filter if provided
-    if (status && ['upcoming', 'ongoing', 'completed'].includes(status)) {
-      filter.status = status;
-    }
-    
-    // Search by title, description, location
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } },
-        { venue: { $regex: search, $options: 'i' } }
-      ];
-    }
-    
-    // Category filter
-    if (category) {
-      filter.category = category;
-    }
-    
-    // Type filter (Online/Offline/Hybrid)
-    if (type) {
-      filter.type = type;
-    }
-    
-    const events = await Event.find(filter)
-      .select('title description location venue startDate endDate time status registrationFee maxParticipants registrationDeadline category type bannerImage tags')
-      .sort({ startDate: 1 });
-    
-    // Get participant counts for each event
-    const eventsWithCounts = await Promise.all(events.map(async (event) => {
-      const participantCount = await Participant.countDocuments({ 
-        event: event._id,
-        registrationStatus: { $in: ['PENDING', 'CONFIRMED'] }
-      });
-      
-      return {
-        ...event.toObject(),
-        participantCount,
-        spotsLeft: event.maxParticipants ? event.maxParticipants - participantCount : null,
-        isRegistrationOpen: event.registrationDeadline ? new Date(event.registrationDeadline) > new Date() : true
+router.get(
+  "/events",
+  cache(CacheTTL.MEDIUM, (req) =>
+    CacheKeys.eventList({
+      search: req.query.search,
+      status: req.query.status,
+      category: req.query.category,
+      type: req.query.type,
+    }),
+  ),
+  async (req, res) => {
+    try {
+      const { search, status, category, type } = req.query;
+
+      // Build filter - only show upcoming, ongoing events (not draft/cancelled)
+      const filter = {
+        status: { $in: ["upcoming", "ongoing"] },
       };
-    }));
-    
-    res.json({
-      success: true,
-      count: eventsWithCounts.length,
-      data: eventsWithCounts
-    });
-  } catch (error) {
-    console.error('Error fetching events:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
+
+      // Apply status filter if provided
+      if (status && ["upcoming", "ongoing", "completed"].includes(status)) {
+        filter.status = status;
+      }
+
+      // Search by title, description, location
+      if (search) {
+        filter.$or = [
+          { title: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { location: { $regex: search, $options: "i" } },
+          { venue: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // Category filter
+      if (category) {
+        filter.category = category;
+      }
+
+      // Type filter (Online/Offline/Hybrid)
+      if (type) {
+        filter.type = type;
+      }
+
+      const events = await Event.find(filter)
+        .select(
+          "title description location venue startDate endDate time status registrationFee maxParticipants registrationDeadline category type bannerImage tags",
+        )
+        .sort({ startDate: 1 });
+
+      // Get participant counts for each event
+      const eventsWithCounts = await Promise.all(
+        events.map(async (event) => {
+          const participantCount = await Participant.countDocuments({
+            event: event._id,
+            registrationStatus: { $in: ["PENDING", "CONFIRMED"] },
+          });
+
+          return {
+            ...event.toObject(),
+            participantCount,
+            spotsLeft: event.maxParticipants
+              ? event.maxParticipants - participantCount
+              : null,
+            isRegistrationOpen: event.registrationDeadline
+              ? new Date(event.registrationDeadline) > new Date()
+              : true,
+          };
+        }),
+      );
+
+      res.json({
+        success: true,
+        count: eventsWithCounts.length,
+        data: eventsWithCounts,
+      });
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Server error",
+          error: error.message,
+        });
+    }
+  },
+);
 
 // GET /api/participant/events/:id - Get single event details
-router.get('/events/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID' });
-    }
-    
-    const event = await Event.findById(id)
-      .populate('teamLead', 'name email')
-      .populate('createdBy', 'name');
-    
-    if (!event) {
-      return res.status(404).json({ success: false, message: 'Event not found' });
-    }
-    
-    // Get participant count
-    const participantCount = await Participant.countDocuments({ 
-      event: id,
-      registrationStatus: { $in: ['PENDING', 'CONFIRMED'] }
-    });
-    
-    // Get event updates (visible ones only)
-    const updates = await EventUpdate.find({ 
-      event: id, 
-      isVisible: true 
-    })
-      .sort({ isPinned: -1, createdAt: -1 })
-      .limit(10);
-    
-    res.json({
-      success: true,
-      data: {
-        ...event.toObject(),
-        participantCount,
-        spotsLeft: event.maxParticipants ? event.maxParticipants - participantCount : null,
-        isRegistrationOpen: event.registrationDeadline ? new Date(event.registrationDeadline) > new Date() : true,
-        updates
+router.get(
+  "/events/:id",
+  cache(CacheTTL.LONG, (req) => CacheKeys.event(req.params.id)),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!isValidObjectId(id)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid event ID" });
       }
-    });
-  } catch (error) {
-    console.error('Error fetching event details:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
+
+      const event = await Event.findById(id)
+        .populate("teamLead", "name email")
+        .populate("createdBy", "name");
+
+      if (!event) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Event not found" });
+      }
+
+      // Get participant count
+      const participantCount = await Participant.countDocuments({
+        event: id,
+        registrationStatus: { $in: ["PENDING", "CONFIRMED"] },
+      });
+
+      // Get event updates (visible ones only)
+      const updates = await EventUpdate.find({
+        event: id,
+        isVisible: true,
+      })
+        .sort({ isPinned: -1, createdAt: -1 })
+        .limit(10);
+
+      res.json({
+        success: true,
+        data: {
+          ...event.toObject(),
+          participantCount,
+          spotsLeft: event.maxParticipants
+            ? event.maxParticipants - participantCount
+            : null,
+          isRegistrationOpen: event.registrationDeadline
+            ? new Date(event.registrationDeadline) > new Date()
+            : true,
+          updates,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching event details:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Server error",
+          error: error.message,
+        });
+    }
+  },
+);
 
 // =====================
 // REGISTRATION APIs
 // =====================
 
 // POST /api/participant/register - Register for an event
-router.post('/register', async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     const { eventId, fullName, email, phone, college, year, branch } = req.body;
-    
+
     // Validate required fields
     if (!eventId || !fullName || !email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Event ID, full name, and email are required' 
+      return res.status(400).json({
+        success: false,
+        message: "Event ID, full name, and email are required",
       });
     }
-    
+
     if (!isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event ID" });
     }
-    
+
     // Check if event exists and is open for registration
     const event = await Event.findById(eventId);
     if (!event) {
-      return res.status(404).json({ success: false, message: 'Event not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Event not found" });
     }
-    
+
     // Check event status
-    if (!['upcoming', 'ongoing'].includes(event.status)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Registration is not open for this event' 
+    if (!["upcoming", "ongoing"].includes(event.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Registration is not open for this event",
       });
     }
-    
+
     // Check registration deadline
-    if (event.registrationDeadline && new Date(event.registrationDeadline) < new Date()) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Registration deadline has passed' 
+    if (
+      event.registrationDeadline &&
+      new Date(event.registrationDeadline) < new Date()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Registration deadline has passed",
       });
     }
-    
+
     // Check if already registered
-    const existingRegistration = await Participant.findOne({ 
-      event: eventId, 
-      email: email.toLowerCase() 
+    const existingRegistration = await Participant.findOne({
+      event: eventId,
+      email: email.toLowerCase(),
     });
-    
+
     if (existingRegistration) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'You are already registered for this event',
-        registration: existingRegistration
+      return res.status(400).json({
+        success: false,
+        message: "You are already registered for this event",
+        registration: existingRegistration,
       });
     }
-    
+
     // Check max participants
     if (event.maxParticipants) {
-      const currentCount = await Participant.countDocuments({ 
+      const currentCount = await Participant.countDocuments({
         event: eventId,
-        registrationStatus: { $in: ['PENDING', 'CONFIRMED'] }
+        registrationStatus: { $in: ["PENDING", "CONFIRMED"] },
       });
-      
+
       if (currentCount >= event.maxParticipants) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Event is full. No more spots available.' 
+        return res.status(400).json({
+          success: false,
+          message: "Event is full. No more spots available.",
         });
       }
     }
-    
+
     // Create participant registration
     const participant = new Participant({
       fullName,
@@ -214,12 +268,12 @@ router.post('/register', async (req, res) => {
       year,
       branch,
       event: eventId,
-      registrationStatus: event.registrationFee === 0 ? 'CONFIRMED' : 'PENDING', // Auto-confirm free events
-      registrationType: 'ONLINE',
-      attendanceStatus: 'PENDING',
-      certificateStatus: 'PENDING'
+      registrationStatus: event.registrationFee === 0 ? "CONFIRMED" : "PENDING", // Auto-confirm free events
+      registrationType: "ONLINE",
+      attendanceStatus: "PENDING",
+      certificateStatus: "PENDING",
     });
-    
+
     await participant.save();
 
     // Auto-create EventRole for transcript
@@ -273,16 +327,22 @@ router.post('/register', async (req, res) => {
       }
     });
     
+    // Invalidate caches for event and event lists
+    await invalidateEventCache(eventId);
+
     res.status(201).json({
       success: true,
-      message: event.registrationFee === 0 
-        ? 'Registration successful! You are confirmed.' 
-        : 'Registration successful! Awaiting confirmation.',
-      data: participant
+      message:
+        event.registrationFee === 0
+          ? "Registration successful! You are confirmed."
+          : "Registration successful! Awaiting confirmation.",
+      data: participant,
     });
   } catch (error) {
-    console.error('Error registering for event:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error registering for event:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -291,125 +351,146 @@ router.post('/register', async (req, res) => {
 // =====================
 
 // GET /api/participant/my-events - Get participant's registered events
-router.get('/my-events', async (req, res) => {
+router.get("/my-events", async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email is required to fetch registrations' 
+      return res.status(400).json({
+        success: false,
+        message: "Email is required to fetch registrations",
       });
     }
-    
-    const registrations = await Participant.find({ 
-      email: email.toLowerCase() 
+
+    const registrations = await Participant.find({
+      email: email.toLowerCase(),
     })
-      .populate('event', 'title description location venue startDate endDate time status bannerImage')
+      .populate(
+        "event",
+        "title description location venue startDate endDate time status bannerImage",
+      )
       .sort({ createdAt: -1 });
-    
+
     // Enrich with certificate info
-    const enrichedRegistrations = await Promise.all(registrations.map(async (reg) => {
-      const certificate = await Certificate.findOne({ 
-        participant: reg._id 
-      });
-      
-      return {
-        ...reg.toObject(),
-        certificate: certificate ? {
-          certificateId: certificate.certificateId,
-          status: certificate.status,
-          certificateUrl: certificate.certificateUrl
-        } : null
-      };
-    }));
-    
+    const enrichedRegistrations = await Promise.all(
+      registrations.map(async (reg) => {
+        const certificate = await Certificate.findOne({
+          participant: reg._id,
+        });
+
+        return {
+          ...reg.toObject(),
+          certificate: certificate
+            ? {
+                certificateId: certificate.certificateId,
+                status: certificate.status,
+                certificateUrl: certificate.certificateUrl,
+              }
+            : null,
+        };
+      }),
+    );
+
     res.json({
       success: true,
       count: enrichedRegistrations.length,
-      data: enrichedRegistrations
+      data: enrichedRegistrations,
     });
   } catch (error) {
-    console.error('Error fetching registrations:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error fetching registrations:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 // GET /api/participant/registration/:eventId - Check registration status for an event
-router.get('/registration/:eventId', async (req, res) => {
+router.get("/registration/:eventId", async (req, res) => {
   try {
     const { eventId } = req.params;
     const { email } = req.query;
-    
+
     if (!isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event ID" });
     }
-    
+
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
-    
-    const registration = await Participant.findOne({ 
-      event: eventId, 
-      email: email.toLowerCase() 
+
+    const registration = await Participant.findOne({
+      event: eventId,
+      email: email.toLowerCase(),
     });
-    
+
     res.json({
       success: true,
       isRegistered: !!registration,
-      data: registration
+      data: registration,
     });
   } catch (error) {
-    console.error('Error checking registration:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error checking registration:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 // DELETE /api/participant/registration/:eventId - Cancel registration
-router.delete('/registration/:eventId', async (req, res) => {
+router.delete("/registration/:eventId", async (req, res) => {
   try {
     const { eventId } = req.params;
     const { email } = req.query;
-    
+
     if (!isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event ID" });
     }
-    
+
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
-    
-    const registration = await Participant.findOne({ 
-      event: eventId, 
-      email: email.toLowerCase() 
+
+    const registration = await Participant.findOne({
+      event: eventId,
+      email: email.toLowerCase(),
     });
-    
+
     if (!registration) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Registration not found' 
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
       });
     }
-    
+
     // Check if attendance is already marked
-    if (registration.attendanceStatus === 'ATTENDED') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cannot cancel registration after attendance is marked' 
+    if (registration.attendanceStatus === "ATTENDED") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot cancel registration after attendance is marked",
       });
     }
-    
+
     // Update status to CANCELLED
-    registration.registrationStatus = 'CANCELLED';
+    registration.registrationStatus = "CANCELLED";
     await registration.save();
-    
+
     res.json({
       success: true,
-      message: 'Registration cancelled successfully'
+      message: "Registration cancelled successfully",
     });
   } catch (error) {
-    console.error('Error cancelling registration:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error cancelling registration:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -418,19 +499,21 @@ router.delete('/registration/:eventId', async (req, res) => {
 // =====================
 
 // POST /api/participant/attendance/scan - Scan QR to mark attendance
-router.post('/attendance/scan', async (req, res) => {
+router.post("/attendance/scan", async (req, res) => {
   try {
     const { eventId, email, sessionId } = req.body;
-    
+
     if (!eventId || !email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Event ID and email are required' 
+      return res.status(400).json({
+        success: false,
+        message: "Event ID and email are required",
       });
     }
-    
+
     if (!isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event ID" });
     }
 
     // Validate QR session if sessionId provided (from dynamic QR)
@@ -439,23 +522,25 @@ router.post('/attendance/scan', async (req, res) => {
       if (!session) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid or expired QR code. Ask the organizer to generate a new one.',
-          code: 'INVALID_SESSION'
+          message:
+            "Invalid or expired QR code. Ask the organizer to generate a new one.",
+          code: "INVALID_SESSION",
         });
       }
       if (Date.now() > session.expiresAt) {
         activeSessions.delete(sessionId);
         return res.status(400).json({
           success: false,
-          message: 'QR code has expired. Ask the organizer to generate a new one.',
-          code: 'SESSION_EXPIRED'
+          message:
+            "QR code has expired. Ask the organizer to generate a new one.",
+          code: "SESSION_EXPIRED",
         });
       }
       if (session.eventId !== eventId) {
         return res.status(400).json({
           success: false,
-          message: 'QR code does not match this event.',
-          code: 'EVENT_MISMATCH'
+          message: "QR code does not match this event.",
+          code: "EVENT_MISMATCH",
         });
       }
     }
@@ -465,55 +550,55 @@ router.post('/attendance/scan', async (req, res) => {
     if (!event) {
       return res.status(404).json({
         success: false,
-        message: 'Event not found',
-        code: 'EVENT_NOT_FOUND'
+        message: "Event not found",
+        code: "EVENT_NOT_FOUND",
       });
     }
-    
+
     // Find the participant
-    const participant = await Participant.findOne({ 
-      event: eventId, 
-      email: email.toLowerCase() 
+    const participant = await Participant.findOne({
+      event: eventId,
+      email: email.toLowerCase(),
     });
-    
+
     if (!participant) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'You are not registered for this event',
-        code: 'NOT_REGISTERED'
+      return res.status(404).json({
+        success: false,
+        message: "You are not registered for this event",
+        code: "NOT_REGISTERED",
       });
     }
-    
+
     // Check if registration is confirmed
-    if (participant.registrationStatus === 'CANCELLED') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Your registration has been cancelled',
-        code: 'CANCELLED'
+    if (participant.registrationStatus === "CANCELLED") {
+      return res.status(400).json({
+        success: false,
+        message: "Your registration has been cancelled",
+        code: "CANCELLED",
       });
     }
-    
+
     // Check if attendance already marked
-    const existingAttendance = await Attendance.findOne({ 
-      event: eventId, 
-      participant: participant._id 
+    const existingAttendance = await Attendance.findOne({
+      event: eventId,
+      participant: participant._id,
     });
-    
+
     if (existingAttendance) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Attendance already marked',
-        code: 'ALREADY_MARKED',
-        scannedAt: existingAttendance.scannedAt
+      return res.status(400).json({
+        success: false,
+        message: "Attendance already marked",
+        code: "ALREADY_MARKED",
+        scannedAt: existingAttendance.scannedAt,
       });
     }
-    
+
     // Mark attendance
     const attendanceData = {
       event: eventId,
       participant: participant._id,
       scannedAt: new Date(),
-      status: 'PRESENT'
+      status: "PRESENT",
     };
     if (sessionId) {
       attendanceData.sessionId = sessionId;
@@ -523,73 +608,81 @@ router.post('/attendance/scan', async (req, res) => {
       attendanceData.markedBy = participant.user;
     }
     const attendance = new Attendance(attendanceData);
-    
+
     await attendance.save();
-    
+
     // Update participant's attendance status
-    participant.attendanceStatus = 'ATTENDED';
-    if (participant.registrationStatus === 'PENDING') {
-      participant.registrationStatus = 'CONFIRMED';
+    participant.attendanceStatus = "ATTENDED";
+    if (participant.registrationStatus === "PENDING") {
+      participant.registrationStatus = "CONFIRMED";
     }
     await participant.save();
-    
+
     res.json({
       success: true,
-      message: 'Attendance marked successfully!',
-      code: 'SUCCESS',
+      message: "Attendance marked successfully!",
+      code: "SUCCESS",
       data: {
         participantName: participant.fullName,
         eventId,
         eventTitle: event.title,
-        scannedAt: attendance.scannedAt
-      }
+        scannedAt: attendance.scannedAt,
+      },
     });
   } catch (error) {
-    console.error('Error marking attendance:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error marking attendance:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 // GET /api/participant/attendance/:eventId - Check attendance status
-router.get('/attendance/:eventId', async (req, res) => {
+router.get("/attendance/:eventId", async (req, res) => {
   try {
     const { eventId } = req.params;
     const { email } = req.query;
-    
+
     if (!isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event ID" });
     }
-    
+
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
-    
-    const participant = await Participant.findOne({ 
-      event: eventId, 
-      email: email.toLowerCase() 
+
+    const participant = await Participant.findOne({
+      event: eventId,
+      email: email.toLowerCase(),
     });
-    
+
     if (!participant) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Registration not found' 
+      return res.status(404).json({
+        success: false,
+        message: "Registration not found",
       });
     }
-    
-    const attendance = await Attendance.findOne({ 
-      event: eventId, 
-      participant: participant._id 
+
+    const attendance = await Attendance.findOne({
+      event: eventId,
+      participant: participant._id,
     });
-    
+
     res.json({
       success: true,
       isAttended: !!attendance,
       attendanceStatus: participant.attendanceStatus,
-      scannedAt: attendance?.scannedAt
+      scannedAt: attendance?.scannedAt,
     });
   } catch (error) {
-    console.error('Error checking attendance:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error checking attendance:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -601,67 +694,71 @@ router.get('/attendance/:eventId', async (req, res) => {
 // that returns certificates, attended events, all events, and stats
 
 // GET /api/participant/certificates/:certificateId - Get single certificate
-router.get('/certificates/:certificateId', async (req, res) => {
+router.get("/certificates/:certificateId", async (req, res) => {
   try {
     const { certificateId } = req.params;
-    
+
     const certificate = await Certificate.findOne({ certificateId })
       .populate({
-        path: 'event',
-        select: 'title description startDate endDate location venue'
+        path: "event",
+        select: "title description startDate endDate location venue",
       })
       .populate({
-        path: 'participant',
-        select: 'fullName email college branch year'
+        path: "participant",
+        select: "fullName email college branch year",
       });
-    
+
     if (!certificate) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Certificate not found' 
+      return res.status(404).json({
+        success: false,
+        message: "Certificate not found",
       });
     }
-    
+
     res.json({
       success: true,
-      data: certificate
+      data: certificate,
     });
   } catch (error) {
-    console.error('Error fetching certificate:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error fetching certificate:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 // PUT /api/participant/certificates/:certificateId/download - Mark certificate as downloaded
-router.put('/certificates/:certificateId/download', async (req, res) => {
+router.put("/certificates/:certificateId/download", async (req, res) => {
   try {
     const { certificateId } = req.params;
-    
+
     const certificate = await Certificate.findOne({ certificateId });
-    
+
     if (!certificate) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Certificate not found' 
+      return res.status(404).json({
+        success: false,
+        message: "Certificate not found",
       });
     }
-    
-    certificate.status = 'DOWNLOADED';
+
+    certificate.status = "DOWNLOADED";
     await certificate.save();
-    
+
     // Update participant's certificate status
     await Participant.findByIdAndUpdate(certificate.participant, {
-      certificateStatus: 'SENT'
+      certificateStatus: "SENT",
     });
-    
+
     res.json({
       success: true,
-      message: 'Certificate download recorded',
-      data: certificate
+      message: "Certificate download recorded",
+      data: certificate,
     });
   } catch (error) {
-    console.error('Error recording download:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error recording download:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -670,59 +767,76 @@ router.put('/certificates/:certificateId/download', async (req, res) => {
 // =====================
 
 // GET /api/participant/history - Get complete participation history
-router.get('/history', async (req, res) => {
+router.get("/history", async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email is required' 
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
       });
     }
-    
-    const history = await Participant.find({ 
-      email: email.toLowerCase() 
+
+    const history = await Participant.find({
+      email: email.toLowerCase(),
     })
-      .populate('event', 'title description location venue startDate endDate status bannerImage')
+      .populate(
+        "event",
+        "title description location venue startDate endDate status bannerImage",
+      )
       .sort({ createdAt: -1 });
-    
+
     // Enrich with certificate and attendance details
-    const enrichedHistory = await Promise.all(history.map(async (record) => {
-      const attendance = await Attendance.findOne({ participant: record._id });
-      const certificate = await Certificate.findOne({ participant: record._id });
-      
-      return {
-        ...record.toObject(),
-        attendance: attendance ? {
-          scannedAt: attendance.scannedAt,
-          status: attendance.status
-        } : null,
-        certificate: certificate ? {
-          certificateId: certificate.certificateId,
-          status: certificate.status,
-          certificateUrl: certificate.certificateUrl,
-          issuedAt: certificate.issuedAt
-        } : null
-      };
-    }));
-    
+    const enrichedHistory = await Promise.all(
+      history.map(async (record) => {
+        const attendance = await Attendance.findOne({
+          participant: record._id,
+        });
+        const certificate = await Certificate.findOne({
+          participant: record._id,
+        });
+
+        return {
+          ...record.toObject(),
+          attendance: attendance
+            ? {
+                scannedAt: attendance.scannedAt,
+                status: attendance.status,
+              }
+            : null,
+          certificate: certificate
+            ? {
+                certificateId: certificate.certificateId,
+                status: certificate.status,
+                certificateUrl: certificate.certificateUrl,
+                issuedAt: certificate.issuedAt,
+              }
+            : null,
+        };
+      }),
+    );
+
     // Calculate stats
     const stats = {
       totalRegistrations: history.length,
-      attended: history.filter(h => h.attendanceStatus === 'ATTENDED').length,
-      certificatesEarned: enrichedHistory.filter(h => h.certificate).length,
-      upcomingEvents: history.filter(h => h.event && h.event.status === 'upcoming').length
+      attended: history.filter((h) => h.attendanceStatus === "ATTENDED").length,
+      certificatesEarned: enrichedHistory.filter((h) => h.certificate).length,
+      upcomingEvents: history.filter(
+        (h) => h.event && h.event.status === "upcoming",
+      ).length,
     };
-    
+
     res.json({
       success: true,
       stats,
-      data: enrichedHistory
+      data: enrichedHistory,
     });
   } catch (error) {
-    console.error('Error fetching history:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error fetching history:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -731,28 +845,31 @@ router.get('/history', async (req, res) => {
 // =====================
 
 // GET /api/participant/updates/:eventId - Get event updates
-router.get('/updates/:eventId', async (req, res) => {
+router.get("/updates/:eventId", async (req, res) => {
   try {
     const { eventId } = req.params;
-    
+
     if (!isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid event ID" });
     }
-    
-    const updates = await EventUpdate.find({ 
+
+    const updates = await EventUpdate.find({
       event: eventId,
-      isVisible: true 
-    })
-      .sort({ isPinned: -1, createdAt: -1 });
-    
+      isVisible: true,
+    }).sort({ isPinned: -1, createdAt: -1 });
+
     res.json({
       success: true,
       count: updates.length,
-      data: updates
+      data: updates,
     });
   } catch (error) {
-    console.error('Error fetching updates:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error fetching updates:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -761,47 +878,48 @@ router.get('/updates/:eventId', async (req, res) => {
 // =====================
 
 // GET /api/participant/profile - Get participant profile
-router.get('/profile', async (req, res) => {
+router.get("/profile", async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email is required' 
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
       });
     }
-    
+
     // Get the most recent participant record to build profile
-    const latestParticipant = await Participant.findOne({ 
-      email: email.toLowerCase() 
+    const latestParticipant = await Participant.findOne({
+      email: email.toLowerCase(),
     }).sort({ createdAt: -1 });
-    
+
     if (!latestParticipant) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Profile not found. Register for an event to create your profile.' 
+      return res.status(404).json({
+        success: false,
+        message:
+          "Profile not found. Register for an event to create your profile.",
       });
     }
-    
+
     // Get participation stats
-    const totalRegistrations = await Participant.countDocuments({ 
-      email: email.toLowerCase() 
-    });
-    
-    const attendedCount = await Participant.countDocuments({ 
+    const totalRegistrations = await Participant.countDocuments({
       email: email.toLowerCase(),
-      attendanceStatus: 'ATTENDED'
     });
-    
-    const participantIds = await Participant.find({ 
-      email: email.toLowerCase() 
-    }).select('_id');
-    
-    const certificatesCount = await Certificate.countDocuments({ 
-      participant: { $in: participantIds.map(p => p._id) }
+
+    const attendedCount = await Participant.countDocuments({
+      email: email.toLowerCase(),
+      attendanceStatus: "ATTENDED",
     });
-    
+
+    const participantIds = await Participant.find({
+      email: email.toLowerCase(),
+    }).select("_id");
+
+    const certificatesCount = await Certificate.countDocuments({
+      participant: { $in: participantIds.map((p) => p._id) },
+    });
+
     res.json({
       success: true,
       data: {
@@ -814,59 +932,63 @@ router.get('/profile', async (req, res) => {
         stats: {
           totalRegistrations,
           attendedCount,
-          certificatesCount
+          certificatesCount,
         },
-        memberSince: latestParticipant.createdAt
-      }
+        memberSince: latestParticipant.createdAt,
+      },
     });
   } catch (error) {
-    console.error('Error fetching profile:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error fetching profile:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 // PUT /api/participant/profile - Update participant profile
-router.put('/profile', async (req, res) => {
+router.put("/profile", async (req, res) => {
   try {
     const { email, fullName, phone, college, branch, year } = req.body;
-    
+
     if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email is required' 
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
       });
     }
-    
+
     // Update all participant records for this email
     const updateResult = await Participant.updateMany(
       { email: email.toLowerCase() },
-      { 
-        $set: { 
+      {
+        $set: {
           fullName: fullName || undefined,
           name: fullName || undefined,
           phone: phone || undefined,
           college: college || undefined,
           branch: branch || undefined,
-          year: year || undefined
-        }
-      }
+          year: year || undefined,
+        },
+      },
     );
-    
+
     if (updateResult.modifiedCount === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Profile not found' 
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
       });
     }
-    
+
     res.json({
       success: true,
-      message: 'Profile updated successfully',
-      modifiedCount: updateResult.modifiedCount
+      message: "Profile updated successfully",
+      modifiedCount: updateResult.modifiedCount,
     });
   } catch (error) {
-    console.error('Error updating profile:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error updating profile:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -875,49 +997,58 @@ router.put('/profile', async (req, res) => {
 // =====================
 
 // GET /api/participant/calendar - Get events for calendar view
-router.get('/calendar', async (req, res) => {
+router.get("/calendar", async (req, res) => {
   try {
     const { email, month, year } = req.query;
-    
+
     // Get all public events for the calendar
     const filter = {
-      status: { $in: ['upcoming', 'ongoing', 'completed'] }
+      status: { $in: ["upcoming", "ongoing", "completed"] },
     };
-    
+
     // Filter by month/year if provided
     if (month && year) {
       const startOfMonth = new Date(parseInt(year), parseInt(month) - 1, 1);
-      const endOfMonth = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+      const endOfMonth = new Date(
+        parseInt(year),
+        parseInt(month),
+        0,
+        23,
+        59,
+        59,
+      );
       filter.startDate = { $gte: startOfMonth, $lte: endOfMonth };
     }
-    
+
     const events = await Event.find(filter)
-      .select('title startDate endDate status location venue')
+      .select("title startDate endDate status location venue")
       .sort({ startDate: 1 });
-    
+
     // If email provided, mark which events the participant is registered for
     let registeredEventIds = [];
     if (email) {
-      const registrations = await Participant.find({ 
+      const registrations = await Participant.find({
         email: email.toLowerCase(),
-        registrationStatus: { $ne: 'CANCELLED' }
-      }).select('event');
-      registeredEventIds = registrations.map(r => r.event.toString());
+        registrationStatus: { $ne: "CANCELLED" },
+      }).select("event");
+      registeredEventIds = registrations.map((r) => r.event.toString());
     }
-    
-    const calendarEvents = events.map(event => ({
+
+    const calendarEvents = events.map((event) => ({
       ...event.toObject(),
-      isRegistered: registeredEventIds.includes(event._id.toString())
+      isRegistered: registeredEventIds.includes(event._id.toString()),
     }));
-    
+
     res.json({
       success: true,
       count: calendarEvents.length,
-      data: calendarEvents
+      data: calendarEvents,
     });
   } catch (error) {
-    console.error('Error fetching calendar:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error fetching calendar:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
@@ -926,114 +1057,145 @@ router.get('/calendar', async (req, res) => {
 // =====================
 
 // GET /api/participant/certificates - Get all certificates for a participant by email
-router.get('/certificates', async (req, res) => {
+router.get("/certificates", async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
-    
+
     console.log(`📋 Fetching certificates for participant: ${email}`);
-    
+
     // Find ALL participant records for this email (across all events)
-    const allParticipantRecords = await Participant.find({ email: email.toLowerCase() })
-      .populate('event', 'title name startDate endDate status');
-    
+    const allParticipantRecords = await Participant.find({
+      email: email.toLowerCase(),
+    }).populate("event", "title name startDate endDate status");
+
     console.log(`📊 Found ${allParticipantRecords.length} participant records`);
-    
+
     // Log each participant record details
     allParticipantRecords.forEach((record, index) => {
       console.log(`  Record ${index + 1}:`, {
         id: record._id,
         email: record.email,
-        event: record.event ? {
-          id: record.event._id,
-          title: record.event.title || record.event.name,
-          status: record.event.status
-        } : 'NO EVENT',
-        attendanceStatus: record.attendanceStatus
+        event: record.event
+          ? {
+              id: record.event._id,
+              title: record.event.title || record.event.name,
+              status: record.event.status,
+            }
+          : "NO EVENT",
+        attendanceStatus: record.attendanceStatus,
       });
     });
-    
-    const participantIds = allParticipantRecords.map(p => p._id);
-    
+
+    const participantIds = allParticipantRecords.map((p) => p._id);
+
     // Get all certificates for any of this participant's records
-    const certificates = await Certificate.find({ participant: { $in: participantIds } })
-      .populate('event', 'title name startDate endDate status')
-      .populate('issuedBy', 'name email')
+    const certificates = await Certificate.find({
+      participant: { $in: participantIds },
+    })
+      .populate("event", "title name startDate endDate status")
+      .populate("issuedBy", "name email")
       .sort({ issuedAt: -1 });
-    
+
     console.log(`🏆 Found ${certificates.length} certificates`);
-    
+
     // Get QR-scanned attendance records
-    const qrAttendance = await Attendance.find({ participant: { $in: participantIds } });
-    const qrAttendedEventIds = qrAttendance.map(a => a.event.toString());
-    
+    const qrAttendance = await Attendance.find({
+      participant: { $in: participantIds },
+    });
+    const qrAttendedEventIds = qrAttendance.map((a) => a.event.toString());
+
     console.log(`✅ QR Attendance records: ${qrAttendance.length}`);
     if (qrAttendance.length > 0) {
-      console.log(`   QR Event IDs: ${qrAttendedEventIds.join(', ')}`);
+      console.log(`   QR Event IDs: ${qrAttendedEventIds.join(", ")}`);
     }
-    
+
     // Build attended events list (includes BOTH QR scanned AND manual attendance)
     const attendedEvents = [];
-    const certificateEventIds = certificates.map(c => c.event._id.toString());
-    
-    console.log(`\n📋 Analyzing ${allParticipantRecords.length} participant records for attended events...`);
-    
+    const certificateEventIds = certificates.map((c) => c.event._id.toString());
+
+    console.log(
+      `\n📋 Analyzing ${allParticipantRecords.length} participant records for attended events...`,
+    );
+
     for (const record of allParticipantRecords) {
       if (!record.event) {
         console.log(`⚠️ Skipping record ${record._id} - No event populated`);
         continue;
       }
-      
+
       const eventId = record.event._id.toString();
       const hasQrAttendance = qrAttendedEventIds.includes(eventId);
-      const hasManualAttendance = record.attendanceStatus === 'ATTENDED';
+      const hasManualAttendance = record.attendanceStatus === "ATTENDED";
       const hasCertificate = certificateEventIds.includes(eventId);
-      const isCompleted = record.event.status && record.event.status.toLowerCase() === 'completed';
-      
+      const isCompleted =
+        record.event.status &&
+        record.event.status.toLowerCase() === "completed";
+
       console.log(`\n  Event: ${record.event.title || record.event.name}`);
       console.log(`    - Event ID: ${eventId}`);
-      console.log(`    - Event Status: "${record.event.status}" (isCompleted: ${isCompleted})`);
+      console.log(
+        `    - Event Status: "${record.event.status}" (isCompleted: ${isCompleted})`,
+      );
       console.log(`    - QR Attendance: ${hasQrAttendance}`);
-      console.log(`    - Manual Attendance Status: "${record.attendanceStatus}" (hasManualAttendance: ${hasManualAttendance})`);
+      console.log(
+        `    - Manual Attendance Status: "${record.attendanceStatus}" (hasManualAttendance: ${hasManualAttendance})`,
+      );
       console.log(`    - Has Certificate: ${hasCertificate}`);
-      console.log(`    - Eligible: ${(hasQrAttendance || hasManualAttendance) && isCompleted && !hasCertificate}`);
-      
+      console.log(
+        `    - Eligible: ${(hasQrAttendance || hasManualAttendance) && isCompleted && !hasCertificate}`,
+      );
+
       // Include if: (QR scanned OR manually marked) AND event is completed AND no certificate yet
-      if ((hasQrAttendance || hasManualAttendance) && isCompleted && !hasCertificate) {
+      if (
+        (hasQrAttendance || hasManualAttendance) &&
+        isCompleted &&
+        !hasCertificate
+      ) {
         console.log(`    ✅ ADDED to attended events list`);
         attendedEvents.push({
           ...record.event.toObject(),
-          attendanceType: hasQrAttendance ? 'QR Scanned' : 'Manual',
-          participantRecordId: record._id
+          attendanceType: hasQrAttendance ? "QR Scanned" : "Manual",
+          participantRecordId: record._id,
         });
       } else {
         console.log(`    ❌ NOT ADDED - Missing criteria`);
       }
     }
-    
-    console.log(`\n📝 Attended events without certificates: ${attendedEvents.length}`);
-    console.log(`   - Events: ${attendedEvents.map(e => e.title || e.name).join(', ')}`);
-    
+
+    console.log(
+      `\n📝 Attended events without certificates: ${attendedEvents.length}`,
+    );
+    console.log(
+      `   - Events: ${attendedEvents.map((e) => e.title || e.name).join(", ")}`,
+    );
+
     // All registered events with status
     const allEvents = allParticipantRecords
-      .filter(p => p.event)
-      .map(p => {
+      .filter((p) => p.event)
+      .map((p) => {
         const eventId = p.event._id.toString();
         const hasQrAttendance = qrAttendedEventIds.includes(eventId);
-        const hasManualAttendance = p.attendanceStatus === 'ATTENDED';
-        
+        const hasManualAttendance = p.attendanceStatus === "ATTENDED";
+
         return {
           ...p.event.toObject(),
           hasAttendance: hasQrAttendance || hasManualAttendance,
-          attendanceType: hasQrAttendance ? 'QR' : hasManualAttendance ? 'Manual' : 'None',
+          attendanceType: hasQrAttendance
+            ? "QR"
+            : hasManualAttendance
+              ? "Manual"
+              : "None",
           hasCertificate: certificateEventIds.includes(eventId),
-          participantRecordId: p._id
+          participantRecordId: p._id,
         };
       });
-    
+
     res.json({
       success: true,
       data: {
@@ -1043,85 +1205,92 @@ router.get('/certificates', async (req, res) => {
         stats: {
           total: certificates.length,
           attended: attendedEvents.length,
-          registered: allEvents.length
-        }
-      }
+          registered: allEvents.length,
+        },
+      },
     });
   } catch (error) {
-    console.error('Error fetching certificates:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error fetching certificates:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 // POST /api/participant/certificates/request - Request a certificate
-router.post('/certificates/request', async (req, res) => {
+router.post("/certificates/request", async (req, res) => {
   try {
     const { participantId, eventId } = req.body;
-    
+
     if (!isValidObjectId(participantId) || !isValidObjectId(eventId)) {
-      return res.status(400).json({ success: false, message: 'Invalid participant or event ID' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid participant or event ID" });
     }
-    
+
     // Check if participant attended the event
-    const attendance = await Attendance.findOne({ 
-      participant: participantId, 
-      event: eventId 
-    });
-    
-    if (!attendance) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'You did not attend this event. Only participants who attended can request certificates.' 
-      });
-    }
-    
-    // Check if certificate already exists
-    const existingCert = await Certificate.findOne({ 
-      participant: participantId, 
-      event: eventId 
-    });
-    
-    if (existingCert) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'You already have a certificate for this event.' 
-      });
-    }
-    
-    // Check if request already exists
-    const existingRequest = await CertificateRequest.findOne({ 
-      participant: participantId, 
+    const attendance = await Attendance.findOne({
+      participant: participantId,
       event: eventId,
-      status: { $in: ['PENDING', 'APPROVED'] }
     });
-    
-    if (existingRequest) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'You have already requested a certificate for this event.' 
+
+    if (!attendance) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You did not attend this event. Only participants who attended can request certificates.",
       });
     }
-    
+
+    // Check if certificate already exists
+    const existingCert = await Certificate.findOne({
+      participant: participantId,
+      event: eventId,
+    });
+
+    if (existingCert) {
+      return res.status(400).json({
+        success: false,
+        message: "You already have a certificate for this event.",
+      });
+    }
+
+    // Check if request already exists
+    const existingRequest = await CertificateRequest.findOne({
+      participant: participantId,
+      event: eventId,
+      status: { $in: ["PENDING", "APPROVED"] },
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already requested a certificate for this event.",
+      });
+    }
+
     // Create request
     const request = await CertificateRequest.create({
       participant: participantId,
-      event: eventId
+      event: eventId,
     });
-    
+
     const populatedRequest = await CertificateRequest.findById(request._id)
-      .populate('event', 'title name startDate')
-      .populate('participant', 'name email');
-    
+      .populate("event", "title name startDate")
+      .populate("participant", "name email");
+
     res.json({
       success: true,
-      message: 'Certificate request submitted successfully. The organizer will process it soon.',
-      data: populatedRequest
+      message:
+        "Certificate request submitted successfully. The organizer will process it soon.",
+      data: populatedRequest,
     });
   } catch (error) {
-    console.error('Error requesting certificate:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    console.error("Error requesting certificate:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 });
 
 export default router;
-

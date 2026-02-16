@@ -11,4 +11,7 @@ export { default as SpeakerProfile } from './SpeakerProfile';
 export { default as SessionAssignment } from './SessionAssignment';
 export { default as Logs } from './Logs';
 export { default as RoleHistory } from './RoleHistory';
-
+export { default as FinanceDashboard } from "./finance/FinanceDashboard";
+export { default as BudgetRequest } from "./finance/BudgetRequest";
+export { default as ExpenseLog } from "./finance/ExpenseLog";
+export { default as BudgetAmendment } from "./finance/BudgetAmendment";
