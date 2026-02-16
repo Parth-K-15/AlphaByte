@@ -29,10 +29,16 @@ import {
   togglePinUpdate,
 } from "../../services/organizerApi";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
 const EventDetails = () => {
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
   const [updates, setUpdates] = useState([]);
+  const [speakerUpdates, setSpeakerUpdates] = useState([]);
+  const [speakerUpdatesLoading, setSpeakerUpdatesLoading] = useState(true);
+  const [speakerUpdateActionKey, setSpeakerUpdateActionKey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [newUpdate, setNewUpdate] = useState({ message: "", type: "INFO" });
@@ -52,16 +58,83 @@ const EventDetails = () => {
     if (!eventId) return;
 
     try {
+      setSpeakerUpdatesLoading(true);
       const [eventRes, updatesRes] = await Promise.all([
         getEventDetails(eventId),
         getEventUpdates(eventId),
       ]);
       if (eventRes.data.success) setEvent(eventRes.data.data);
       if (updatesRes.data.success) setUpdates(updatesRes.data.data);
+
+      // Fetch sessions for this event so we can show speaker-posted updates here
+      const token = localStorage.getItem("token");
+      const sessionsRes = await fetch(
+        `${API_BASE_URL}/organizer/sessions/${eventId}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
+      const sessionsData = await sessionsRes.json();
+      const sessions = sessionsData?.success ? sessionsData.data || [] : [];
+
+      const flattenedUpdates = (sessions || []).flatMap((session) =>
+        (session.updates || []).map((u, updateIndex) => ({
+          ...u,
+          _sessionId: session._id,
+          _updateIndex: updateIndex,
+          _sessionTitle: session.title,
+          _speaker: session.speaker,
+          _speakerName: session.speaker?.name,
+        })),
+      );
+
+      flattenedUpdates.sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime(),
+      );
+
+      setSpeakerUpdates(flattenedUpdates);
     } catch (error) {
       console.error("Error fetching event data:", error);
     } finally {
       setLoading(false);
+      setSpeakerUpdatesLoading(false);
+    }
+  };
+
+  const handleSpeakerUpdateDecision = async (sessionId, updateIndex, status) => {
+    const actionKey = `${sessionId}:${updateIndex}`;
+    try {
+      setSpeakerUpdateActionKey(actionKey);
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${API_BASE_URL}/organizer/sessions/${sessionId}/updates/${updateIndex}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ status }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to update status");
+      }
+
+      setSpeakerUpdates((prev) =>
+        prev.map((u) =>
+          u._sessionId === sessionId && u._updateIndex === updateIndex
+            ? { ...u, status }
+            : u,
+        ),
+      );
+    } catch (error) {
+      console.error("Error updating speaker update status:", error);
+    } finally {
+      setSpeakerUpdateActionKey(null);
     }
   };
 
@@ -613,6 +686,107 @@ const EventDetails = () => {
                     </a>
                   )}
                 </div>
+              </div>
+
+              {/* Speaker Updates */}
+              <div>
+                <h3 className="font-semibold text-gray-800 dark:text-white text-lg mb-4 flex items-center gap-2">
+                  <MessageSquare size={18} className="text-gray-400" />
+                  Speaker Updates
+                </h3>
+
+                {speakerUpdatesLoading ? (
+                  <div className="bg-white dark:bg-white/[0.03] rounded-xl p-6 border border-gray-100 dark:border-white/5">
+                    <p className="text-sm text-gray-500 dark:text-zinc-500">
+                      Loading speaker updates...
+                    </p>
+                  </div>
+                ) : speakerUpdates.length === 0 ? (
+                  <div className="bg-white dark:bg-white/[0.03] rounded-xl p-6 border border-gray-100 dark:border-white/5">
+                    <p className="text-sm text-gray-500 dark:text-zinc-500">
+                      No speaker updates posted for this event yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {speakerUpdates.map((u) => (
+                      <div
+                        key={u._id || `${u._sessionId}-${u.createdAt}-${u.message}`}
+                        className="bg-white dark:bg-white/[0.03] rounded-xl p-5 border border-gray-100 dark:border-white/5"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {u._speakerName || "Speaker"} • {u._sessionTitle || "Session"}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-zinc-400 mt-1">
+                              {u.message}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-zinc-500 mt-2">
+                              {(u.type || "general").toString()}
+                              {u.createdAt
+                                ? ` • ${new Date(u.createdAt).toLocaleString()}`
+                                : ""}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs px-2.5 py-1 rounded-full font-semibold self-start ${
+                                u.status === "approved"
+                                  ? "bg-green-50 text-green-700 border border-green-200"
+                                  : u.status === "rejected"
+                                    ? "bg-red-50 text-red-700 border border-red-200"
+                                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                              }`}
+                            >
+                              {u.status || "pending"}
+                            </span>
+
+                            {(u.status === "pending" || !u.status) && (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleSpeakerUpdateDecision(
+                                      u._sessionId,
+                                      u._updateIndex,
+                                      "approved",
+                                    )
+                                  }
+                                  disabled={
+                                    speakerUpdateActionKey ===
+                                    `${u._sessionId}:${u._updateIndex}`
+                                  }
+                                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleSpeakerUpdateDecision(
+                                      u._sessionId,
+                                      u._updateIndex,
+                                      "rejected",
+                                    )
+                                  }
+                                  disabled={
+                                    speakerUpdateActionKey ===
+                                    `${u._sessionId}:${u._updateIndex}`
+                                  }
+                                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

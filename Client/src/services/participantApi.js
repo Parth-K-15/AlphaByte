@@ -52,6 +52,12 @@ export const requestCertificate = (data) => fetchApi('/participant/certificates/
 export const getProfile = (participantId) => fetchApi(`/participant/profile/${participantId}`);
 export const updateProfile = (participantId, data) => fetchApi(`/participant/profile/${participantId}`, { method: 'PUT', body: data });
 
+// Transcript
+export const syncTranscript = () => fetchApi('/transcript/sync', { method: 'POST' });
+export const getTranscript = () => fetchApi('/transcript');
+export const addTranscriptRole = (data) => fetchApi('/transcript/role', { method: 'POST', body: data });
+export const deleteTranscriptRole = (roleId) => fetchApi(`/transcript/role/${roleId}`, { method: 'DELETE' });
+
 export default {
   getAllEvents,
   getEventDetails,
@@ -61,5 +67,9 @@ export default {
   getMyCertificates,
   requestCertificate,
   getProfile,
-  updateProfile
+  updateProfile,
+  syncTranscript,
+  getTranscript,
+  addTranscriptRole,
+  deleteTranscriptRole
 };

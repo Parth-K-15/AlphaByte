@@ -10,7 +10,8 @@ import { ProtectedRoute, PublicRoute } from "./components/ProtectedRoute";
 import AdminLayout from "./layouts/AdminLayout";
 import OrganizerLayout from "./layouts/OrganizerLayout";
 import ParticipantLayout from "./layouts/ParticipantLayout";
-import { SignIn, SignUp, Landing, AdminSignIn } from "./pages/auth";
+import SpeakerLayout from "./layouts/SpeakerLayout";
+import { SignIn, SignUp, Landing, AdminSignIn, SpeakerAuth } from "./pages/auth";
 import {
   Dashboard,
   Events,
@@ -37,6 +38,9 @@ import {
   Certificates,
   TeamAccess,
   Logs as OrganizerLogs,
+  Speakers as OrganizerSpeakers,
+  SpeakerProfile as OrganizerSpeakerProfile,
+  SessionAssignment,
 } from "./pages/organizer";
 import {
   EventsHome,
@@ -47,7 +51,16 @@ import {
   History,
   Profile,
   Calendar,
+  Transcript,
 } from "./pages/participant";
+import {
+  Dashboard as SpeakerDashboard,
+  Sessions as SpeakerSessions,
+  SessionDetail as SpeakerSessionDetail,
+  Profile as SpeakerProfile,
+  Materials as SpeakerMaterials,
+  Analytics as SpeakerAnalytics,
+} from "./pages/speaker";
 
 function App() {
   return (
@@ -87,6 +100,14 @@ function App() {
               element={
                 <PublicRoute>
                   <AdminSignIn />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/speaker-auth"
+              element={
+                <PublicRoute>
+                  <SpeakerAuth />
                 </PublicRoute>
               }
             />
@@ -179,6 +200,11 @@ function App() {
 
               {/* Team Access (Team Lead Only) */}
               <Route path="team" element={<TeamAccess />} />
+
+              {/* Speaker Management */}
+              <Route path="speakers" element={<OrganizerSpeakers />} />
+              <Route path="speakers/:id" element={<OrganizerSpeakerProfile />} />
+              <Route path="sessions/assign" element={<SessionAssignment />} />
             </Route>
 
             {/* Participant Routes - Protected */}
@@ -218,6 +244,26 @@ function App() {
 
               {/* Profile */}
               <Route path="profile" element={<Profile />} />
+
+              {/* Transcript */}
+              <Route path="transcript" element={<Transcript />} />
+            </Route>
+
+            {/* Speaker Routes - Protected */}
+            <Route
+              path="/speaker"
+              element={
+                <ProtectedRoute allowedRoles={["SPEAKER"]}>
+                  <SpeakerLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<SpeakerDashboard />} />
+              <Route path="sessions" element={<SpeakerSessions />} />
+              <Route path="sessions/:id" element={<SpeakerSessionDetail />} />
+              <Route path="profile" element={<SpeakerProfile />} />
+              <Route path="materials" element={<SpeakerMaterials />} />
+              <Route path="analytics" element={<SpeakerAnalytics />} />
             </Route>
           </Routes>
         </Router>
