@@ -53,7 +53,8 @@ const QRScannerVerify = () => {
   useEffect(() => {
     processQRDataRef.current = (data) => {
       stopCamera();
-      // Try to extract verificationId from a full URL
+
+      // 1. Try to extract verificationId from a full URL
       try {
         const url = new URL(data);
         const parts = url.pathname.split('/verify/');
@@ -62,13 +63,37 @@ const QRScannerVerify = () => {
           return;
         }
       } catch {
-        // Not a URL
+        // Not a URL — continue to other checks
       }
-      // Check if raw hex verification id format
+
+      // 2. Check if raw hex verification id format (e.g. "19a3f0c-8b2d1e4f-a7c9b3e2")
       if (/^[a-f0-9]+-[a-f0-9]+-[a-f0-9]+$/i.test(data.trim())) {
         navigateRef.current(`/verify/${data.trim()}`);
         return;
       }
+
+      // 3. Handle multi-line tamper-proof QR text block
+      //    Look for "Verify online: <url>" line
+      const verifyUrlMatch = data.match(/Verify online:\s*(https?:\/\/[^\s]+\/verify\/([^\s]+))/i);
+      if (verifyUrlMatch && verifyUrlMatch[2]) {
+        navigateRef.current(`/verify/${verifyUrlMatch[2]}`);
+        return;
+      }
+
+      //    Look for "Verification ID: <id>" line
+      const verificationIdMatch = data.match(/Verification ID:\s*([a-f0-9]+-[a-f0-9]+-[a-f0-9]+)/i);
+      if (verificationIdMatch && verificationIdMatch[1]) {
+        navigateRef.current(`/verify/${verificationIdMatch[1]}`);
+        return;
+      }
+
+      // 4. Try to find any verify URL pattern anywhere in the text
+      const anyUrlMatch = data.match(/\/verify\/([a-f0-9]+-[a-f0-9]+-[a-f0-9]+)/i);
+      if (anyUrlMatch && anyUrlMatch[1]) {
+        navigateRef.current(`/verify/${anyUrlMatch[1]}`);
+        return;
+      }
+
       setError('Invalid QR code. This does not appear to be a Planix certificate QR.');
       setTimeout(() => setError(''), 3000);
     };
