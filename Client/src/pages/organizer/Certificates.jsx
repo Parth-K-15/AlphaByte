@@ -807,7 +807,7 @@ const Certificates = () => {
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {templates.map((template) => (
-                      <button
+                      <div
                         key={template.id}
                         onClick={() =>
                           setGenerateOptions({
@@ -815,7 +815,9 @@ const Certificates = () => {
                             template: template.id,
                           })
                         }
-                        className={`relative p-6 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${generateOptions.template === template.id
+                        role="button"
+                        tabIndex={0}
+                        className={`relative p-6 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer ${generateOptions.template === template.id
                           ? "border-[#191A23] bg-[#B9FF66]/10 shadow-lg"
                           : "border-gray-200 dark:border-white/10 hover:border-[#B9FF66] bg-white dark:bg-white/[0.03]"
                           }`}
@@ -854,7 +856,7 @@ const Certificates = () => {
                             />
                           </div>
                         )}
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>

@@ -1069,6 +1069,7 @@ router.get('/certificates/:eventId/stats', async (req, res) => {
 });
 
 router.post('/certificates/:eventId/generate', async (req, res) => {
+  let idemScope, idempotencyKey;
   try {
     const { eventId } = req.params;
     // Permission check: canGenerateCertificates
@@ -1087,8 +1088,8 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
         JSON.stringify({ eventId, organizerId, template, achievement, competitionName: competitionName || null }),
       )
       .digest('hex');
-    const idempotencyKey = providedKey || derivedKey;
-    const idemScope = `CERT_GENERATE_EVENT:${eventId}`;
+    idempotencyKey = providedKey || derivedKey;
+    idemScope = `CERT_GENERATE_EVENT:${eventId}`;
     const idemHash = buildRequestHash({ organizerId, template, achievement, competitionName: competitionName || null });
 
     const idem = await getOrCreateIdempotencyRecord({
@@ -1251,7 +1252,8 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
           organizationName: event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
           departmentName: event.departmentName || 'Department of Computer Science & Engineering',
           competitionName: competitionName || event.title || event.name || 'Competition',
-          achievement: achievement || 'Participation'
+          achievement: achievement || 'Participation',
+          participantEmail: participant.email || ''
         };
 
         // Generate Certificate JPG
@@ -1400,7 +1402,19 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
 
     res.json(responseBody);
   } catch (error) {
-    console.error('Error generating certificates:', error);
+    console.error('❌ Error generating certificates:', error);
+    console.error('Full stack:', error.stack);
+
+    // Clean up idempotency record so the user can retry
+    try {
+      if (typeof idemScope !== 'undefined' && typeof idempotencyKey !== 'undefined') {
+        await IdempotencyKey.deleteOne({ scope: idemScope, key: idempotencyKey });
+        console.log('🧹 Cleaned up idempotency record for retry');
+      }
+    } catch (cleanupErr) {
+      console.error('⚠️ Could not clean idempotency record:', cleanupErr.message);
+    }
+
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
@@ -2048,7 +2062,8 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
       organizationName: request.event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
       departmentName: request.event.departmentName || 'Department of Computer Science & Engineering',
       competitionName: competitionName || request.event.title || request.event.name,
-      achievement: achievement || 'Participation'
+      achievement: achievement || 'Participation',
+      participantEmail: request.participant.email || ''
     };
 
     console.log(`📄 Generating certificate for ${request.participant.name} (Request: ${requestId})...`);

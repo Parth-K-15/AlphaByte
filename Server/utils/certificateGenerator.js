@@ -67,6 +67,7 @@ class CertificateGenerator {
       eventDate,
       certificateId,
       verificationId = '',
+      participantEmail = '',
       organizationName = 'PCET\'s Pimpri Chinchwad College of Engineering',
       departmentName = 'Department of Computer Science & Engineering',
       associationText = 'In association with',
@@ -131,6 +132,40 @@ class CertificateGenerator {
         achievementDescription = `achieved ${achievement}`;
       }
 
+      // Generate QR code with tamper-proof verification text
+      let qrCodeDataUri = '';
+      if (verificationId) {
+        try {
+          const clientUrl = process.env.CLIENT_URL || 'https://eventsync-protocol.vercel.app';
+          const issuedAt = new Date().toISOString();
+          // Encode all certificate details as plain text so Google Lens can read it
+          const qrText = [
+            `CERTIFICATE VERIFICATION`,
+            `========================`,
+            `Name: ${participantName}`,
+            `Email: ${participantEmail || 'N/A'}`,
+            `Event: ${eventName}`,
+            `Achievement: ${achievementBadge}`,
+            `Organizer: ${organizerName}`,
+            `Issued: ${issuedAt}`,
+            `Certificate ID: ${certificateId}`,
+            `Verification ID: ${verificationId}`,
+            `========================`,
+            `Verify online: ${clientUrl}/verify/${verificationId}`,
+          ].join('\n');
+
+          qrCodeDataUri = await QRCode.toDataURL(qrText, {
+            width: 280,
+            margin: 1,
+            color: { dark: '#1a202c', light: '#ffffff' },
+            errorCorrectionLevel: 'M',
+          });
+          console.log('\u2705 QR code generated for verification:', `${clientUrl}/verify/${verificationId}`);
+        } catch (qrError) {
+          console.error('\u26a0\ufe0f QR code generation failed (non-blocking):', qrError.message);
+        }
+      }
+
       // Prepare template data
       const templateData = {
         participantName,
@@ -154,7 +189,8 @@ class CertificateGenerator {
         signature4Name,
         signature4Title,
         qrCodeDataUri,
-        verificationId
+        verificationId: verificationId || '',
+        certificateId: certificateId || ''
       };
 
       console.log('\u2705 Template data prepared');

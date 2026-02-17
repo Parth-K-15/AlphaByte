@@ -18,6 +18,7 @@ import {
   Loader2,
   Banknote,
   ChevronRight,
+  Play,
 } from "lucide-react";
 import {
   getAssignedEvents,

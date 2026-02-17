@@ -182,6 +182,36 @@
       margin-top: 40px;
       font-family: 'Georgia', serif;
     }
+
+    /* QR Verification */
+    .qr-verification {
+      position: absolute;
+      bottom: 60px;
+      right: 80px;
+      text-align: center;
+      z-index: 9999;
+    }
+    .qr-code {
+      width: 160px;
+      height: 160px;
+      border: 3px solid #333333;
+      border-radius: 12px;
+      padding: 4px;
+      background: #fff;
+    }
+    .qr-text {
+      font-size: 20px;
+      color: #666666;
+      font-family: 'Arial', sans-serif;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+    .qr-id {
+      font-size: 16px;
+      color: #999999;
+      font-family: 'Courier New', monospace;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -232,6 +262,13 @@
       
       <!-- Issue date -->
       <div class="issue-date">Issued on: {{eventDate}}</div>
+    </div>
+
+    <!-- QR Verification -->
+    <div class="qr-verification">
+      <img src="{{qrCodeDataUri}}" alt="Verify" class="qr-code" />
+      <div class="qr-text">Scan to verify</div>
+      <div class="qr-id">ID: {{certificateId}}</div>
     </div>
   </div>
 </body>
