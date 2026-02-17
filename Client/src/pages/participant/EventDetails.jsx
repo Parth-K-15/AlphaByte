@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { ScaleUp } from "../../components/participant/ScrollAnimations";
+import { getEventImageUrl } from "../../utils/eventImageResolver";
 import {
   Calendar,
   MapPin,
@@ -381,16 +383,15 @@ const EventDetails = () => {
       </button>
 
       {/* Event Header */}
+      <ScaleUp>
       <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none overflow-hidden border border-light-400/50 dark:border-white/5">
         {/* Banner */}
         <div className="h-48 md:h-64 bg-dark relative overflow-hidden">
-          {event.bannerImage && (
-            <img
-              src={event.bannerImage}
-              alt={event.title}
-              className="w-full h-full object-cover opacity-80"
-            />
-          )}
+          <img
+            src={getEventImageUrl(event || {})}
+            alt={event.title || "Event"}
+            className="w-full h-full object-cover opacity-80"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/60 to-transparent"></div>
 
           {/* Decorative lime accent */}
@@ -760,6 +761,7 @@ const EventDetails = () => {
           )}
         </div>
       </div>
+      </ScaleUp>
 
       {/* Rulebook / Guidelines */}
       {event.rulebook && (

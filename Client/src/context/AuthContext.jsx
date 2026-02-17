@@ -29,27 +29,55 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is authenticated on mount
   useEffect(() => {
+    const abortController = new AbortController();
+
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
           const response = await authApi.getMe();
-          if (response.success) {
-            setUser(response.data);
-            setToken(storedToken);
-          } else {
-            // Token invalid, clear storage
+
+          // Guard: only act if the token hasn't changed while getMe() was in-flight
+          // (e.g. user logged in fresh while the stale-token request was pending)
+          const currentToken = localStorage.getItem('token');
+          if (abortController.signal.aborted) return;
+
+          if (currentToken === storedToken) {
+            if (response.success) {
+              setUser(response.data);
+              setToken(storedToken);
+            } else {
+              logout();
+            }
+          }
+          // If token changed, skip — the new login already set state
+        } catch (error) {
+          if (abortController.signal.aborted) return;
+          console.error('Auth init error:', error);
+          // Only logout if no fresh login has occurred in the meantime
+          const currentToken = localStorage.getItem('token');
+          if (currentToken === storedToken || !currentToken) {
             logout();
           }
-        } catch (error) {
-          console.error('Auth init error:', error);
-          logout();
         }
       }
-      setLoading(false);
+      if (!abortController.signal.aborted) {
+        setLoading(false);
+      }
     };
 
     initAuth();
+
+    // Listen for auth:expired events dispatched by API services on 401
+    const handleAuthExpired = () => {
+      logout();
+    };
+    window.addEventListener('auth:expired', handleAuthExpired);
+
+    return () => {
+      abortController.abort();
+      window.removeEventListener('auth:expired', handleAuthExpired);
+    };
   }, []);
 
   const login = async (email, password) => {

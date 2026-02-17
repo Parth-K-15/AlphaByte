@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { FadeUp, StaggerContainer, StaggerItem, ScaleUp } from "../../components/participant/ScrollAnimations";
 import {
-  QrCode,
   X,
   CheckCircle,
   Camera,
@@ -10,11 +10,11 @@ import {
   RefreshCw,
   Calendar,
   MapPin,
-  Users,
   Award,
 } from "lucide-react";
 import jsQR from "jsqr";
 import { useAuth } from "../../context/AuthContext";
+import { getEventImageUrl } from "../../utils/eventImageResolver";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://eventsync-blue.vercel.app/api";
 
@@ -108,23 +108,7 @@ const MyRegistrations = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      PENDING: "bg-yellow-100 text-yellow-800",
-      CONFIRMED: "bg-lime/20 text-dark",
-      CANCELLED: "bg-red-50 text-red-700",
-    };
-    return badges[status] || "bg-light-400 text-dark-300";
-  };
 
-  const getAttendanceBadge = (status) => {
-    const badges = {
-      PENDING: "bg-light-400 text-dark-300",
-      ATTENDED: "bg-lime text-dark",
-      ABSENT: "bg-red-50 text-red-700",
-    };
-    return badges[status] || "bg-light-400 text-dark-300";
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "TBA";
@@ -422,6 +406,7 @@ const MyRegistrations = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <FadeUp>
       <div className="relative bg-gradient-to-br from-dark via-dark to-dark-500 rounded-3xl p-8 lg:p-10 text-white overflow-hidden shadow-2xl">
         {/* Animated Background Elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-lime/5 rounded-full blur-3xl"></div>
@@ -460,6 +445,7 @@ const MyRegistrations = () => {
           <span className="font-bold text-lime text-sm">{email}</span>
         </div>
       </div>
+      </FadeUp>
 
       {/* Message */}
       {message.text && (
@@ -501,185 +487,125 @@ const MyRegistrations = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {registrations.map((reg, index) => {
-            const variant = index % 2 === 0 ? "white" : "dark";
-
-            return (
-              <div
-                key={reg._id}
-                className={`group relative rounded-3xl overflow-hidden transition-all duration-500 hover:scale-[1.01] ${
-                  variant === "dark"
-                    ? "bg-gradient-to-br from-dark via-dark to-dark-500 text-white shadow-2xl hover:shadow-lime/20"
-                    : "bg-white dark:bg-gradient-to-br dark:from-white/10 dark:via-white/5 dark:to-white/5 shadow-xl hover:shadow-2xl dark:shadow-white/5 border border-light-400/50 dark:border-white/10 text-dark dark:text-white"
-                }`}
-              >
-                {/* Gradient Overlay on Hover */}
-                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
-                  variant === "dark" ? "bg-gradient-to-tr from-lime/5 to-transparent" : "bg-gradient-to-tr from-lime/5 to-transparent"
-                }`}></div>
-                
-                <div className="relative z-10 flex flex-col lg:flex-row">
-                  {/* Event Image */}
-                  <div
-                    className={`w-full lg:w-64 h-48 lg:h-auto relative overflow-hidden ${
-                      variant === "dark"
-                        ? "bg-gradient-to-br from-dark-400 to-dark-500"
-                        : "bg-gradient-to-br from-lime/20 via-lime/10 to-lime/5 dark:from-lime/15 dark:via-lime/10 dark:to-lime/5"
+        <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {registrations.map((reg) => (
+            <StaggerItem key={reg._id}>
+            <div
+              className="group bg-white dark:bg-dark rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl dark:shadow-white/5 dark:hover:shadow-lime/10 transition-all duration-500 hover:-translate-y-1 border border-light-400/40 dark:border-white/10 flex flex-col"
+            >
+              {/* Card Image */}
+              <div className="relative h-48 overflow-hidden bg-gradient-to-br from-light-300 to-light-400 dark:from-dark-400 dark:to-dark-500">
+                <img
+                  src={getEventImageUrl(reg.event || {})}
+                  alt={reg.event?.title || "Event"}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                {/* Event Status Pill */}
+                {reg.event?.status && (
+                  <span
+                    className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md flex items-center gap-1 ${
+                      reg.event.status === "upcoming"
+                        ? "bg-lime/90 text-dark"
+                        : reg.event.status === "ongoing"
+                          ? "bg-dark/70 text-lime border border-lime/40"
+                          : "bg-dark/60 text-white/70 border border-white/20"
                     }`}
                   >
-                    {reg.event?.bannerImage ? (
-                      <img
-                        src={reg.event.bannerImage}
-                        alt={reg.event?.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <div className="text-6xl drop-shadow-lg">🎪</div>
-                      </div>
-                    )}
-                    {/* Overlay Gradient */}
-                    <div className={`absolute inset-0 ${
-                      variant === "dark" 
-                        ? "bg-gradient-to-t from-dark/50 to-transparent" 
-                        : "bg-gradient-to-t from-white/50 dark:from-dark/50 to-transparent"
-                    }`}></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></div>
+                    {reg.event.status}
+                  </span>
+                )}
+                {/* Attendance Indicator */}
+                {reg.attendanceStatus === "ATTENDED" && (
+                  <div className="absolute top-3 right-3 w-8 h-8 bg-lime rounded-full flex items-center justify-center shadow-lg shadow-lime/30">
+                    <CheckCircle size={16} className="text-dark" />
                   </div>
-
-                  {/* Event Info */}
-                  <div className="flex-1 p-6 lg:p-8">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <h3 className="font-black text-xl lg:text-2xl mb-2 leading-tight group-hover:translate-x-1 transition-transform duration-300">
-                          {reg.event?.title || "Event Deleted"}
-                        </h3>
-                        <div
-                          className={`flex flex-wrap items-center gap-4 text-sm font-medium ${variant === "dark" ? "text-dark-200" : "text-dark-300 dark:text-zinc-400"}`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <div className={`p-1 rounded-md ${variant === "dark" ? "bg-lime/10" : "bg-light-400 dark:bg-white/10"}`}>
-                              <Calendar size={14} />
-                            </div>
-                            <span>{formatDate(reg.event?.startDate)}</span>
-                          </div>
-                          {reg.event?.venue && (
-                            <div className="flex items-center gap-1.5">
-                              <div className={`p-1 rounded-md ${variant === "dark" ? "bg-lime/10" : "bg-light-400 dark:bg-white/10"}`}>
-                                <MapPin size={14} />
-                              </div>
-                              <span className="truncate max-w-[200px]">{reg.event.venue}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {reg.event?.status && (
-                        <span
-                          className={`self-start px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md backdrop-blur-sm flex items-center gap-1.5 ${
-                            reg.event.status === "upcoming"
-                              ? "bg-gradient-to-r from-lime to-lime/90 text-dark"
-                              : reg.event.status === "ongoing"
-                                ? variant === "dark"
-                                  ? "bg-lime/15 text-lime border border-lime/30"
-                                  : "bg-dark text-lime"
-                                : variant === "dark"
-                                  ? "bg-dark-400/50 text-dark-200 border border-white/10"
-                                  : "bg-light-400/50 dark:bg-white/10 text-dark-300 dark:text-zinc-400 border border-dark/10 dark:border-white/10"
-                          }`}
-                        >
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse mr-1"></span>
-                          {reg.event.status}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Status Badges */}
-                    <div className="mt-5 flex flex-wrap gap-2.5">
-                      {/* Team Badge */}
-                      {reg.teamInfo && (
-                        <span className="group/badge relative px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transition-all duration-300 hover:scale-105 hover:shadow-blue-500/50">
-                          <div className="flex items-center gap-1.5">
-                            <Users size={12} className="group-hover/badge:scale-110 transition-transform" />
-                            <span>{reg.teamInfo.isCaptain ? '👑 ' : ''}{reg.teamInfo.teamName}</span>
-                            <span className="opacity-75">({reg.teamInfo.role})</span>
-                          </div>
-                        </span>
-                      )}
-                      <span
-                        className={`group/badge relative px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all duration-300 hover:scale-105 ${getStatusBadge(reg.registrationStatus)}`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <CheckCircle size={12} className="group-hover/badge:scale-110 transition-transform" />
-                          <span>Registration: {reg.registrationStatus}</span>
-                        </div>
-                      </span>
-                      <span
-                        className={`group/badge relative px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all duration-300 hover:scale-105 ${getAttendanceBadge(reg.attendanceStatus)}`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Users size={12} className="group-hover/badge:scale-110 transition-transform" />
-                          <span>Attendance: {reg.attendanceStatus}</span>
-                        </div>
-                      </span>
-                      {reg.certificate && (
-                        <span className="group/badge relative px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-lime to-lime/90 text-dark shadow-md transition-all duration-300 hover:scale-105 hover:shadow-lime/50">
-                          <div className="flex items-center gap-1.5">
-                            <Award size={12} className="group-hover/badge:rotate-12 transition-transform" />
-                            <span>Certificate: {reg.certificate.status}</span>
-                          </div>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      {reg.event && (
-                        <Link
-                          to={`/participant/event/${reg.event._id}`}
-                          className={`group/btn relative px-5 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 shadow-md overflow-hidden ${
-                            variant === "dark"
-                              ? "bg-lime/10 text-lime border-2 border-lime/30 hover:bg-lime/20 hover:shadow-lime/20"
-                              : "bg-dark/5 text-dark dark:text-lime border-2 border-dark/10 dark:border-lime/30 hover:bg-dark/10 dark:hover:bg-lime/10 hover:shadow-lg"
-                          }`}
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
-                          <span className="relative z-10">View Event</span>
-                          <ArrowUpRight size={16} className="relative z-10 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                        </Link>
-                      )}
-                      {reg.attendanceStatus !== "ATTENDED" && reg.event && (
-                        <button
-                          onClick={() => handleOpenScanner(reg.event)}
-                          className="group/btn relative px-5 py-2.5 text-sm bg-gradient-to-r from-lime to-lime/90 text-dark rounded-xl hover:shadow-2xl hover:shadow-lime/50 flex items-center gap-2 font-bold transition-all duration-300 hover:scale-105 overflow-hidden"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
-                          <Camera size={16} className="relative z-10 group-hover/btn:scale-110 transition-transform" />
-                          <span className="relative z-10">Scan QR</span>
-                        </button>
-                      )}
-                      {reg.attendanceStatus === "ATTENDED" && (
-                        <span className="px-5 py-2.5 text-sm bg-lime/20 text-dark dark:text-lime rounded-xl flex items-center gap-2 font-bold shadow-md border-2 border-lime/30">
-                          <CheckCircle size={16} className="animate-pulse" />
-                          Attended
-                        </span>
-                      )}
-                      {reg.certificate && reg.certificate.certificateUrl && (
-                        <Link
-                          to={`/participant/certificates`}
-                          className="group/btn relative px-5 py-2.5 text-sm bg-gradient-to-r from-dark to-dark/90 text-lime rounded-xl font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-xl overflow-hidden"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-lime/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
-                          <span className="relative z-10">📜 Certificate</span>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
-            );
-          })}
-        </div>
+
+              {/* Card Body */}
+              <div className="flex-1 p-5 flex flex-col">
+                {/* Title */}
+                <h3 className="font-bold text-lg text-dark dark:text-white leading-snug mb-1 line-clamp-2">
+                  {reg.event?.title || "Event Deleted"}
+                </h3>
+
+                {/* Subtitle / Registration Status */}
+                <p className="text-dark-300 dark:text-zinc-500 text-sm font-medium mb-4">
+                  {reg.registrationStatus === "CONFIRMED" ? "Confirmed" : reg.registrationStatus === "PENDING" ? "Pending Confirmation" : reg.registrationStatus}
+                </p>
+
+                {/* Meta Row */}
+                <div className="flex items-center justify-between text-xs text-dark-300 dark:text-zinc-400 mt-auto mb-4">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={13} className="text-dark-200 dark:text-zinc-500" />
+                    <span className="font-semibold">{formatDate(reg.event?.startDate)}</span>
+                  </div>
+                  {reg.event?.venue && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin size={13} className="text-dark-200 dark:text-zinc-500" />
+                      <span className="font-semibold truncate max-w-[100px]">{reg.event.venue}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Badges Row */}
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {reg.certificate && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-lime/15 text-dark dark:text-lime">
+                      <Award size={10} />
+                      Certificate
+                    </span>
+                  )}
+                  {reg.attendanceStatus === "ATTENDED" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-lime/15 text-dark dark:text-lime">
+                      <CheckCircle size={10} />
+                      Attended
+                    </span>
+                  )}
+                </div>
+
+                {/* CTA Button */}
+                {reg.event ? (
+                  <Link
+                    to={`/participant/event/${reg.event._id}`}
+                    className="w-full py-3 bg-dark dark:bg-lime/10 dark:border dark:border-lime/30 text-white dark:text-lime rounded-2xl font-bold text-sm text-center hover:bg-dark-600 dark:hover:bg-lime/20 transition-all duration-300 active:scale-[0.97]"
+                  >
+                    View Details
+                  </Link>
+                ) : (
+                  <div className="w-full py-3 bg-light-400 dark:bg-white/5 text-dark-300 dark:text-zinc-500 rounded-2xl font-bold text-sm text-center cursor-not-allowed">
+                    Unavailable
+                  </div>
+                )}
+
+                {/* Secondary Actions */}
+                {reg.event && (
+                  <div className="flex gap-2 mt-2">
+                    {reg.attendanceStatus !== "ATTENDED" && (
+                      <button
+                        onClick={() => handleOpenScanner(reg.event)}
+                        className="flex-1 py-2.5 bg-lime text-dark rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 hover:shadow-lg hover:shadow-lime/30 transition-all duration-300 active:scale-[0.97]"
+                      >
+                        <Camera size={14} />
+                        Scan QR
+                      </button>
+                    )}
+                    {reg.certificate && reg.certificate.certificateUrl && (
+                      <Link
+                        to="/participant/certificates"
+                        className="flex-1 py-2.5 bg-dark/5 dark:bg-white/5 text-dark dark:text-white rounded-2xl font-bold text-xs text-center hover:bg-dark/10 dark:hover:bg-white/10 transition-all duration-300 active:scale-[0.97]"
+                      >
+                        Certificate
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
       )}
 
       {/* Change Email */}
