@@ -10,6 +10,7 @@ import EventUpdate from '../models/EventUpdate.js';
 import SpeakerAuth from '../models/SpeakerAuth.js';
 import Session from '../models/Session.js';
 import SpeakerReview from '../models/SpeakerReview.js';
+import SpeakerRequest from '../models/SpeakerRequest.js';
 import Log from '../models/Log.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
@@ -17,6 +18,7 @@ import bcrypt from 'bcrypt';
 import { sendBulkEmails, testEmailConnection, sendCertificateEmail } from '../utils/emailService.js';
 import certificateGenerator from '../utils/certificateGenerator.js';
 import activeSessions from '../utils/sessionStore.js';
+import { getRecommendedSpeakers } from '../utils/speakerRecommendation.js';
 import { verifyToken, isOrganizer } from '../middleware/auth.js';
 import { cache } from '../middleware/cache.js';
 import { CacheKeys, CacheTTL } from '../utils/cacheKeys.js';
@@ -626,7 +628,7 @@ router.post('/attendance/:eventId/generate-qr', async (req, res) => {
     const sessionId = crypto.randomBytes(16).toString('hex');
     const timestamp = Date.now();
     const expiresAt = timestamp + (5 * 60 * 1000);
-    activeSessions.set(sessionId, { eventId, organizerId, createdAt: timestamp, expiresAt });
+    await activeSessions.set(sessionId, { eventId, organizerId, createdAt: timestamp, expiresAt });
     const qrData = { eventId, sessionId, timestamp, expiresAt };
 
     // Log QR generation
@@ -662,9 +664,9 @@ router.post('/attendance/mark', async (req, res) => {
     const perm = await checkPermission(req, eventId, 'canManageAttendance');
     if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
-    const session = activeSessions.get(sessionId);
+    const session = await activeSessions.get(sessionId);
     if (!session) return res.status(400).json({ success: false, message: 'Invalid or expired QR code' });
-    if (Date.now() > session.expiresAt) { activeSessions.delete(sessionId); return res.status(400).json({ success: false, message: 'QR code has expired' }); }
+    if (Date.now() > session.expiresAt) { await activeSessions.delete(sessionId); return res.status(400).json({ success: false, message: 'QR code has expired' }); }
     if (session.eventId !== eventId) return res.status(400).json({ success: false, message: 'QR code does not match event' });
     const participant = await Participant.findOne({ _id: participantId, event: eventId });
     if (!participant) return res.status(404).json({ success: false, message: 'Participant not registered for this event' });
@@ -772,7 +774,7 @@ router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => 
     if (!attendance) return res.status(404).json({ success: false, message: 'Attendance record not found' });
 
     await Participant.findByIdAndUpdate(participantId, {
-      attendanceStatus: 'NOT_ATTENDED',
+      attendanceStatus: 'ABSENT',
       attendedAt: null
     });
 
@@ -795,7 +797,7 @@ router.delete('/attendance/:eventId/unmark/:participantId', async (req, res) => 
       severity: 'WARNING',
       reason: 'Attendance record removed by organizer',
       oldState: { attendanceStatus: 'ATTENDED' },
-      newState: { attendanceStatus: 'NOT_ATTENDED' }
+      newState: { attendanceStatus: 'ABSENT' }
     });
 
     res.json({ success: true, message: 'Attendance unmarked successfully' });
@@ -1045,12 +1047,14 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
         }
 
         // Prepare certificate data with all required fields
+        const certVerificationId = `${Date.now().toString(16)}-${Math.random().toString(16).substring(2, 10)}-${Math.random().toString(16).substring(2, 10)}`;
         const certificateData = {
           template,
           participantName: participant.name || participant.fullName || 'Participant',
           eventName: event.title || event.name || 'Event',
           eventDate: event.startDate || event.createdAt || new Date(),
           certificateId: `CERT-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
+          verificationId: certVerificationId,
           organizationName: event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
           departmentName: event.departmentName || 'Department of Computer Science & Engineering',
           competitionName: competitionName || event.title || event.name || 'Competition',
@@ -1093,6 +1097,7 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
               event: eventId,
               participant: participant._id,
               certificateId: certificateData.certificateId,
+              verificationId: certVerificationId,
               issuedBy: organizerId,
               template,
               achievement,
@@ -1761,12 +1766,14 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
     }
 
     // Generate certificate
+    const certVerificationId = `${Date.now().toString(16)}-${Math.random().toString(16).substring(2, 10)}-${Math.random().toString(16).substring(2, 10)}`;
     const certificateData = {
       template,
       participantName: request.participant.name || request.participant.fullName,
       eventName: request.event.title || request.event.name,
       eventDate: request.event.startDate || request.event.createdAt,
       certificateId: `CERT-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`.toUpperCase(),
+      verificationId: certVerificationId,
       organizationName: request.event.organizationName || 'PCET\'s Pimpri Chinchwad College of Engineering',
       departmentName: request.event.departmentName || 'Department of Computer Science & Engineering',
       competitionName: competitionName || request.event.title || request.event.name,
@@ -1783,6 +1790,7 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
         event: request.event._id,
         participant: request.participant._id,
         certificateId: certificateData.certificateId,
+        verificationId: certVerificationId,
         issuedBy: organizerId,
         template,
         achievement: achievement || 'Participation',
@@ -2621,6 +2629,159 @@ router.post('/speakers/:id/review', async (req, res) => {
   } catch (error) {
     console.error('Add review error:', error);
     res.status(500).json({ success: false, message: 'Error adding review', error: error.message });
+  }
+});
+
+// @desc    Get recommended speakers for an event (AI Recommendation Engine)
+// @route   GET /api/organizer/speakers/recommend/:eventId
+router.get('/speakers/recommend/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { limit = 10, minRating = 0 } = req.query;
+
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    const recommendations = await getRecommendedSpeakers(eventId, {
+      limit: parseInt(limit) || 10,
+      minRating: parseFloat(minRating) || 0,
+    });
+
+    res.json({
+      success: true,
+      event: {
+        _id: event._id,
+        title: event.title,
+        category: event.category,
+        tags: event.tags,
+        type: event.type,
+        startDate: event.startDate,
+        endDate: event.endDate,
+      },
+      count: recommendations.length,
+      data: recommendations,
+    });
+  } catch (error) {
+    console.error('Speaker recommendation error:', error);
+    res.status(500).json({ success: false, message: 'Error getting recommendations', error: error.message });
+  }
+});
+
+// @desc    Send speaker request/invitation for an event (top 3 from recommendations)
+// @route   POST /api/organizer/speakers/request
+router.post('/speakers/request', async (req, res) => {
+  try {
+    const { eventId, speakers } = req.body;
+    // speakers: [{ speakerId, matchScore, rank, message }]
+
+    if (!eventId || !speakers || !Array.isArray(speakers) || speakers.length === 0) {
+      return res.status(400).json({ success: false, message: 'Event ID and speakers array are required' });
+    }
+
+    if (speakers.length > 3) {
+      return res.status(400).json({ success: false, message: 'You can send requests to a maximum of 3 speakers at a time' });
+    }
+
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    const organizerId = req.user._id;
+    const results = [];
+    const errors = [];
+
+    for (const s of speakers) {
+      try {
+        if (!isValidObjectId(s.speakerId)) {
+          errors.push({ speakerId: s.speakerId, error: 'Invalid speaker ID' });
+          continue;
+        }
+
+        const speaker = await SpeakerAuth.findById(s.speakerId);
+        if (!speaker) {
+          errors.push({ speakerId: s.speakerId, error: 'Speaker not found' });
+          continue;
+        }
+
+        // Check if request already exists
+        const existing = await SpeakerRequest.findOne({ speaker: s.speakerId, event: eventId });
+        if (existing) {
+          errors.push({ speakerId: s.speakerId, name: speaker.name, error: 'Request already sent', status: existing.status });
+          continue;
+        }
+
+        const request = await SpeakerRequest.create({
+          speaker: s.speakerId,
+          event: eventId,
+          organizer: organizerId,
+          message: s.message || `You are invited to speak at "${event.title}". Your expertise is a great match for this event.`,
+          matchScore: s.matchScore || 0,
+          rank: s.rank || 0,
+          status: 'pending',
+        });
+
+        const populated = await SpeakerRequest.findById(request._id)
+          .populate('speaker', 'name email specializations')
+          .populate('event', 'title category type startDate endDate')
+          .populate('organizer', 'name email');
+
+        results.push(populated);
+      } catch (err) {
+        if (err.code === 11000) {
+          errors.push({ speakerId: s.speakerId, error: 'Request already exists for this speaker and event' });
+        } else {
+          errors.push({ speakerId: s.speakerId, error: err.message });
+        }
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `${results.length} request(s) sent successfully${errors.length > 0 ? `, ${errors.length} failed` : ''}`,
+      data: results,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    console.error('Send speaker request error:', error);
+    res.status(500).json({ success: false, message: 'Error sending speaker requests', error: error.message });
+  }
+});
+
+// @desc    Get speaker request status for an event (check which speakers already have requests)
+// @route   GET /api/organizer/speakers/requests/:eventId
+router.get('/speakers/requests/:eventId', async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: 'Invalid event ID' });
+    }
+
+    const requests = await SpeakerRequest.find({ event: eventId })
+      .populate('speaker', 'name email specializations headshot')
+      .populate('event', 'title category type startDate endDate')
+      .populate('organizer', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: requests.length,
+      data: requests,
+    });
+  } catch (error) {
+    console.error('Get speaker requests error:', error);
+    res.status(500).json({ success: false, message: 'Error fetching speaker requests', error: error.message });
   }
 });
 

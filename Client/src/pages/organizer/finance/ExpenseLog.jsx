@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Upload,
   CheckCircle,
   ArrowLeft,
   IndianRupee,
@@ -9,6 +8,9 @@ import {
   FileText,
   AlertCircle,
   Sparkles,
+  Camera,
+  Wand2,
+  PenLine,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import financeService from "../../../services/financeService";
@@ -36,23 +38,54 @@ const categoryEmojis = {
   Other: "📝",
 };
 
+// AI badge component for auto-filled fields
+const AiBadge = ({ visible }) => {
+  if (!visible) return null;
+  return (
+    <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-400 text-[10px] font-bold rounded-md animate-in">
+      <Sparkles size={10} />
+      AI-filled
+    </span>
+  );
+};
+
+// Skeleton shimmer for loading fields
+const FieldSkeleton = () => (
+  <div className="space-y-2">
+    <div className="h-3 w-20 bg-gray-200 dark:bg-white/10 rounded animate-pulse"></div>
+    <div className="h-11 bg-lime-50 dark:bg-lime-900/10 border border-lime-200 dark:border-lime-800/30 rounded-xl animate-pulse flex items-center px-4">
+      <div className="flex items-center gap-2 text-lime-600 dark:text-lime-400 text-xs font-medium">
+        <Wand2 size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
+        <span>AI is reading...</span>
+      </div>
+    </div>
+  </div>
+);
+
 const ExpenseLog = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [budget, setBudget] = useState(null);
+  const [recentExpenses, setRecentExpenses] = useState([]);
+
   const [form, setForm] = useState({
-    category: "Food",
+    category: "Other",
     amount: "",
     description: "",
     vendor: "",
     receiptUrl: "",
   });
-  const [recentExpenses, setRecentExpenses] = useState([]);
-  const [ocrData, setOcrData] = useState(null);
-  const [showOcrSuggestion, setShowOcrSuggestion] = useState(false);
+
+  // AI / OCR states
+  const [ocrProcessing, setOcrProcessing] = useState(false);
+  const [autoFilled, setAutoFilled] = useState({}); // { amount: true, category: true, ... }
+  const [ocrConfidence, setOcrConfidence] = useState(null);
+  const [aiFieldCount, setAiFieldCount] = useState(0);
+  const [editingExpense, setEditingExpense] = useState(null);
 
   useEffect(() => {
     fetchBudgetAndExpenses();
@@ -73,44 +106,59 @@ const ExpenseLog = () => {
     }
   };
 
+  // Called when OCR starts processing
+  const handleOCRStart = () => {
+    setOcrProcessing(true);
+    setAutoFilled({});
+    setOcrConfidence(null);
+    setAiFieldCount(0);
+  };
+
+  // Called when OCR finishes
   const handleOCRComplete = (data) => {
-    if (data) {
-      setOcrData(data);
-      setShowOcrSuggestion(true);
-      
-      // Auto-fill only if form is empty
-      if (!form.amount && !form.description) {
-        applyOCRData(data);
-      }
-    }
-  };
+    setOcrProcessing(false);
 
-  const applyOCRData = (data) => {
+    if (!data) return;
+
+    const filled = {};
     const updatedForm = { ...form };
-    
-    if (data.amount && !form.amount) {
+
+    if (data.amount) {
       updatedForm.amount = data.amount.toString();
+      filled.amount = true;
     }
-    
-    if (data.description && !form.description) {
+
+    if (data.description) {
       updatedForm.description = data.description;
+      filled.description = true;
     }
-    
-    if (data.vendor && !form.vendor) {
+
+    if (data.vendor) {
       updatedForm.vendor = data.vendor;
+      filled.vendor = true;
     }
-    
-    if (data.suggestedCategory) {
+
+    if (data.suggestedCategory && CATEGORIES.includes(data.suggestedCategory)) {
       updatedForm.category = data.suggestedCategory;
+      filled.category = true;
     }
-    
+
     setForm(updatedForm);
-    setShowOcrSuggestion(false);
+    setAutoFilled(filled);
+    setOcrConfidence(data.confidence);
+    setAiFieldCount(Object.keys(filled).length);
   };
 
-  const dismissOCRSuggestion = () => {
-    setShowOcrSuggestion(false);
-    setOcrData(null);
+  // Track manual edits to remove AI badge
+  const handleFieldChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (autoFilled[field]) {
+      setAutoFilled((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -120,54 +168,82 @@ const ExpenseLog = () => {
     if (!form.amount || !form.description) {
       setError("Please fill in the amount and description.");
       return;
-    }setOcrData(null);
-      setShowOcrSuggestion(false);
-      
+    }
 
     if (!budget) {
       setError("No approved budget found for this event.");
       return;
     }
 
-    // Get user ID from multiple sources
-    const userId = user?.id || user?.userId || user?._id || localStorage.getItem('userId');
-    
+    const userId =
+      user?.id || user?.userId || user?._id || localStorage.getItem("userId");
+
     if (!userId) {
       setError("User authentication error. Please log in again.");
-      console.error("User object:", user);
       return;
     }
 
-    console.log("Submitting expense with userId:", userId);
-
     try {
       setLoading(true);
-      await financeService.logExpense({
-        eventId,
-        budgetId: budget._id,
-        category: form.category,
-        amount: Number(form.amount),
-        description: form.description,
-        vendor: form.vendor || undefined,
-        receiptUrl: form.receiptUrl || undefined,
-        type: "PERSONAL_SPEND",
-        incurredBy: userId,
-      });
+      if (editingExpense?._id) {
+        await financeService.resubmitExpense(editingExpense._id, {
+          userId,
+          category: form.category || "Other",
+          amount: Number(form.amount),
+          description: form.description,
+          receiptUrl: form.receiptUrl || undefined,
+        });
+      } else {
+        await financeService.logExpense({
+          eventId,
+          budgetId: budget._id,
+          category: form.category || "Other",
+          amount: Number(form.amount),
+          description: form.description,
+          vendor: form.vendor || undefined,
+          receiptUrl: form.receiptUrl || undefined,
+          type: "PERSONAL_SPEND",
+          incurredBy: userId,
+        });
+      }
 
-      // Reset form and refresh
+      setSuccess(true);
       setForm({
-        category: "Food",
+        category: "Other",
         amount: "",
         description: "",
         vendor: "",
         receiptUrl: "",
       });
+      setEditingExpense(null);
+      setAutoFilled({});
+      setOcrConfidence(null);
+      setAiFieldCount(0);
       await fetchBudgetAndExpenses();
+
+      setTimeout(() => setSuccess(false), 4000);
     } catch (err) {
       setError(err.message || "Failed to log expense");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResubmitExpense = async (expense) => {
+    setError("");
+    setSuccess(false);
+    setEditingExpense(expense);
+    setForm({
+      category: expense.category || "Other",
+      amount: expense.amount?.toString() || "",
+      description: expense.description || "",
+      vendor: expense.vendor || "",
+      receiptUrl: expense.receiptUrl || "",
+    });
+    setAutoFilled({});
+    setOcrConfidence(null);
+    setAiFieldCount(0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const getCategorySpend = (catName) => {
@@ -182,8 +258,9 @@ const ExpenseLog = () => {
     return cat?.allocatedAmount || 0;
   };
 
-  const selectedBudget = getCategoryBudget(form.category);
-  const selectedSpend = getCategorySpend(form.category);
+  const activeCat = form.category || "Other";
+  const selectedBudget = getCategoryBudget(activeCat);
+  const selectedSpend = getCategorySpend(activeCat);
   const selectedRemaining = selectedBudget - selectedSpend;
 
   const getStatusBadge = (status) => {
@@ -191,7 +268,10 @@ const ExpenseLog = () => {
       APPROVED: "bg-[#B9FF66] text-[#191A23]",
       PENDING:
         "bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400",
-      REJECTED: "bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400",
+      CHANGES_REQUESTED:
+        "bg-purple-100 text-purple-800 dark:bg-purple-500/10 dark:text-purple-400",
+      REJECTED:
+        "bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400",
       REIMBURSED:
         "bg-blue-100 text-blue-800 dark:bg-blue-500/10 dark:text-blue-400",
     };
@@ -218,9 +298,19 @@ const ExpenseLog = () => {
           <div className="h-1 w-20 bg-[#B9FF66] rounded-full"></div>
         </div>
         <p className="text-gray-600 dark:text-zinc-400 mt-3 text-base font-medium">
-          Record an expense against your approved budget
+          Upload a bill and AI will fill the details for you
         </p>
       </div>
+
+      {/* Success Toast */}
+      {success && (
+        <div className="bg-lime-50 dark:bg-lime-950/50 border border-lime-300 dark:border-lime-800 rounded-xl p-4 flex items-center gap-3 animate-in">
+          <CheckCircle size={18} className="text-lime-600 dark:text-lime-400" />
+          <p className="text-sm text-lime-800 dark:text-lime-300 font-semibold">
+            Expense logged successfully!
+          </p>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -232,14 +322,179 @@ const ExpenseLog = () => {
         </div>
       )}
 
+      {recentExpenses.some((e) => e.status === "CHANGES_REQUESTED") && (
+        <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-purple-800 dark:text-purple-300">
+            Admin requested changes on these bills. Review old values, update, and resubmit.
+          </p>
+          <div className="space-y-2">
+            {recentExpenses
+              .filter((e) => e.status === "CHANGES_REQUESTED")
+              .map((expense) => (
+                <div
+                  key={expense._id}
+                  className="bg-white dark:bg-white/[0.03] border border-purple-200 dark:border-purple-800/40 rounded-lg p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-[#191A23] dark:text-white">
+                        {expense.description}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-zinc-400">
+                        Previous values: {expense.category} • ₹{expense.amount?.toLocaleString()} • {expense.vendor || "No vendor"}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-zinc-400">
+                        Last submitted: {expense.createdAt ? new Date(expense.createdAt).toLocaleString() : "N/A"}
+                      </p>
+                      {expense.receiptUrl && (
+                        <a
+                          href={expense.receiptUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-block mt-1"
+                        >
+                          <img
+                            src={expense.receiptUrl}
+                            alt="Previously uploaded bill"
+                            className="w-24 h-24 object-cover rounded-lg border border-purple-200 dark:border-purple-800/40"
+                          />
+                        </a>
+                      )}
+                      {expense.adminNotes && (
+                        <p className="text-xs text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 rounded p-2">
+                          Admin note: {expense.adminNotes}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleResubmitExpense(expense)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                    >
+                      Edit & Resubmit
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Expense Form */}
-        <div className="lg:col-span-2">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {editingExpense && (
+            <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/40 rounded-xl p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-purple-800 dark:text-purple-300">
+                  Editing previous bill for resubmission
+                </p>
+                <p className="text-xs text-purple-700 dark:text-purple-400 mt-1">
+                  Old values: {editingExpense.category} • ₹{editingExpense.amount?.toLocaleString()} • {editingExpense.vendor || "No vendor"}
+                </p>
+                <p className="text-xs text-purple-700 dark:text-purple-400 mt-1">
+                  Last submitted: {editingExpense.createdAt ? new Date(editingExpense.createdAt).toLocaleString() : "N/A"}
+                </p>
+                {editingExpense.receiptUrl && (
+                  <a
+                    href={editingExpense.receiptUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block mt-2"
+                  >
+                    <img
+                      src={editingExpense.receiptUrl}
+                      alt="Previously uploaded bill"
+                      className="w-24 h-24 object-cover rounded-lg border border-purple-200 dark:border-purple-800/40"
+                    />
+                  </a>
+                )}
+                {editingExpense.adminNotes && (
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                    Admin note: {editingExpense.adminNotes}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingExpense(null);
+                  setForm({
+                    category: "Other",
+                    amount: "",
+                    description: "",
+                    vendor: "",
+                    receiptUrl: "",
+                  });
+                }}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/20"
+              >
+                Cancel Editing
+              </button>
+            </div>
+          )}
+
+          {/* ========== STEP 1: UPLOAD BILL ========== */}
+          <div className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#B9FF66] text-[#191A23] text-xs font-black">
+                1
+              </div>
+              <h3 className="font-bold text-[#191A23] dark:text-white text-lg flex items-center gap-2">
+                <Camera size={20} />
+                Upload Bill / Receipt
+              </h3>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-400 text-[10px] font-bold rounded-md">
+                <Sparkles size={10} />
+                AI-Powered
+              </span>
+            </div>
+            <p className="text-gray-500 dark:text-zinc-500 text-sm mb-5 ml-10">
+              Upload your bill and AI will auto-extract amount, vendor, category & description
+            </p>
+
+            <ReceiptUpload
+              onUpload={(url) => setForm((prev) => ({ ...prev, receiptUrl: url }))}
+              onOCRComplete={handleOCRComplete}
+              onOCRStart={handleOCRStart}
+              existingReceipt={form.receiptUrl ? { url: form.receiptUrl } : null}
+              disabled={loading}
+              enableOCR={true}
+            />
+          </div>
+
+          {/* ========== AI EXTRACTION SUMMARY ========== */}
+          {aiFieldCount > 0 && !ocrProcessing && (
+            <div className="flex items-center gap-3 px-5 py-3 bg-lime-50 dark:bg-lime-950/30 border border-lime-200 dark:border-lime-800/40 rounded-2xl">
+              <div className="p-1.5 bg-lime-200 dark:bg-lime-800/50 rounded-lg">
+                <Wand2 size={16} className="text-lime-700 dark:text-lime-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-lime-800 dark:text-lime-300">
+                  AI extracted {aiFieldCount} field{aiFieldCount > 1 ? "s" : ""} from your bill
+                  {ocrConfidence && (
+                    <span className="ml-2 text-xs font-normal text-lime-600 dark:text-lime-500">
+                      ({Math.round(ocrConfidence)}% confidence)
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-lime-600 dark:text-lime-500 mt-0.5">
+                  Review the details below and edit if anything looks incorrect
+                </p>
+              </div>
+              <PenLine size={14} className="text-lime-500" />
+            </div>
+          )}
+
+          {/* ========== STEP 2: EXPENSE DETAILS (Auto-filled) ========== */}
           <form
             onSubmit={handleSubmit}
             className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none"
           >
             <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#B9FF66] text-[#191A23] text-xs font-black">
+                2
+              </div>
               <div className="p-2.5 bg-[#B9FF66]/10 rounded-xl">
                 <FileText
                   size={20}
@@ -249,104 +504,135 @@ const ExpenseLog = () => {
               <h3 className="font-bold text-[#191A23] dark:text-white text-lg">
                 Expense Details
               </h3>
+              {ocrProcessing && (
+                <span className="ml-auto flex items-center gap-2 text-lime-600 dark:text-lime-400 text-xs font-semibold">
+                  <Loader2 size={14} className="animate-spin" />
+                  AI is extracting...
+                </span>
+              )}
             </div>
 
             <div className="space-y-5">
               {/* Category & Amount Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
-                    Category
-                  </label>
-                  <select
-                    value={form.category}
-                    onChange={(e) =>
-                      setForm({ ...form, category: e.target.value })
-                    }
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-semibold text-[#191A23] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {categoryEmojis[cat]} {cat}
-                      </option>
-                    ))}
-                  </select>
+              {ocrProcessing ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FieldSkeleton />
+                  <FieldSkeleton />
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
-                    Amount (₹)
-                  </label>
-                  <div className="relative">
-                    <IndianRupee
-                      size={14}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      value={form.amount}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
+                      Category
+                      <AiBadge visible={autoFilled.category} />
+                    </label>
+                    <select
+                      value={form.category}
                       onChange={(e) =>
-                        setForm({ ...form, amount: e.target.value })
+                        handleFieldChange("category", e.target.value)
                       }
-                      placeholder="0.00"
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-semibold text-[#191A23] dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all"
-                      required
-                    />
+                      className={`w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border rounded-xl text-sm font-semibold text-[#191A23] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all ${
+                        autoFilled.category
+                          ? "border-lime-400 dark:border-lime-600 bg-lime-50/50 dark:bg-lime-900/10"
+                          : "border-gray-200 dark:border-white/10"
+                      }`}
+                    >
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {categoryEmojis[cat]} {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
+                      Amount (₹)
+                      <AiBadge visible={autoFilled.amount} />
+                    </label>
+                    <div className="relative">
+                      <IndianRupee
+                        size={14}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        value={form.amount}
+                        onChange={(e) =>
+                          handleFieldChange("amount", e.target.value)
+                        }
+                        placeholder="0.00"
+                        className={`w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-white/5 border rounded-xl text-sm font-semibold text-[#191A23] dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all ${
+                          autoFilled.amount
+                            ? "border-lime-400 dark:border-lime-600 bg-lime-50/50 dark:bg-lime-900/10"
+                            : "border-gray-200 dark:border-white/10"
+                        }`}
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Description */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                  placeholder="Describe the expense (e.g., Catering for 200 participants)"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-semibold text-[#191A23] dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all resize-none"
-                  required
-                />
-              </div>
+              {ocrProcessing ? (
+                <div className="space-y-2">
+                  <div className="h-3 w-24 bg-gray-200 dark:bg-white/10 rounded animate-pulse"></div>
+                  <div className="h-20 bg-lime-50 dark:bg-lime-900/10 border border-lime-200 dark:border-lime-800/30 rounded-xl animate-pulse flex items-center px-4">
+                    <div className="flex items-center gap-2 text-lime-600 dark:text-lime-400 text-xs font-medium">
+                      <Wand2 size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
+                      <span>Generating description...</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
+                    Description
+                    <AiBadge visible={autoFilled.description} />
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={form.description}
+                    onChange={(e) =>
+                      handleFieldChange("description", e.target.value)
+                    }
+                    placeholder="Describe the expense (e.g., Catering for 200 participants)"
+                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border rounded-xl text-sm font-semibold text-[#191A23] dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all resize-none ${
+                      autoFilled.description
+                        ? "border-lime-400 dark:border-lime-600 bg-lime-50/50 dark:bg-lime-900/10"
+                        : "border-gray-200 dark:border-white/10"
+                    }`}
+                    required
+                  />
+                </div>
+              )}
 
               {/* Vendor */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
-                  Vendor / Payee (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={form.vendor}
-                  onChange={(e) => setForm({ ...form, vendor: e.target.value })}
-                  placeholder="Name of vendor or shop"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-semibold text-[#191A23] dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all"
-                />
-              </div>
-
-              {/* Receipt Upload */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-3">
-                  <span className="flex items-center gap-2">
-                    Receipt / Bill
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-400 text-[10px] font-bold rounded">
-                      <Sparkles size={10} />
-                      AI-Powered
-                    </span>
-                  </span>
-                </label>
-                <ReceiptUpload
-                  onUpload={(url) => setForm({ ...form, receiptUrl: url })}
-                  onOCRComplete={handleOCRComplete}
-                  existingReceipt={form.receiptUrl ? { url: form.receiptUrl } : null}
-                  disabled={loading}
-                  enableOCR={true}
-                />
-              </div>
+              {ocrProcessing ? (
+                <FieldSkeleton />
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-wider mb-2">
+                    Vendor / Payee (Optional)
+                    <AiBadge visible={autoFilled.vendor} />
+                  </label>
+                  <input
+                    type="text"
+                    value={form.vendor}
+                    onChange={(e) =>
+                      handleFieldChange("vendor", e.target.value)
+                    }
+                    placeholder="Name of vendor or shop"
+                    className={`w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border rounded-xl text-sm font-semibold text-[#191A23] dark:text-white placeholder:text-gray-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#B9FF66]/30 focus:border-[#B9FF66] transition-all ${
+                      autoFilled.vendor
+                        ? "border-lime-400 dark:border-lime-600 bg-lime-50/50 dark:bg-lime-900/10"
+                        : "border-gray-200 dark:border-white/10"
+                    }`}
+                  />
+                </div>
+              )}
 
               {/* Submit */}
               <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/5">
@@ -359,18 +645,18 @@ const ExpenseLog = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || ocrProcessing}
                   className="flex items-center gap-2 px-6 py-3 bg-[#191A23] text-[#B9FF66] rounded-xl font-bold text-sm hover:shadow-lg hover:bg-[#2A2B33] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
                       <Loader2 size={16} className="animate-spin" />
-                      Logging...
+                      {editingExpense ? "Resubmitting..." : "Logging..."}
                     </>
                   ) : (
                     <>
                       <CheckCircle size={16} />
-                      Log Expense
+                      {editingExpense ? "Save & Resubmit" : "Log Expense"}
                     </>
                   )}
                 </button>
@@ -387,7 +673,7 @@ const ExpenseLog = () => {
 
             <div className="relative z-10">
               <h3 className="text-white font-bold text-sm mb-4">
-                {categoryEmojis[form.category]} {form.category} Budget
+                {categoryEmojis[activeCat]} {activeCat} Budget
               </h3>
               <div className="space-y-4">
                 <div>
@@ -468,6 +754,15 @@ const ExpenseLog = () => {
                       >
                         {expense.status}
                       </span>
+                      {expense.status === "CHANGES_REQUESTED" && (
+                        <button
+                          type="button"
+                          onClick={() => handleResubmitExpense(expense)}
+                          className="block mt-2 text-[10px] font-semibold text-blue-700 hover:text-blue-900"
+                        >
+                          Edit & Resubmit
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

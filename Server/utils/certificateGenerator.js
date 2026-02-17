@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cloudinary from '../config/cloudinary.js';
 import puppeteer from 'puppeteer';
+import QRCode from 'qrcode';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,6 +66,7 @@ class CertificateGenerator {
       eventName,
       eventDate,
       certificateId,
+      verificationId = '',
       organizationName = 'PCET\'s Pimpri Chinchwad College of Engineering',
       departmentName = 'Department of Computer Science & Engineering',
       associationText = 'In association with',
@@ -150,7 +152,9 @@ class CertificateGenerator {
         signature3Name,
         signature3Title,
         signature4Name,
-        signature4Title
+        signature4Title,
+        qrCodeDataUri,
+        verificationId
       };
 
       console.log('\u2705 Template data prepared');

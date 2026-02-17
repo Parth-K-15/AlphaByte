@@ -8,16 +8,18 @@ import {
   ArrowUpRight,
   RefreshCw,
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 const API_BASE = "http://localhost:5000/api";
 
 const History = () => {
+  const { user } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
-  const email = localStorage.getItem("participantEmail") || "";
+  const email = user?.email || localStorage.getItem("participantEmail") || "";
 
   useEffect(() => {
     fetchHistory();

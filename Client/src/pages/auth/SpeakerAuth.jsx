@@ -110,6 +110,21 @@ const SpeakerAuth = () => {
             </div>
           )}
 
+          {isLogin && (
+            <div className="mb-4 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">!</span>
+                </div>
+                <h3 className="text-sm font-bold text-gray-900">Test Credentials (For Testing)</h3>
+              </div>
+              <div className="text-xs bg-white/70 rounded-lg p-2">
+                <span className="font-semibold text-gray-700">Speaker:</span>
+                <div className="text-gray-600 mt-1">parthkathane152005@gmail.com / 12345678</div>
+              </div>
+            </div>
+          )}
+
           {/* Link to Participant Login */}
           <div className="mb-4 text-center p-3 rounded-xl bg-purple-50 border border-purple-200">
             <p className="text-sm text-gray-700">

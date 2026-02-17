@@ -193,6 +193,7 @@ const AttendanceQR = () => {
       }
     } catch (error) {
       console.error("Error generating QR:", error);
+      alert("Failed to generate QR code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -427,7 +428,11 @@ const AttendanceQR = () => {
             <div className="flex flex-col items-center">
               {qrData ? (
                 <div className="text-center">
-                  {/* QR Code Display */}
+                  <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-6">
+                    Scan QR Code for Attendance
+                  </h3>
+
+                  {/* Dynamic QR Code Display */}
                   <div className="relative inline-block">
                     <div className="w-80 h-80 bg-white rounded-3xl shadow-2xl p-8 flex items-center justify-center border-4 border-[#B9FF66]/30">
                       <QRCodeCanvas value={qrData.qrData} size={240} />
@@ -442,9 +447,10 @@ const AttendanceQR = () => {
                   </div>
 
                   <p className="text-gray-700 dark:text-zinc-300 font-bold mt-6 mb-2">
-                    Session ID:{" "}
+                    Event:{" "}
                     <span className="font-black text-[#191A23] dark:text-white">
-                      {qrData.sessionId}
+                      {events.find((e) => e._id === selectedEvent)
+                        ?.title || "Event"}
                     </span>
                   </p>
                   <p className="text-sm text-gray-600 dark:text-zinc-400 font-semibold">
@@ -467,43 +473,47 @@ const AttendanceQR = () => {
                 </div>
               ) : selectedEvent && events.length > 0 ? (
                 <div className="text-center">
-                  {/* Generate Dynamic QR Section */}
-                  <div>
-                    <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                      <QrCode
-                        size={64}
-                        className="text-gray-500"
-                        strokeWidth={2}
-                      />
-                    </div>
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
-                      Generate Attendance QR Code
-                    </h3>
-                    <p className="text-gray-600 dark:text-zinc-400 font-semibold mb-6 max-w-md mx-auto">
-                      Generate a secure, time-limited QR code (expires in 5 minutes).
-                      Participants must scan this code in real-time to mark their attendance.
-                    </p>
-                    <button
-                      onClick={handleGenerateQR}
-                      disabled={loading}
-                      className="group flex items-center gap-2 px-8 py-3 bg-[#191A23] text-[#B9FF66] rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold mx-auto disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg"
-                    >
-                      {loading ? (
-                        <RefreshCw
-                          size={18}
-                          strokeWidth={2.5}
-                          className="animate-spin"
-                        />
-                      ) : (
-                        <QrCode
-                          size={18}
-                          strokeWidth={2.5}
-                          className="group-hover:scale-110 transition-transform"
-                        />
-                      )}
-                      Generate QR Code
-                    </button>
+                  <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-white/5 dark:to-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg dark:shadow-none">
+                    <QrCode
+                      size={64}
+                      className="text-gray-500 dark:text-zinc-400"
+                      strokeWidth={2}
+                    />
                   </div>
+                  <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">
+                    Generate Attendance QR Code
+                  </h3>
+                  <p className="text-gray-600 dark:text-zinc-400 font-semibold mb-2 max-w-md mx-auto">
+                    Event:{" "}
+                    <span className="font-black text-gray-900 dark:text-white">
+                      {events.find((e) => e._id === selectedEvent)
+                        ?.title || "Event"}
+                    </span>
+                  </p>
+                  <p className="text-gray-600 dark:text-zinc-400 font-semibold mb-6 max-w-md mx-auto">
+                    Generate a secure, time-limited QR code (expires in 5 minutes).
+                    Participants must scan this code to mark their attendance.
+                  </p>
+                  <button
+                    onClick={handleGenerateQR}
+                    disabled={loading}
+                    className="group flex items-center gap-2 px-8 py-3 bg-[#191A23] text-[#B9FF66] rounded-xl hover:shadow-xl hover:scale-105 transition-all font-bold mx-auto disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-lg"
+                  >
+                    {loading ? (
+                      <RefreshCw
+                        size={18}
+                        strokeWidth={2.5}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <QrCode
+                        size={18}
+                        strokeWidth={2.5}
+                        className="group-hover:scale-110 transition-transform"
+                      />
+                    )}
+                    Generate QR Code
+                  </button>
                 </div>
               ) : (
                 <div className="text-center py-16">
@@ -526,11 +536,11 @@ const AttendanceQR = () => {
 
               {/* Live Feed */}
               {qrData && (
-                <div className="w-full max-w-2xl mt-8 border-t border-gray-200 pt-8">
+                <div className="w-full max-w-2xl mt-8 border-t border-gray-200 dark:border-zinc-700 pt-8">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
                       <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                      Live Check-ins
+                      Recent Check-ins
                     </h3>
                   </div>
                   <div className="space-y-3 max-h-64 overflow-y-auto">

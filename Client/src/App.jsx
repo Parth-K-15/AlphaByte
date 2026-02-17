@@ -30,6 +30,7 @@ import {
   FinanceDashboard as AdminFinanceDashboard,
   BudgetApproval,
   ExpenseDetail,
+  Reimbursements,
   FinancialReports,
   AmendmentReview,
 } from "./pages/admin";
@@ -45,12 +46,14 @@ import {
   Logs as OrganizerLogs,
   Speakers as OrganizerSpeakers,
   SpeakerProfile as OrganizerSpeakerProfile,
+  SpeakerRecommendation,
   SessionAssignment,
   RoleHistory,
   FinanceDashboard as OrganizerFinanceDashboard,
   BudgetRequest,
   ExpenseLog,
   BudgetAmendment,
+  PayoutDetails,
 } from "./pages/organizer";
 import {
   EventsHome,
@@ -65,6 +68,8 @@ import {
 } from "./pages/participant";
 import AIParticipationTest from './pages/ai-intelligence-test/AIParticipationTest';
 import ChatbotTest from './pages/chatbot-test/ChatbotTest';
+import CertificateVerify from './pages/verify/CertificateVerify';
+import QRScannerVerify from './pages/verify/QRScannerVerify';
 import {
   Dashboard as SpeakerDashboard,
   Sessions as SpeakerSessions,
@@ -72,6 +77,7 @@ import {
   Profile as SpeakerProfile,
   Materials as SpeakerMaterials,
   Analytics as SpeakerAnalytics,
+  Invitations as SpeakerInvitations,
 } from "./pages/speaker";
 
 function App() {
@@ -89,6 +95,10 @@ function App() {
                 </PublicRoute>
               }
             />
+
+            {/* Public Certificate Verification Route */}
+            <Route path="/verify" element={<QRScannerVerify />} />
+            <Route path="/verify/:verificationId" element={<CertificateVerify />} />
 
             {/* Auth Routes - Public */}
             <Route
@@ -179,12 +189,20 @@ function App() {
                 element={<FinancialReports />}
               />
               <Route
+                path="finance/reimbursements"
+                element={<Reimbursements />}
+              />
+              <Route
                 path="finance/amendments/:eventId/:amendmentId"
                 element={<AmendmentReview />}
               />
 
               {/* System Logs */}
               <Route path="logs" element={<Logs />} />
+
+              {/* Verify Certificate */}
+              <Route path="verify" element={<QRScannerVerify />} />
+              <Route path="verify/:verificationId" element={<CertificateVerify />} />
 
               {/* Settings */}
               <Route path="settings" element={<Settings />} />
@@ -237,6 +255,7 @@ function App() {
               {/* Speaker Management */}
               <Route path="speakers" element={<OrganizerSpeakers />} />
               <Route path="speakers/:id" element={<OrganizerSpeakerProfile />} />
+              <Route path="speakers/recommend" element={<SpeakerRecommendation />} />
               <Route path="sessions/assign" element={<SessionAssignment />} />
 
               {/* Role History */}
@@ -258,6 +277,10 @@ function App() {
                 path="events/:eventId/finance/amendment"
                 element={<BudgetAmendment />}
               />
+              <Route path="profile/payout" element={<PayoutDetails />} />
+              {/* Verify Certificate */}
+              <Route path="verify" element={<QRScannerVerify />} />
+              <Route path="verify/:verificationId" element={<CertificateVerify />} />
             </Route>
 
             {/* Participant Routes - Protected */}
@@ -317,6 +340,7 @@ function App() {
               <Route index element={<SpeakerDashboard />} />
               <Route path="sessions" element={<SpeakerSessions />} />
               <Route path="sessions/:id" element={<SpeakerSessionDetail />} />
+              <Route path="invitations" element={<SpeakerInvitations />} />
               <Route path="profile" element={<SpeakerProfile />} />
               <Route path="materials" element={<SpeakerMaterials />} />
               <Route path="analytics" element={<SpeakerAnalytics />} />

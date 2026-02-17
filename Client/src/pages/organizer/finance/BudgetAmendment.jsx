@@ -98,13 +98,14 @@ const BudgetAmendment = () => {
 
     try {
       setLoading(true);
+      const userId = user?.id || user?.userId || user?._id || localStorage.getItem('userId');
       await financeService.requestAmendment(eventId, {
         requestedCategories: categories.map((c) => ({
           ...c,
           requestedAmount: Number(c.requestedAmount),
         })),
         reason,
-        userId: user.userId,
+        userId,
       });
 
       alert("Budget amendment requested successfully!");

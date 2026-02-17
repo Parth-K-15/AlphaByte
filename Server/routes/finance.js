@@ -153,7 +153,10 @@ router.get(
         .json({ success: false, message: "Invalid event ID" });
 
     const budget = await Budget.findOne({ event: eventId })
+      .populate("event", "title eventDate location")
       .populate("history.performedBy", "name email")
+      .populate("amendments.requestedBy", "name email")
+      .populate("amendments.reviewedBy", "name email")
       .populate("createdBy", "name email");
 
     if (!budget) {
@@ -363,13 +366,19 @@ router.post("/expense", async (req, res) => {
       });
     }
 
-    // Verify category exists in budget
-    const budgetCategory = budget.categories.find((c) => c.name === category);
+    // Verify category exists in budget, auto-add if missing
+    let budgetCategory = budget.categories.find((c) => c.name === category);
     if (!budgetCategory) {
-      return res.status(400).json({
-        success: false,
-        message: `Category '${category}' not found in budget`,
+      // Auto-add the category with 0 allocation so the expense can be logged
+      budget.categories.push({
+        name: category,
+        requestedAmount: 0,
+        allocatedAmount: 0,
+        justification: 'Auto-added during expense logging',
       });
+      await budget.save();
+      budgetCategory = budget.categories.find((c) => c.name === category);
+      console.log(`Auto-added category '${category}' to budget`);
     }
 
     const expense = new Expense({
@@ -470,7 +479,7 @@ router.get("/expense/:expenseId", async (req, res) => {
     const expense = await Expense.findById(expenseId)
       .populate("event", "title eventDate location")
       .populate("budget")
-      .populate("incurredBy", "name email")
+      .populate("incurredBy", "name email upiId payoutQrUrl")
       .populate("approvedBy", "name email")
       .populate("reimbursedBy", "name email");
 
@@ -495,7 +504,7 @@ router.get("/expense/:expenseId", async (req, res) => {
 router.put("/expense/:expenseId/status", async (req, res) => {
   try {
     const { expenseId } = req.params;
-    const { status, adminNotes, adminId } = req.body; // status: APPROVED, REJECTED, REIMBURSED
+    const { status, adminNotes, adminId } = req.body; // status: APPROVED, CHANGES_REQUESTED, REJECTED, REIMBURSED
 
     if (!isValidObjectId(expenseId))
       return res
@@ -508,6 +517,25 @@ router.put("/expense/:expenseId/status", async (req, res) => {
         .status(404)
         .json({ success: false, message: "Expense not found" });
 
+    const allowedStatuses = ["APPROVED", "CHANGES_REQUESTED", "REJECTED", "REIMBURSED"];
+    if (!allowedStatuses.includes(status)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid status" });
+    }
+
+    if (!adminId || !isValidObjectId(adminId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid admin ID format" });
+    }
+
+    if (["CHANGES_REQUESTED", "REJECTED"].includes(status) && !adminNotes?.trim()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Admin notes are required for this action" });
+    }
+
     expense.status = status;
     expense.adminNotes = adminNotes;
 
@@ -516,6 +544,10 @@ router.put("/expense/:expenseId/status", async (req, res) => {
     } else if (status === "REIMBURSED") {
       expense.reimbursedBy = adminId;
       expense.reimbursedAt = Date.now();
+    } else if (status === "CHANGES_REQUESTED") {
+      expense.approvedBy = undefined;
+      expense.reimbursedBy = undefined;
+      expense.reimbursedAt = undefined;
     }
 
     await expense.save();
@@ -530,6 +562,128 @@ router.put("/expense/:expenseId/status", async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating expense status:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+});
+
+/**
+ * @desc    Resubmit Expense after admin requested changes (Staff/Lead)
+ * @route   PUT /api/finance/expense/:expenseId/resubmit
+ */
+router.put("/expense/:expenseId/resubmit", async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+    const { userId, category, amount, description, receiptUrl } = req.body;
+
+    if (!isValidObjectId(expenseId) || !isValidObjectId(userId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid ID format" });
+    }
+
+    const expense = await Expense.findById(expenseId);
+    if (!expense) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Expense not found" });
+    }
+
+    if (expense.incurredBy.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to edit this expense" });
+    }
+
+    if (expense.status !== "CHANGES_REQUESTED") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Only change-requested expenses can be resubmitted" });
+    }
+
+    expense.category = category || expense.category;
+    expense.amount = Number(amount) || expense.amount;
+    expense.description = description || expense.description;
+    expense.receiptUrl = receiptUrl || expense.receiptUrl;
+    expense.status = "PENDING";
+
+    await expense.save();
+    await invalidateFinanceCache(expense.event.toString());
+
+    res.json({
+      success: true,
+      message: "Expense resubmitted successfully",
+      data: expense,
+    });
+  } catch (error) {
+    console.error("Error resubmitting expense:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+});
+
+/**
+ * @desc    Get Pending Reimbursements grouped by user (Admin)
+ * @route   GET /api/finance/reimbursements/pending-by-user
+ */
+router.get("/reimbursements/pending-by-user", async (req, res) => {
+  try {
+    const reimbursableExpenses = await Expense.find({
+      status: "APPROVED",
+      type: "PERSONAL_SPEND",
+    })
+      .populate("event", "title eventDate")
+      .populate("incurredBy", "name email upiId payoutQrUrl")
+      .sort({ createdAt: 1 });
+
+    const grouped = reimbursableExpenses.reduce((acc, expense) => {
+      const userObj = expense.incurredBy;
+      if (!userObj?._id) return acc;
+
+      const userId = userObj._id.toString();
+      if (!acc[userId]) {
+        acc[userId] = {
+          userId,
+          user: {
+            _id: userObj._id,
+            name: userObj.name,
+            email: userObj.email,
+            upiId: userObj.upiId || "",
+            payoutQrUrl: userObj.payoutQrUrl || "",
+          },
+          totalAmount: 0,
+          billCount: 0,
+          expenses: [],
+        };
+      }
+
+      acc[userId].totalAmount += expense.amount || 0;
+      acc[userId].billCount += 1;
+      acc[userId].expenses.push({
+        _id: expense._id,
+        event: expense.event,
+        category: expense.category,
+        amount: expense.amount,
+        description: expense.description,
+        receiptUrl: expense.receiptUrl,
+        createdAt: expense.createdAt,
+        adminNotes: expense.adminNotes,
+      });
+
+      return acc;
+    }, {});
+
+    const data = Object.values(grouped).sort((a, b) => b.totalAmount - a.totalAmount);
+
+    res.json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    console.error("Error fetching pending reimbursements:", error);
     res
       .status(500)
       .json({ success: false, message: "Server error", error: error.message });

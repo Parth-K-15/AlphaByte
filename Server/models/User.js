@@ -90,6 +90,17 @@ const userSchema = new mongoose.Schema(
     avatarPublicId: {
       type: String,
     },
+
+    upiId: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    payoutQrUrl: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );

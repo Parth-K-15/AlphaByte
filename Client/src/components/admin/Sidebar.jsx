@@ -22,6 +22,7 @@ import {
   Ban,
   FileText,
   IndianRupee,
+  QrCode,
 } from 'lucide-react';
 
 const Sidebar = ({ mobileOpen, setMobileOpen }) => {
@@ -85,6 +86,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       key: 'finance',
       children: [
         { title: 'Budgets', path: '/admin/finance/budgets', badge: null },
+        { title: 'Reimbursements', path: '/admin/finance/reimbursements', badge: null },
         { title: 'Reports', path: '/admin/finance/reports', badge: null },
       ],
     },
@@ -97,6 +99,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       title: 'System Logs',
       icon: FileText,
       path: '/admin/logs',
+    },
+    {
+      title: 'Verify Certificate',
+      icon: QrCode,
+      path: '/admin/verify',
     },
     {
       title: 'Settings',

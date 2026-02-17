@@ -92,8 +92,8 @@ const AdminSignIn = () => {
                   <div className="text-gray-600 mt-1">admin@alphabyte.com / admin123</div>
                 </div>
                 <div className="bg-white/70 rounded-lg p-2">
-                  <span className="font-semibold text-gray-700">Team Lead:</span>
-                  <div className="text-gray-600 mt-1">lead@alphabyte.com / lead123</div>
+                  <span className="font-semibold text-gray-700">Event Lead:</span>
+                  <div className="text-gray-600 mt-1">parth.kathane23@pccoepune.org / 12345678</div>
                 </div>
                 <div className="bg-white/70 rounded-lg p-2">
                   <span className="font-semibold text-gray-700">Event Staff:</span>

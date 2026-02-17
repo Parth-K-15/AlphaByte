@@ -10,16 +10,18 @@ import {
   RefreshCw,
 } from "lucide-react";
 import jsQR from "jsqr";
+import { useAuth } from "../../context/AuthContext";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://eventsync-blue.vercel.app/api";
 
 const MyRegistrations = () => {
+  const { user } = useAuth();
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [email, setEmail] = useState(
-    localStorage.getItem("participantEmail") || "",
+    user?.email || localStorage.getItem("participantEmail") || "",
   );
   const [inputEmail, setInputEmail] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -208,24 +210,32 @@ const MyRegistrations = () => {
   };
 
   const handleQRCodeScanned = async (qrData) => {
+    console.log('[QR Scan] Raw QR data:', qrData);
     try {
       const parsedData = JSON.parse(qrData);
+      console.log('[QR Scan] Parsed data:', parsedData);
 
-      if (parsedData.eventId || parsedData.qrData) {
+      // Accept either static QR (eventId only) or dynamic QR (eventId + sessionId)
+      if (parsedData.eventId) {
+        console.log('[QR Scan] Valid QR detected, marking attendance...');
         await markAttendanceFromQR(parsedData);
       } else {
-        setScannedData({ success: false, message: "Invalid QR code format" });
+        console.error('[QR Scan] Invalid QR format - missing eventId:', parsedData);
+        setScannedData({ success: false, message: "Invalid QR code format. Missing event information." });
       }
     } catch (error) {
-      await markAttendanceFromQR({
-        sessionId: qrData,
-        eventId: selectedEvent._id,
-      });
+      console.error('[QR Scan] JSON parse failed:', error);
+      setScannedData({ success: false, message: "Invalid QR code format. Please scan a valid event QR code." });
     }
   };
 
   const markAttendanceFromQR = async (qrCodeData) => {
     setMarkingAttendance(true);
+    console.log('[QR Scan] Sending attendance request:', {
+      eventId: qrCodeData.eventId || selectedEvent._id,
+      email: email,
+      sessionId: qrCodeData.sessionId,
+    });
     try {
       const response = await fetch(`${API_BASE}/participant/attendance/scan`, {
         method: "POST",
@@ -233,7 +243,7 @@ const MyRegistrations = () => {
         body: JSON.stringify({
           eventId: qrCodeData.eventId || selectedEvent._id,
           email: email,
-          qrData: qrCodeData.qrData || qrCodeData.sessionId,
+          sessionId: qrCodeData.sessionId,
         }),
       });
 

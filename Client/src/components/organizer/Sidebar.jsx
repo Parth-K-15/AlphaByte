@@ -68,12 +68,6 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       icon: LayoutDashboard,
       path: "/organizer",
     },
-    
-    {
-      title: "Finance",
-      icon: Banknote,
-      path: "/organizer/events",
-    },
     {
       title: "Events",
       icon: Calendar,
@@ -124,15 +118,26 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       icon: Clock,
       path: "/organizer/role-history",
     },
+    {
+      title: "Payout Details",
+      icon: Banknote,
+      path: "/organizer/profile/payout",
+    },
     ...(canManageSpeakers ? [{
       title: "Speakers",
       icon: Mic,
       key: "speakers",
       submenu: [
         { title: "All Speakers", path: "/organizer/speakers" },
+        { title: "Recommendations", path: "/organizer/speakers/recommend" },
         { title: "Assign Sessions", path: "/organizer/sessions/assign" },
       ],
     }] : []),
+    {
+      title: "Verify Certificate",
+      icon: QrCode,
+      path: "/organizer/verify",
+    },
   ];
 
   const isActive = (path) => location.pathname === path;

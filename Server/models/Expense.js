@@ -47,7 +47,7 @@ const expenseSchema = new mongoose.Schema(
     receiptPublicId: String, // For Cloudinary
     status: {
       type: String,
-      enum: ["PENDING", "APPROVED", "REJECTED", "REIMBURSED"],
+      enum: ["PENDING", "APPROVED", "CHANGES_REQUESTED", "REJECTED", "REIMBURSED"],
       default: "PENDING",
     },
     type: {
