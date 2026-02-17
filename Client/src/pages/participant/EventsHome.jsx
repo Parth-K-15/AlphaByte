@@ -558,6 +558,229 @@ const EventsHome = () => {
         </div>
       </div>
 
+      {/* Upcoming + Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Upcoming Events */}
+        <div className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <h3 className="font-bold text-dark dark:text-white leading-tight">
+                Upcoming Events
+              </h3>
+              <p className="text-xs text-dark-300 dark:text-zinc-400 mt-1 font-medium">
+                {events.length > 0
+                  ? `Next ${Math.min(3, events.length)} events • Tap to view details`
+                  : "New events will appear here"}
+              </p>
+            </div>
+            <Link
+              to="/participant/calendar"
+              className="shrink-0 text-sm font-bold text-dark bg-lime hover:bg-lime-400 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              View All
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {events.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="text-dark-200 dark:text-zinc-600 mb-2">
+                  <Calendar className="w-12 h-12 mx-auto" />
+                </div>
+                <p className="text-dark-300 dark:text-zinc-400 text-sm font-medium">
+                  No upcoming events
+                </p>
+                <p className="text-dark-200 dark:text-zinc-500 text-xs mt-1">
+                  Check back soon for new events.
+                </p>
+              </div>
+            ) : (
+              events.slice(0, 3).map((event) => {
+                const eventDate = event.startDate ? new Date(event.startDate) : null;
+                const day = eventDate ? eventDate.getDate() : "--";
+                const month = eventDate
+                  ? eventDate.toLocaleDateString("en-US", { month: "short" })
+                  : "TBA";
+                const weekday = eventDate
+                  ? eventDate.toLocaleDateString("en-US", { weekday: "short" })
+                  : "";
+
+                const daysLeft = eventDate
+                  ? Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24))
+                  : null;
+
+                const daysLeftLabel =
+                  daysLeft === 0 ? "Today" : daysLeft && daysLeft > 0 ? `${daysLeft}d left` : null;
+
+                return (
+                  <Link
+                    key={event._id}
+                    to={`/participant/event/${event._id}`}
+                    className="group block"
+                  >
+                    <div className="rounded-2xl border border-light-400/60 dark:border-white/10 bg-white/70 dark:bg-white/[0.02] hover:bg-light-200/40 dark:hover:bg-white/[0.05] transition-colors">
+                      <div className="p-4 flex items-stretch gap-4">
+                        <div className="w-16 shrink-0 rounded-2xl border border-light-400/60 dark:border-white/10 bg-light-200/60 dark:bg-white/[0.04] flex flex-col items-center justify-center text-center">
+                          <div className="text-[10px] font-black tracking-wide text-dark-300 dark:text-zinc-400 uppercase">
+                            {month}
+                          </div>
+                          <div className="text-2xl font-black text-dark dark:text-white leading-none">
+                            {day}
+                          </div>
+                          <div className="text-[10px] font-bold text-dark-200 dark:text-zinc-500 mt-0.5">
+                            {weekday}
+                          </div>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${getStatusBadge(
+                                event.status,
+                              )}`}
+                            >
+                              {event.status || "upcoming"}
+                            </span>
+                            {daysLeftLabel && (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-light-400/70 dark:bg-white/10 text-dark-300 dark:text-zinc-300">
+                                <Clock size={12} />
+                                {daysLeftLabel}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-2 flex items-start justify-between gap-3">
+                            <h4 className="font-black text-base md:text-lg text-dark dark:text-white leading-snug truncate group-hover:underline underline-offset-4 decoration-light-400/80 dark:decoration-white/20">
+                              {event.title}
+                            </h4>
+
+                            <div className="shrink-0 text-right">
+                              <div className="font-black text-sm md:text-base text-dark dark:text-lime">
+                                {event.registrationFee > 0 ? (
+                                  <span>
+                                    <span className="text-xs font-bold opacity-70">₹</span>
+                                    {event.registrationFee}
+                                  </span>
+                                ) : (
+                                  <span>FREE</span>
+                                )}
+                              </div>
+                              <div className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-dark-300 dark:text-zinc-400 group-hover:text-dark dark:group-hover:text-white transition-colors">
+                                <span>View</span>
+                                <ArrowUpRight
+                                  size={14}
+                                  className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-dark-300 dark:text-zinc-400">
+                            <span className="inline-flex items-center gap-1.5">
+                              <Calendar size={14} className="text-dark-200 dark:text-zinc-500" />
+                              {formatDate(event.startDate)}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5">
+                              <MapPin size={14} className="text-dark-200 dark:text-zinc-500" />
+                              {event.type || "Online"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-dark rounded-3xl p-6 lg:p-8 shadow-2xl">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <h3 className="font-black text-xl text-white leading-tight">
+                Quick Actions
+              </h3>
+              <p className="text-xs text-dark-200 mt-1 font-medium">
+                Shortcuts to the things you use most.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                name: "Scan QR",
+                icon: CheckCircle,
+                path: "/participant/scan",
+              },
+              {
+                name: "My Events",
+                icon: Calendar,
+                path: "/participant/registrations",
+              },
+              {
+                name: "Certificates",
+                icon: Award,
+                path: "/participant/certificates",
+              },
+              {
+                name: "Profile",
+                icon: Users,
+                path: "/participant/profile",
+              },
+            ].map((action) => (
+              <Link
+                key={action.name}
+                to={action.path}
+                className="group/action rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors p-4 flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-lime/15 text-lime flex items-center justify-center">
+                  <action.icon size={20} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-black text-white leading-tight truncate">
+                    {action.name}
+                  </div>
+                  <div className="text-[11px] text-dark-200 font-medium group-hover/action:text-white/90 transition-colors">
+                    Open
+                  </div>
+                </div>
+                <ArrowUpRight
+                  size={16}
+                  className="ml-auto text-white/70 group-hover/action:text-white transition-colors"
+                />
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-black text-white flex items-center gap-2">
+                  <Sparkles size={16} className="text-lime" />
+                  Learning Streak
+                </h4>
+                <p className="text-xs text-dark-200 mt-1 font-medium">
+                  {userStats.learningStreak > 0
+                    ? "Keep the momentum going."
+                    : "Start with your first event."}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-black text-lime leading-none">
+                  {userStats.learningStreak}
+                </div>
+                <div className="text-[10px] text-dark-200 font-bold uppercase mt-1">
+                  events
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Learning Goal */}
         <div className="bg-lime rounded-3xl p-6">
@@ -729,278 +952,6 @@ const EventsHome = () => {
                 );
               })
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming Events */}
-        <div className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-dark dark:text-white">
-              Upcoming Events
-            </h3>
-            <Link
-              to="/participant/calendar"
-              className="text-sm font-bold text-dark bg-lime hover:bg-lime-400 px-3 py-1.5 rounded-xl transition-colors"
-            >
-              View All
-            </Link>
-          </div>
-
-          <div className="space-y-4">
-            {events.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-dark-200 dark:text-zinc-600 mb-2">
-                  <Calendar className="w-12 h-12 mx-auto" />
-                </div>
-                <p className="text-dark-300 dark:text-zinc-400 text-sm font-medium">
-                  No upcoming events
-                </p>
-                <p className="text-dark-200 dark:text-zinc-500 text-xs mt-1">
-                  Check back soon for new events!
-                </p>
-              </div>
-            ) : (
-              events.slice(0, 3).map((event, index) => {
-                const variants = ["dark", "lime", "white"];
-                const variant = variants[index % 3];
-
-                const eventDate = event.startDate
-                  ? new Date(event.startDate)
-                  : null;
-                const daysLeft = eventDate
-                  ? Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24))
-                  : null;
-
-                return (
-                  <Link
-                    key={event._id}
-                    to={`/participant/event/${event._id}`}
-                    className="block group"
-                  >
-                    <div
-                      className={`relative rounded-3xl p-6 transition-all duration-500 hover:scale-[1.02] overflow-hidden ${
-                        variant === "dark"
-                          ? "bg-gradient-to-br from-dark via-dark to-dark-500 text-white shadow-2xl hover:shadow-lime/20"
-                          : variant === "lime"
-                            ? "bg-gradient-to-br from-lime via-lime to-lime/90 text-dark shadow-xl hover:shadow-lime/40"
-                            : "bg-gradient-to-br from-white via-white to-light-200 dark:from-white/10 dark:via-white/5 dark:to-white/5 text-dark dark:text-white shadow-lg hover:shadow-xl dark:shadow-white/5 border border-light-400/50 dark:border-white/10"
-                      }`}
-                    >
-                      {/* Banner Image */}
-                      {event.bannerImage && (
-                        <div className="w-full h-36 overflow-hidden rounded-2xl mb-4">
-                          <img
-                            src={event.bannerImage}
-                            alt={event.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-
-                      {/* Status Badge */}
-                      <div className="flex items-center justify-between mb-3">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                            variant === "dark"
-                              ? "bg-lime text-dark"
-                              : variant === "lime"
-                                ? "bg-dark text-white"
-                                : "bg-dark text-white"
-                          }`}
-                        >
-                          {event.status}
-                        </span>
-                        {daysLeft && daysLeft > 0 && (
-                          <div
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-sm ${
-                              variant === "dark"
-                                ? "bg-white/10 text-lime"
-                                : variant === "lime"
-                                  ? "bg-dark/10 text-dark"
-                                  : "bg-light-400 dark:bg-white/10 text-dark-300 dark:text-zinc-300"
-                            }`}
-                          >
-                            <Clock size={12} />
-                            {daysLeft}d left
-                          </div>
-                        )}
-                      </div>
-
-                      <h3 className="font-black text-xl mb-3 leading-tight group-hover:translate-x-1 transition-transform duration-300">
-                        {event.title}
-                      </h3>
-
-                      {/* Details Grid */}
-                      <div className="space-y-2.5 mb-4">
-                        <div
-                          className={`flex items-center gap-2 text-sm font-medium ${
-                            variant === "dark"
-                              ? "text-dark-200"
-                              : variant === "lime"
-                                ? "text-dark/70"
-                                : "text-dark-300 dark:text-zinc-400"
-                          }`}
-                        >
-                          <div
-                            className={`p-1.5 rounded-lg ${
-                              variant === "dark"
-                                ? "bg-lime/10"
-                                : variant === "lime"
-                                  ? "bg-dark/10"
-                                  : "bg-light-400 dark:bg-white/10"
-                            }`}
-                          >
-                            <MapPin size={14} />
-                          </div>
-                          <span>{event.type || "Online"}</span>
-                        </div>
-                        <div
-                          className={`flex items-center gap-2 text-sm font-medium ${
-                            variant === "dark"
-                              ? "text-dark-200"
-                              : variant === "lime"
-                                ? "text-dark/70"
-                                : "text-dark-300 dark:text-zinc-400"
-                          }`}
-                        >
-                          <div
-                            className={`p-1.5 rounded-lg ${
-                              variant === "dark"
-                                ? "bg-lime/10"
-                                : variant === "lime"
-                                  ? "bg-dark/10"
-                                  : "bg-light-400 dark:bg-white/10"
-                            }`}
-                          >
-                            <Calendar size={14} />
-                          </div>
-                          <span>{formatDate(event.startDate)}</span>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-current/10">
-                        <div
-                          className={`flex items-center gap-2 font-black text-lg ${
-                            variant === "dark"
-                              ? "text-lime"
-                              : variant === "lime"
-                                ? "text-dark"
-                                : "text-dark dark:text-lime"
-                          }`}
-                        >
-                          {event.registrationFee > 0 ? (
-                            <>
-                              <span className="text-xs font-medium opacity-60">₹</span>
-                              {event.registrationFee}
-                            </>
-                          ) : (
-                            <span className="text-base">FREE</span>
-                          )}
-                        </div>
-                        <div
-                          className={`flex items-center gap-1.5 text-sm font-bold group-hover:gap-2.5 transition-all ${
-                            variant === "dark"
-                              ? "text-lime"
-                              : variant === "lime"
-                                ? "text-dark"
-                                : "text-dark dark:text-lime"
-                          }`}
-                        >
-                          <span>View Details</span>
-                          <ArrowUpRight
-                            size={18}
-                            className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="relative bg-gradient-to-br from-dark via-dark to-dark-500 rounded-3xl p-6 lg:p-8 overflow-hidden shadow-2xl">
-          {/* Background Decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-lime/5 rounded-full blur-2xl"></div>
-          
-          <div className="relative z-10">
-            <h3 className="font-black text-xl text-white mb-6">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                {
-                  name: "Scan QR",
-                  icon: CheckCircle,
-                  variant: "lime",
-                  path: "/participant/scan",
-                },
-                {
-                  name: "My Events",
-                  icon: Calendar,
-                  variant: "white",
-                  path: "/participant/registrations",
-                },
-                {
-                  name: "Certificates",
-                  icon: Award,
-                  variant: "white",
-                  path: "/participant/certificates",
-                },
-                {
-                  name: "Profile",
-                  icon: Users,
-                  variant: "lime",
-                  path: "/participant/profile",
-                },
-              ].map((action, index) => (
-                <Link
-                  key={index}
-                  to={action.path}
-                  className={`group/action relative flex flex-col items-center gap-3 p-5 rounded-2xl transition-all duration-500 hover:scale-110 overflow-hidden ${
-                    action.variant === "lime"
-                      ? "bg-gradient-to-br from-lime to-lime/90 text-dark shadow-lg hover:shadow-lime/40"
-                      : "bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 border border-white/10"
-                  }`}
-                >
-                  {/* Shine Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/action:translate-x-[100%] transition-transform duration-700"></div>
-                  
-                  <action.icon size={24} className="relative z-10 group-hover/action:scale-110 transition-transform duration-300" />
-                  <span className="relative z-10 text-xs font-bold">{action.name}</span>
-                </Link>
-              ))}
-            </div>
-
-            <div className="mt-6 relative p-5 bg-gradient-to-br from-lime/15 to-lime/5 rounded-2xl border-2 border-lime/30 overflow-hidden backdrop-blur-sm">
-              {/* Animated Background */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-lime/10 rounded-full blur-xl"></div>
-              
-              <div className="relative z-10 flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-black text-white flex items-center gap-2">
-                    <Sparkles size={16} className="text-lime" />
-                    Learning Streak
-                  </h4>
-                  <p className="text-xs text-dark-200 mt-1 font-medium">
-                    {userStats.learningStreak > 0
-                      ? "Keep up the great work!"
-                      : "Start your journey!"}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-black text-lime">
-                    {userStats.learningStreak}
-                  </div>
-                  <div className="text-xs text-dark-200 font-bold uppercase">events</div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
