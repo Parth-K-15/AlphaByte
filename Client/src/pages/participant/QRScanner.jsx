@@ -142,18 +142,46 @@ const QRScanner = () => {
         return;
       }
 
+      // Attempt to capture participant's GPS location for geo-fenced attendance.
+      // If geolocation fails or is denied, we still send the request without coordinates —
+      // the server will reject only if the session has geo-fence enabled.
+      let participantLat = null;
+      let participantLng = null;
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0,
+            });
+          });
+          participantLat = position.coords.latitude;
+          participantLng = position.coords.longitude;
+        } catch (geoErr) {
+          console.warn("Geolocation unavailable:", geoErr.message);
+          // Continue without coordinates — server will reject if geo-fence is required
+        }
+      }
+
       const token = localStorage.getItem("token");
+      const scanBody = {
+        eventId: parsedData.eventId,
+        email: emailRef.current,
+        sessionId: parsedData.sessionId, // Optional - undefined for static QR
+      };
+      if (participantLat != null && participantLng != null) {
+        scanBody.latitude = participantLat;
+        scanBody.longitude = participantLng;
+      }
+
       const response = await fetch(`${API_BASE}/participant/attendance/scan`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          eventId: parsedData.eventId,
-          email: emailRef.current,
-          sessionId: parsedData.sessionId, // Optional - undefined for static QR
-        }),
+        body: JSON.stringify(scanBody),
       });
 
       const responseData = await response.json();
@@ -184,6 +212,10 @@ const QRScanner = () => {
           errorMessage = "Your attendance has already been marked for this event.";
         } else if (responseData.code === 'NO_SESSION_ID') {
           errorMessage = "Invalid QR code. Please scan the live attendance QR code.";
+        } else if (responseData.code === 'LOCATION_REQUIRED') {
+          errorMessage = "Location access is required for this event. Please enable GPS/Location in your browser settings and try again.";
+        } else if (responseData.code === 'OUT_OF_RANGE') {
+          errorMessage = responseData.message || `You are too far from the event venue. Move closer and try again.`;
         }
         
         setResult({

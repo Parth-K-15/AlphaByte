@@ -15,6 +15,9 @@ import {
   Activity,
   ShieldAlert,
   History,
+  MapPin,
+  Navigation,
+  Radius,
 } from "lucide-react";
 import QRCode from "qrcode";
 import {
@@ -77,6 +80,14 @@ const AttendanceQR = () => {
   const [participants, setParticipants] = useState([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const intervalRef = useRef(null);
+
+  // Geo-fence state for location-based QR attendance
+  const [geoFenceEnabled, setGeoFenceEnabled] = useState(false);
+  const [geoLatitude, setGeoLatitude] = useState("");
+  const [geoLongitude, setGeoLongitude] = useState("");
+  const [geoRadius, setGeoRadius] = useState(200);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState("");
 
   // Retroactive Change & Audit Trail states
   const [showInvalidateModal, setShowInvalidateModal] = useState(false);
@@ -177,9 +188,31 @@ const AttendanceQR = () => {
       alert("Please select an event first.");
       return;
     }
+    // Validate geo-fence fields if enabled
+    if (geoFenceEnabled) {
+      if (!geoLatitude || !geoLongitude) {
+        alert("Please enter or capture coordinates before generating the QR code.");
+        return;
+      }
+      const lat = parseFloat(geoLatitude);
+      const lng = parseFloat(geoLongitude);
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        alert("Invalid coordinates. Latitude must be -90 to 90, Longitude must be -180 to 180.");
+        return;
+      }
+    }
     setLoading(true);
     try {
-      const response = await generateQRCode(selectedEvent);
+      // Build geo data only when enabled
+      const geoData = geoFenceEnabled
+        ? {
+            geoFenceEnabled: true,
+            geoLatitude: parseFloat(geoLatitude),
+            geoLongitude: parseFloat(geoLongitude),
+            geoRadius: parseInt(geoRadius) || 200,
+          }
+        : {};
+      const response = await generateQRCode(selectedEvent, geoData);
       if (response.data.success) {
         setQrData(response.data.data);
         setTimeRemaining(300); // 5 minutes
@@ -197,6 +230,28 @@ const AttendanceQR = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Geo-fence: capture organizer's current GPS coordinates
+  const handleGetCoordinates = () => {
+    if (!navigator.geolocation) {
+      setGeoError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGeoLatitude(position.coords.latitude.toFixed(6));
+        setGeoLongitude(position.coords.longitude.toFixed(6));
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoError("Failed to get location: " + err.message);
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
   };
 
   const formatTime = (seconds) => {
@@ -494,6 +549,125 @@ const AttendanceQR = () => {
                     Generate a secure, time-limited QR code (expires in 5 minutes).
                     Participants must scan this code to mark their attendance.
                   </p>
+
+                  {/* Geo-Fence Controls */}
+                  <div className="max-w-md mx-auto mb-6 text-left">
+                    <div className="flex items-center gap-3 mb-3">
+                      <button
+                        onClick={() => {
+                          setGeoFenceEnabled(!geoFenceEnabled);
+                          setGeoError("");
+                        }}
+                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+                          geoFenceEnabled
+                            ? "bg-[#B9FF66]"
+                            : "bg-gray-300 dark:bg-zinc-600"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                            geoFenceEnabled ? "translate-x-6" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-gray-600 dark:text-zinc-400" />
+                        <span className="text-sm font-bold text-gray-700 dark:text-zinc-300">
+                          Enable Geo-Fenced Attendance
+                        </span>
+                      </div>
+                    </div>
+
+                    {geoFenceEnabled && (
+                      <div className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                        <p className="text-xs text-gray-500 dark:text-zinc-500 font-medium">
+                          Only participants within the specified radius of these coordinates can mark attendance.
+                        </p>
+
+                        {/* Get Coordinates Button */}
+                        <button
+                          onClick={handleGetCoordinates}
+                          disabled={geoLoading}
+                          className="flex items-center gap-2 px-4 py-2 bg-[#191A23] text-[#B9FF66] rounded-xl text-sm font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                        >
+                          {geoLoading ? (
+                            <RefreshCw size={14} className="animate-spin" />
+                          ) : (
+                            <Navigation size={14} />
+                          )}
+                          {geoLoading ? "Getting Location..." : "Get My Coordinates"}
+                        </button>
+
+                        {geoError && (
+                          <p className="text-xs text-red-500 font-medium">{geoError}</p>
+                        )}
+
+                        {/* Coordinate Inputs */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-bold text-gray-600 dark:text-zinc-400 mb-1 block">
+                              Latitude
+                            </label>
+                            <input
+                              type="text"
+                              value={geoLatitude}
+                              onChange={(e) => setGeoLatitude(e.target.value)}
+                              placeholder="e.g. 28.6139"
+                              className="w-full px-3 py-2 text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#B9FF66] focus:border-transparent outline-none font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-gray-600 dark:text-zinc-400 mb-1 block">
+                              Longitude
+                            </label>
+                            <input
+                              type="text"
+                              value={geoLongitude}
+                              onChange={(e) => setGeoLongitude(e.target.value)}
+                              placeholder="e.g. 77.2090"
+                              className="w-full px-3 py-2 text-sm bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#B9FF66] focus:border-transparent outline-none font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Radius Slider */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-bold text-gray-600 dark:text-zinc-400 flex items-center gap-1">
+                              <Radius size={12} />
+                              Allowed Radius
+                            </label>
+                            <span className="text-xs font-mono font-bold text-[#191A23] dark:text-[#B9FF66]">
+                              {geoRadius}m
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="50"
+                            max="2000"
+                            step="50"
+                            value={geoRadius}
+                            onChange={(e) => setGeoRadius(Number(e.target.value))}
+                            className="w-full h-2 bg-gray-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-[#B9FF66]"
+                          />
+                          <div className="flex justify-between text-[10px] text-gray-400 dark:text-zinc-600 mt-1">
+                            <span>50m</span>
+                            <span>2000m</span>
+                          </div>
+                        </div>
+
+                        {geoLatitude && geoLongitude && (
+                          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-200 dark:border-green-500/20">
+                            <CheckCircle size={14} className="text-green-600 dark:text-green-400" />
+                            <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+                              Coordinates set: {parseFloat(geoLatitude).toFixed(4)}, {parseFloat(geoLongitude).toFixed(4)} | Radius: {geoRadius}m
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={handleGenerateQR}
                     disabled={loading}
