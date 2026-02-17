@@ -1,7 +1,13 @@
 import express from 'express';
 import User from '../models/User.js';
+import { verifyToken, authorizeRoles } from '../middleware/auth.js';
+import { isEncryptedPii, maybeDecryptPii, maskPhone } from '../utils/piiCrypto.js';
+import { auditPiiAccess } from '../utils/piiAudit.js';
 
 const router = express.Router();
+
+// Users endpoints are privileged (staff only)
+router.use(verifyToken, authorizeRoles('ADMIN', 'TEAM_LEAD'));
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -26,10 +32,16 @@ router.get('/', async (req, res) => {
       .populate('assignedEvent', 'title')
       .sort({ createdAt: -1 });
 
+    const sanitized = users.map((u) => {
+      const obj = u.toObject();
+      obj.phone = maskPhone(maybeDecryptPii(obj.phone));
+      return obj;
+    });
+
     res.json({
       success: true,
-      count: users.length,
-      data: users
+      count: sanitized.length,
+      data: sanitized
     });
   } catch (error) {
     res.status(500).json({
@@ -56,9 +68,32 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    const wantsFull = (req.query?.pii || '').toString() === 'full';
+    const reason = (req.query?.reason || '').toString().trim();
+
+    const obj = user.toObject();
+    if (wantsFull && reason) {
+      obj.phone = maybeDecryptPii(obj.phone);
+      if (isEncryptedPii(obj.phone)) {
+        return res.status(503).json({
+          success: false,
+          message: 'PII decryption unavailable (missing/invalid encryption key)'
+        });
+      }
+      await auditPiiAccess({
+        req,
+        entityType: 'USER',
+        targetUserId: obj._id,
+        fields: ['phone'],
+        reason,
+      });
+    } else {
+      obj.phone = maskPhone(maybeDecryptPii(obj.phone));
+    }
+
     res.json({
       success: true,
-      data: user
+      data: obj
     });
   } catch (error) {
     res.status(500).json({

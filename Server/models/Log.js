@@ -190,7 +190,6 @@ logSchema.index({ type: 1 });
 logSchema.index({ level: 1 });
 logSchema.index({ userId: 1 });
 logSchema.index({ eventId: 1, createdAt: -1 });
-logSchema.index({ participantId: 1 });
 logSchema.index({ actionType: 1 });
 logSchema.index({ entityType: 1 });
 logSchema.index({ severity: 1 });

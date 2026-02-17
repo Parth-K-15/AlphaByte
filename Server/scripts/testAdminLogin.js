@@ -28,6 +28,8 @@ async function testAdminLogin() {
       if (data.success) {
         console.log('✅ LOGIN SUCCESSFUL!');
         console.log('User:', data.data.user);
+        console.log('Token:', data.data.token);
+        console.log('Redirect:', data.data.redirectPath);
         return;
       } else {
         console.log('Message:', data.message);

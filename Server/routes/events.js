@@ -8,6 +8,7 @@ import Log from '../models/Log.js';
 import mongoose from 'mongoose';
 import { invalidateEventCache, invalidateDashboardCache, invalidateMultiple } from '../utils/cacheInvalidation.js';
 import { CachePatterns } from '../utils/cacheKeys.js';
+import { maybeDecryptPii, maskPhone } from '../utils/piiCrypto.js';
 
 const router = express.Router();
 
@@ -101,10 +102,15 @@ router.get('/:id', async (req, res) => {
     const attendanceCount = await Attendance.countDocuments({ event: event._id });
     const certificateCount = await Certificate.countDocuments({ event: event._id });
 
+    const eventObj = event.toObject();
+    if (eventObj?.teamLead?.phone !== undefined) {
+      eventObj.teamLead.phone = maskPhone(maybeDecryptPii(eventObj.teamLead.phone));
+    }
+
     res.json({
       success: true,
       data: {
-        ...event.toObject(),
+        ...eventObj,
         participantCount,
         attendanceCount,
         certificateCount
@@ -677,11 +683,16 @@ router.put('/:id/lifecycle', async (req, res) => {
 
     const participantCount = await Participant.countDocuments({ event: event._id });
 
+    const eventObj = event.toObject();
+    if (eventObj?.teamLead?.phone !== undefined) {
+      eventObj.teamLead.phone = maskPhone(maybeDecryptPii(eventObj.teamLead.phone));
+    }
+
     res.json({
       success: true,
       message: 'Event status updated successfully',
       data: {
-        ...event.toObject(),
+        ...eventObj,
         participantCount
       }
     });

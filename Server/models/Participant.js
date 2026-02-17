@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { maybeEncryptPii } from "../utils/piiCrypto.js";
 
 const participantSchema = new mongoose.Schema(
   {
@@ -91,5 +92,12 @@ const participantSchema = new mongoose.Schema(
 
 // Compound unique index: same email can register for multiple events, but not the same event twice
 participantSchema.index({ email: 1, event: 1 }, { unique: true });
+
+participantSchema.pre("save", function (next) {
+  if (this.isModified("phone")) {
+    this.phone = maybeEncryptPii(this.phone);
+  }
+  next();
+});
 
 export default mongoose.model("Participant", participantSchema);

@@ -2,8 +2,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
+import { verifyToken, authorizeRoles } from '../middleware/auth.js';
+import { maybeDecryptPii, maskPhone } from '../utils/piiCrypto.js';
 
 const router = express.Router();
+
+// Team management endpoints are privileged (staff only)
+router.use(verifyToken, authorizeRoles('ADMIN', 'TEAM_LEAD'));
 
 // Helper function to validate ObjectId
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -27,10 +32,16 @@ router.get('/leads', async (req, res) => {
       console.log('Sample team lead:', JSON.stringify(teamLeads[0], null, 2));
     }
     
+    const sanitized = teamLeads.map((u) => {
+      const obj = u.toObject();
+      obj.phone = maskPhone(maybeDecryptPii(obj.phone));
+      return obj;
+    });
+
     res.json({ 
       success: true, 
-      count: teamLeads.length,
-      data: teamLeads 
+      count: sanitized.length,
+      data: sanitized 
     });
   } catch (error) {
     console.error('Error fetching team leads:', error);
@@ -62,10 +73,16 @@ router.get('/members', async (req, res) => {
       console.log('Sample team member:', JSON.stringify(teamMembers[0], null, 2));
     }
     
+    const sanitized = teamMembers.map((u) => {
+      const obj = u.toObject();
+      obj.phone = maskPhone(maybeDecryptPii(obj.phone));
+      return obj;
+    });
+
     res.json({ 
       success: true, 
-      count: teamMembers.length,
-      data: teamMembers 
+      count: sanitized.length,
+      data: sanitized 
     });
   } catch (error) {
     console.error('Error fetching team members:', error);

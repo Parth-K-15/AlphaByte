@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { maybeEncryptPii } from "../utils/piiCrypto.js";
 
 const participantAuthSchema = new mongoose.Schema(
   {
@@ -62,5 +63,12 @@ const participantAuthSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+participantAuthSchema.pre("save", function (next) {
+  if (this.isModified("phone")) {
+    this.phone = maybeEncryptPii(this.phone);
+  }
+  next();
+});
 
 export default mongoose.model("ParticipantAuth", participantAuthSchema);

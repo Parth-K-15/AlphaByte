@@ -35,15 +35,20 @@ import transcriptRoutes from './routes/transcript.js';
 import chatbotRoutes from './routes/chatbot.js';
 import verifyRoutes from './routes/verify.js';
 import reconciliationRoutes from './routes/reconciliation.js';
+import requestId from "./middleware/requestId.js";
 
 // Import email service
 import { testEmailConnection } from "./utils/emailService.js";
 import financeRoutes from "./routes/finance.js";
+import financeLedgerRoutes from "./routes/financeLedger.js";
 
 // Import Redis
 import { initRedis, closeRedis } from "./config/redis.js";
 
 const app = express();
+
+// Attach requestId early (for logs + audit trails)
+app.use(requestId());
 
 // Middleware
 const allowedOrigins = [
@@ -69,8 +74,8 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+    exposedHeaders: ["Content-Range", "X-Content-Range", "X-Request-Id"],
     maxAge: 600, // Cache preflight request for 10 minutes
   }),
 );
@@ -118,6 +123,7 @@ const initializeReconciliationHooks = async () => {
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/finance/ledger', financeLedgerRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/access-control', accessControlRoutes);

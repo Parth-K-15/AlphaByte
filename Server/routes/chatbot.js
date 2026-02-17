@@ -6,8 +6,33 @@ import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
 import ParticipantAuth from '../models/ParticipantAuth.js';
 import { verifyToken } from '../middleware/auth.js';
+import { tokenBucketRateLimit } from "../middleware/rateLimit.js";
 
 const router = express.Router();
+
+const chatbotUserKey = (req) => {
+  const xff = req.headers["x-forwarded-for"];
+  const ip = typeof xff === "string" && xff.trim() ? xff.split(",")[0].trim() : (req.ip || "unknown");
+  const userId = req.user?._id ? String(req.user._id) : "";
+  const email = (req.user?.email || "").toString().trim().toLowerCase();
+  return userId || email || ip;
+};
+
+const chatbotChatLimiter = tokenBucketRateLimit({
+  name: "chatbot:chat",
+  capacity: 15,
+  refillTokens: 15,
+  refillIntervalMs: 60_000,
+  identifier: chatbotUserKey,
+});
+
+const chatbotMetaLimiter = tokenBucketRateLimit({
+  name: "chatbot:meta",
+  capacity: 60,
+  refillTokens: 60,
+  refillIntervalMs: 60_000,
+  identifier: chatbotUserKey,
+});
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -295,7 +320,7 @@ const generateGeminiResponse = async (query, contextDocs, conversationHistory = 
  * @route   POST /api/chatbot/chat
  * @access  Authenticated participants
  */
-router.post('/chat', verifyToken, async (req, res) => {
+router.post('/chat', verifyToken, chatbotChatLimiter, async (req, res) => {
   try {
     const { message, conversationHistory = [] } = req.body;
 
@@ -337,7 +362,7 @@ router.post('/chat', verifyToken, async (req, res) => {
  * @route   GET /api/chatbot/context
  * @access  Authenticated participants
  */
-router.get('/context', verifyToken, async (req, res) => {
+router.get('/context', verifyToken, chatbotMetaLimiter, async (req, res) => {
   try {
     const participantEmail = req.user?.email || null;
 
@@ -366,7 +391,7 @@ router.get('/context', verifyToken, async (req, res) => {
  * @route   GET /api/chatbot/suggestions
  * @access  Authenticated participants
  */
-router.get('/suggestions', verifyToken, async (req, res) => {
+router.get('/suggestions', verifyToken, chatbotMetaLimiter, async (req, res) => {
   try {
     const participantEmail = req.user?.email || null;
 

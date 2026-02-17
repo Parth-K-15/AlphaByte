@@ -2,37 +2,70 @@ import { createClient } from "redis";
 
 let redisClient = null;
 let isConnected = false;
+let lastErrorLog = { key: null, at: 0 };
+
+const logRedisErrorThrottled = (err) => {
+  const code = err?.code || "UNKNOWN";
+  const msg = err?.message || String(err);
+  const key = `${code}:${msg}`;
+  const now = Date.now();
+  if (lastErrorLog.key === key && now - lastErrorLog.at < 2000) {
+    return;
+  }
+  lastErrorLog = { key, at: now };
+  console.error("❌ Redis Client Error:", code || msg);
+};
 
 /**
  * Initialize Redis client
  */
 export const initRedis = async () => {
   try {
-    // Check if caching is enabled
-    if (process.env.CACHE_ENABLED === "false") {
-      console.log("⚠️  Redis caching is disabled via CACHE_ENABLED=false");
+    // Allow Redis for multiple features (cache, rate limiting, etc.)
+    // If both are explicitly disabled, skip Redis entirely.
+    if (process.env.CACHE_ENABLED === "false" && process.env.RATE_LIMIT_ENABLED === "false") {
+      console.log("⚠️  Redis is disabled via CACHE_ENABLED=false and RATE_LIMIT_ENABLED=false");
       return null;
     }
 
     // Read config at runtime (after dotenv has loaded)
+    const redisUrlFromEnv = process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL || "";
     const host = process.env.REDIS_HOST || "localhost";
     const port = parseInt(process.env.REDIS_PORT || "6379");
     const password = process.env.REDIS_PASSWORD || undefined;
     const database = parseInt(process.env.REDIS_DB || "0");
-    const isRemote = host !== "localhost" && host !== "127.0.0.1";
 
-    console.log(`🔧 Redis Config: host=${host}, port=${port}, tls=${isRemote}`);
+    const isRemoteHost = host !== "localhost" && host !== "127.0.0.1";
+    const isRemote = Boolean(redisUrlFromEnv) || isRemoteHost;
 
-    // Use URL-based connection for remote Redis (Upstash)
-    // rediss:// = Redis over TLS
-    if (isRemote) {
+    console.log(
+      `🔧 Redis Config: ${redisUrlFromEnv ? "url=SET" : `host=${host}, port=${port}`}, tls=${isRemote}`,
+    );
+
+    // Prefer URL-based connection when provided (Upstash commonly provides this)
+    // Accept redis:// or rediss://
+    if (redisUrlFromEnv) {
+      redisClient = createClient({
+        url: redisUrlFromEnv,
+        socket: {
+          reconnectStrategy: (retries) => {
+            if (retries > 3) {
+              console.log("⚠️  Redis reconnection attempts exhausted. Continuing without Redis features.");
+              return false;
+            }
+            return Math.min(retries * 100, 3000);
+          },
+        },
+      });
+    } else if (isRemoteHost) {
+      // Remote Redis via host/port/password (rediss:// = Redis over TLS)
       const redisUrl = `rediss://default:${password}@${host}:${port}`;
       redisClient = createClient({
         url: redisUrl,
         socket: {
           reconnectStrategy: (retries) => {
             if (retries > 3) {
-              console.log("⚠️  Redis reconnection attempts exhausted. Continuing without cache.");
+              console.log("⚠️  Redis reconnection attempts exhausted. Continuing without Redis features.");
               return false;
             }
             return Math.min(retries * 100, 3000);
@@ -47,7 +80,7 @@ export const initRedis = async () => {
           port: port,
           reconnectStrategy: (retries) => {
             if (retries > 3) {
-              console.log("⚠️  Redis reconnection attempts exhausted. Continuing without cache.");
+              console.log("⚠️  Redis reconnection attempts exhausted. Continuing without Redis features.");
               return false;
             }
             return Math.min(retries * 100, 3000);
@@ -60,7 +93,7 @@ export const initRedis = async () => {
 
     // Error handling
     redisClient.on("error", (err) => {
-      console.error("❌ Redis Client Error:", err.code || err.message || err);
+      logRedisErrorThrottled(err);
       isConnected = false;
     });
 
@@ -92,8 +125,8 @@ export const initRedis = async () => {
     return redisClient;
   } catch (error) {
     console.error("❌ Failed to initialize Redis:", error.code || error.message || 'Unknown error');
-    console.log("⚠️  Application will continue without caching");
-    console.log("💡 To disable caching, set CACHE_ENABLED=false in .env");
+    console.log("⚠️  Application will continue without Redis features (cache/rate limiting)");
+    console.log("💡 Fix: start Redis locally, or set REDIS_URL/REDIS_HOST, or disable with RATE_LIMIT_ENABLED=false and CACHE_ENABLED=false");
     
     // Clean up failed client
     if (redisClient) {

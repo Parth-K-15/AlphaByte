@@ -4,6 +4,7 @@ import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import ParticipantAuth from '../models/ParticipantAuth.js';
 import { verifyToken } from '../middleware/auth.js';
+import { isEncryptedPii, maybeDecryptPii } from '../utils/piiCrypto.js';
 
 const router = express.Router();
 
@@ -33,14 +34,18 @@ const upload = multer({
 router.get('/profile', verifyToken, async (req, res) => {
   try {
     // req.userId is set by verifyToken middleware
-    const participant = await ParticipantAuth.findById(req.userId).select('-password');
+    const participantDoc = await ParticipantAuth.findById(req.userId).select('-password');
     
-    if (!participant) {
+    if (!participantDoc) {
       return res.status(404).json({
         success: false,
         message: 'Participant not found',
       });
     }
+
+    const participant = participantDoc.toObject();
+    participant.phone = maybeDecryptPii(participant.phone);
+    if (isEncryptedPii(participant.phone)) participant.phone = null;
 
     res.json({
       success: true,
@@ -81,7 +86,12 @@ router.put('/profile', verifyToken, async (req, res) => {
     await participant.save();
 
     // Return without password
-    const updatedParticipant = await ParticipantAuth.findById(req.userId).select('-password');
+    const updatedDoc = await ParticipantAuth.findById(req.userId).select('-password');
+    const updatedParticipant = updatedDoc ? updatedDoc.toObject() : null;
+    if (updatedParticipant) {
+      updatedParticipant.phone = maybeDecryptPii(updatedParticipant.phone);
+      if (isEncryptedPii(updatedParticipant.phone)) updatedParticipant.phone = null;
+    }
 
     res.json({
       success: true,
