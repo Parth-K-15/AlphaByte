@@ -19,6 +19,7 @@ import {
   CheckCircle,
   ArrowUpRight,
   Sparkles,
+  QrCode,
 } from "lucide-react";
 
 const API_BASE = "http://localhost:5000/api";
@@ -962,7 +963,7 @@ const EventsHome = () => {
         className="fixed bottom-6 right-6 z-50 bg-gradient-to-br from-lime to-lime/90 text-dark p-5 rounded-full shadow-2xl hover:shadow-lime/60 hover:scale-110 transition-all duration-300 group"
         title="Scan QR Code"
       >
-        <Zap size={24} className="group-hover:animate-pulse" />
+        <QrCode size={24} className="group-hover:animate-pulse" />
       </Link>
     </div>
   );

@@ -77,17 +77,20 @@ const BudgetRequest = () => {
   };
 
   const applySuggestions = () => {
-    if (!aiSuggestions?.suggestions) return;
+    const suggestedCategories = aiSuggestions?.suggestions?.suggestions;
+    if (!suggestedCategories || typeof suggestedCategories !== "object") return;
 
-    const newItems = Object.entries(aiSuggestions.suggestions)
-      .filter(([, data]) => data.suggested > 0)
+    const newItems = Object.entries(suggestedCategories)
       .map(([category, data]) => ({
         name: category,
-        requestedAmount: data.suggested.toString(),
-        justification: data.reasoning
-      }));
+        requestedAmount: String(data?.suggested ?? ""),
+        justification: data?.reasoning || `Budget allocation for ${category}`,
+      }))
+      .filter((item) => Number(item.requestedAmount) > 0);
 
-    setItems(newItems);
+    if (newItems.length > 0) {
+      setItems(newItems);
+    }
     setShowSuggestions(false);
   };
 
@@ -209,7 +212,7 @@ const BudgetRequest = () => {
                     AI Budget Recommendations
                   </h3>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                    Based on {aiSuggestions.basedOn?.similarEvents || 0} similar past events • {aiSuggestions.suggestions.confidence}% confidence
+                    Based on {aiSuggestions.basedOn?.similarEvents || 0} similar past events • {aiSuggestions.confidence || 0}% confidence
                   </p>
                 </div>
               </div>
