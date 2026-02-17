@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -8,9 +7,6 @@ import { dirname, join } from 'path';
 // Get current directory in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Load env variables with explicit path
-dotenv.config({ path: join(__dirname, '.env') });
 
 // Debug: Verify env variables are loaded
 console.log('🔍 Environment Check:');

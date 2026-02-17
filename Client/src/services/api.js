@@ -2,7 +2,17 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 
 // Get auth token from localStorage
 const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
+  const rawToken = localStorage.getItem('token');
+  if (!rawToken) return {};
+
+  let token = rawToken.trim();
+  if (token.startsWith('"') && token.endsWith('"')) {
+    token = token.slice(1, -1);
+  }
+  if (token.toLowerCase().startsWith('bearer ')) {
+    token = token.slice(7).trim();
+  }
+
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 

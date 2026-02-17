@@ -12,8 +12,8 @@ import { isEncryptedPii, maybeDecryptPii, maybeEncryptPii } from "../utils/piiCr
 
 const router = express.Router();
 
-// JWT Secret (use environment variable in production)
-const JWT_SECRET = process.env.JWT_SECRET || "alphabyte_jwt_secret_key_2026";
+// JWT Secret - read at runtime to ensure dotenv has loaded
+const getJwtSecret = () => process.env.JWT_SECRET || 'alphabyte_jwt_secret_key_2026';
 const JWT_EXPIRES_IN = "7d";
 
 const authIpEmailKey = (req) => {
@@ -98,7 +98,7 @@ router.post("/signup", signupLimiter, async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: participant._id, role: "PARTICIPANT", isParticipant: true },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: JWT_EXPIRES_IN },
     );
 
@@ -183,7 +183,7 @@ router.post('/speaker/signup', signupLimiter, async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: speaker._id, role: 'SPEAKER', isSpeaker: true },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: JWT_EXPIRES_IN }
     );
 
@@ -320,7 +320,7 @@ router.post("/login", loginLimiter, async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, role: role, isParticipant, isSpeaker },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: JWT_EXPIRES_IN },
     );
 
@@ -394,7 +394,7 @@ router.get(
       const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith("Bearer ")) {
         const token = authHeader.split(" ")[1];
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, getJwtSecret());
         return CacheKeys.user(decoded.id);
       }
     } catch (err) {
@@ -417,7 +417,7 @@ router.get(
     const token = authHeader.split(" ")[1];
 
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     // Get user from appropriate collection
     let user;
@@ -491,7 +491,7 @@ router.put("/profile", async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const { name, email, phone, avatar, upiId, payoutQrUrl } = req.body;
 
@@ -656,7 +656,7 @@ router.put("/password", async (req, res) => {
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     const { currentPassword, newPassword } = req.body;
 

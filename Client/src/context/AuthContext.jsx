@@ -6,7 +6,18 @@ const AuthContext = createContext(null);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Return safe defaults instead of throwing during HMR/fast refresh
+    return {
+      user: null,
+      token: null,
+      loading: true,
+      isAuthenticated: false,
+      login: async () => ({ success: false, message: 'Auth not initialized' }),
+      signup: async () => ({ success: false, message: 'Auth not initialized' }),
+      logout: () => {},
+      hasRole: () => false,
+      getRedirectPath: () => '/login',
+    };
   }
   return context;
 };

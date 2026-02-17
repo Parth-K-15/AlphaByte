@@ -3,7 +3,8 @@ import User from '../models/User.js';
 import ParticipantAuth from '../models/ParticipantAuth.js';
 import SpeakerAuth from '../models/SpeakerAuth.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'alphabyte_jwt_secret_key_2026';
+// Read JWT_SECRET at runtime to ensure dotenv has loaded
+const getJwtSecret = () => process.env.JWT_SECRET || 'alphabyte_jwt_secret_key_2026';
 
 // Verify JWT token middleware
 export const verifyToken = async (req, res, next) => {
@@ -20,7 +21,7 @@ export const verifyToken = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
 
     // Check if user is a participant, speaker, or staff
     let user;
