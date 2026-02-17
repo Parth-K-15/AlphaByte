@@ -2,6 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Event from '../models/Event.js';
 import Participant from '../models/Participant.js';
+import ParticipantTeam from '../models/ParticipantTeam.js';
+import TeamAttendance from '../models/TeamAttendance.js';
 import Attendance from '../models/Attendance.js';
 import Certificate from '../models/Certificate.js';
 import CertificateRequest from '../models/CertificateRequest.js';
@@ -267,6 +269,15 @@ router.post("/register", async (req, res) => {
         .json({ success: false, message: "Event not found" });
     }
 
+    // Check if this is a team event
+    if (event.participationType === 'TEAM') {
+      return res.status(400).json({
+        success: false,
+        message: "This is a team event. Please use team registration.",
+        requiresTeamRegistration: true,
+      });
+    }
+
     // Check event status
     if (!["upcoming", "ongoing"].includes(event.status)) {
       return res.status(400).json({
@@ -403,6 +414,240 @@ router.post("/register", async (req, res) => {
   }
 });
 
+// POST /api/participant/register-team - Register a team for an event
+router.post("/register-team", async (req, res) => {
+  try {
+    const { eventId, teamName, captain, members } = req.body;
+
+    // Validate required fields
+    if (!eventId || !teamName || !captain || !members || !Array.isArray(members)) {
+      return res.status(400).json({
+        success: false,
+        message: "Event ID, team name, captain details, and members array are required",
+      });
+    }
+
+    if (!isValidObjectId(eventId)) {
+      return res.status(400).json({ success: false, message: "Invalid event ID" });
+    }
+
+    // Check if event exists and is a team event
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ success: false, message: "Event not found" });
+    }
+
+    if (event.participationType !== 'TEAM') {
+      return res.status(400).json({
+        success: false,
+        message: "This event does not accept team registrations",
+      });
+    }
+
+    // Check event status
+    if (!["upcoming", "ongoing"].includes(event.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Registration is not open for this event",
+      });
+    }
+
+    // Check registration deadline
+    if (event.registrationDeadline && new Date(event.registrationDeadline) < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "Registration deadline has passed",
+      });
+    }
+
+    // Validate team size
+    const teamSize = members.length;
+    const { minSize, maxSize } = event.teamConfig || { minSize: 2, maxSize: 5 };
+
+    if (teamSize < minSize || teamSize > maxSize) {
+      return res.status(400).json({
+        success: false,
+        message: `Team size must be between ${minSize} and ${maxSize} members`,
+      });
+    }
+
+    // Check if team name already exists for this event
+    const existingTeam = await ParticipantTeam.findOne({
+      event: eventId,
+      teamName: { $regex: new RegExp(`^${teamName}$`, 'i') },
+    });
+
+    if (existingTeam) {
+      return res.status(400).json({
+        success: false,
+        message: "A team with this name is already registered for this event",
+      });
+    }
+
+    // Check max teams (if maxParticipants is set, it means max teams for team events)
+    if (event.maxParticipants) {
+      const currentTeamCount = await ParticipantTeam.countDocuments({
+        event: eventId,
+        registrationStatus: { $in: ["PENDING", "CONFIRMED"] },
+      });
+
+      if (currentTeamCount >= event.maxParticipants) {
+        return res.status(400).json({
+          success: false,
+          message: "Event is full. No more teams can register.",
+        });
+      }
+    }
+
+    // Validate captain is in members list
+    const captainEmail = captain.email.toLowerCase();
+    const captainInMembers = members.some(m => m.email.toLowerCase() === captainEmail);
+    
+    if (!captainInMembers) {
+      return res.status(400).json({
+        success: false,
+        message: "Captain must be included in the team members list",
+      });
+    }
+
+    // Check for duplicate emails within team
+    const emails = members.map(m => m.email.toLowerCase());
+    const uniqueEmails = new Set(emails);
+    
+    if (uniqueEmails.size !== emails.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate email addresses found in team members",
+      });
+    }
+
+    // Check if any member is already registered for this event (in another team or individually)
+    const existingParticipants = await Participant.find({
+      event: eventId,
+      email: { $in: emails },
+    });
+
+    if (existingParticipants.length > 0) {
+      const existingEmails = existingParticipants.map(p => p.email).join(', ');
+      return res.status(400).json({
+        success: false,
+        message: `The following email(s) are already registered for this event: ${existingEmails}`,
+      });
+    }
+
+    // Create all participant records
+    const participantRecords = [];
+    for (const member of members) {
+      const isCaptain = member.email.toLowerCase() === captainEmail;
+      
+      const participant = new Participant({
+        fullName: member.fullName || member.name,
+        name: member.fullName || member.name,
+        email: member.email.toLowerCase(),
+        phone: member.phone,
+        college: member.college,
+        year: member.year,
+        branch: member.branch,
+        event: eventId,
+        registrationStatus: event.registrationFee === 0 ? "CONFIRMED" : "PENDING",
+        registrationType: "ONLINE",
+        attendanceStatus: "PENDING",
+        certificateStatus: "PENDING",
+        isCaptain: isCaptain,
+        memberRole: isCaptain ? "Captain" : "Member",
+      });
+
+      await participant.save();
+      participantRecords.push(participant);
+
+      // Auto-create EventRole for each member
+      try {
+        await EventRole.create({
+          email: member.email.toLowerCase(),
+          name: member.fullName || member.name,
+          event: eventId,
+          role: 'participant',
+          startTime: event.startDate || new Date(),
+          endTime: event.endDate || undefined,
+          durationMinutes: event.startDate && event.endDate
+            ? Math.round((new Date(event.endDate) - new Date(event.startDate)) / 60000)
+            : 0,
+          status: 'active',
+          source: 'auto',
+          details: { notes: `Registered as team member (${isCaptain ? 'Captain' : 'Member'})` },
+        });
+      } catch (roleErr) {
+        console.error('EventRole auto-create error (non-blocking):', roleErr);
+      }
+    }
+
+    // Find captain participant record
+    const captainParticipant = participantRecords.find(p => p.isCaptain);
+
+    // Create team record
+    const team = new ParticipantTeam({
+      event: eventId,
+      teamName,
+      captain: captainParticipant._id,
+      members: participantRecords.map(p => p._id),
+      totalMembers: teamSize,
+      registrationStatus: event.registrationFee === 0 ? "CONFIRMED" : "PENDING",
+      contactEmail: captain.email.toLowerCase(),
+      contactPhone: captain.phone,
+    });
+
+    await team.save();
+
+    // Update all participant records with team reference
+    await Participant.updateMany(
+      { _id: { $in: participantRecords.map(p => p._id) } },
+      { $set: { team: team._id } }
+    );
+
+    // Create log entry for team registration
+    await Log.create({
+      eventId,
+      eventName: event.title,
+      actionType: 'TEAM_REGISTERED',
+      entityType: 'PARTICIPATION',
+      action: 'Team registered for event',
+      details: `Team "${teamName}" (${teamSize} members) registered for "${event.title}" - Captain: ${captain.fullName || captain.name}`,
+      actorType: 'STUDENT',
+      actorId: captainParticipant._id,
+      actorName: captain.fullName || captain.name,
+      actorEmail: captain.email.toLowerCase(),
+      severity: 'INFO',
+      newState: {
+        teamName,
+        teamSize,
+        registrationStatus: team.registrationStatus,
+        fee: event.registrationFee
+      }
+    });
+
+    // Invalidate caches
+    await invalidateEventCache(eventId);
+
+    res.status(201).json({
+      success: true,
+      message: event.registrationFee === 0
+        ? "Team registration successful! Your team is confirmed."
+        : "Team registration successful! Awaiting confirmation.",
+      data: {
+        team,
+        members: participantRecords,
+      },
+    });
+  } catch (error) {
+    console.error("Error registering team:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error", 
+      error: error.message 
+    });
+  }
+});
+
 // =====================
 // MY REGISTRATIONS APIs
 // =====================
@@ -424,8 +669,9 @@ router.get("/my-events", async (req, res) => {
     })
       .populate(
         "event",
-        "title description location venue startDate endDate time status bannerImage",
+        "title description location venue startDate endDate time status bannerImage participationType",
       )
+      .populate("team", "teamName captain totalMembers")
       .sort({ createdAt: -1 });
 
     // Enrich with attendance (source of truth) and certificate info
@@ -451,6 +697,14 @@ router.get("/my-events", async (req, res) => {
                 certificateUrl: certificate.certificateUrl,
               }
             : null,
+          // Team information
+          teamInfo: reg.team ? {
+            teamName: reg.team.teamName,
+            teamId: reg.team._id,
+            totalMembers: reg.team.totalMembers,
+            isCaptain: reg.isCaptain,
+            role: reg.isCaptain ? 'Captain' : (reg.memberRole || 'Member')
+          } : null,
         };
       }),
     );
@@ -489,12 +743,31 @@ router.get("/registration/:eventId", async (req, res) => {
     const registration = await Participant.findOne({
       event: eventId,
       email: email.toLowerCase(),
-    });
+    }).populate("team", "teamName captain members totalMembers");
+
+    // If registered and part of a team, get team member details
+    let teamMembers = null;
+    if (registration?.team) {
+      teamMembers = await Participant.find({
+        team: registration.team._id,
+        event: eventId
+      }).select('fullName name email phone college year branch isCaptain memberRole registrationType');
+    }
 
     res.json({
       success: true,
       isRegistered: !!registration,
-      data: registration,
+      data: registration ? {
+        ...registration.toObject(),
+        teamInfo: registration.team ? {
+          teamName: registration.team.teamName,
+          teamId: registration.team._id,
+          totalMembers: registration.team.totalMembers,
+          isCaptain: registration.isCaptain,
+          role: registration.isCaptain ? 'Captain' : (registration.memberRole || 'Member'),
+          members: teamMembers,
+        } : null
+      } : null,
     });
   } catch (error) {
     console.error("Error checking registration:", error);

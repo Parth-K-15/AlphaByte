@@ -395,6 +395,12 @@ const Participants = () => {
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 dark:text-zinc-400 hidden lg:table-cell">
                       Organization
                     </th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 dark:text-zinc-400 hidden xl:table-cell">
+                      Team
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 dark:text-zinc-400 hidden xl:table-cell">
+                      Role
+                    </th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-gray-500 dark:text-zinc-400 hidden lg:table-cell">
                       Status
                     </th>
@@ -461,6 +467,30 @@ const Participants = () => {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-zinc-400 hidden lg:table-cell">
                         {participant.organization || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-zinc-400 hidden xl:table-cell">
+                        {participant.teamName ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 text-xs font-medium">
+                            <Users size={12} />
+                            {participant.teamName}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-zinc-500">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-zinc-400 hidden xl:table-cell">
+                        {participant.teamRole ? (
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${
+                            participant.isCaptain 
+                              ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400' 
+                              : 'bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {participant.isCaptain && '👑 '}
+                            {participant.teamRole}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-zinc-500">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 hidden lg:table-cell">
                         {statusBadge(participant.status || "registered")}

@@ -11,6 +11,20 @@ const attendanceSchema = new mongoose.Schema({
     ref: 'Participant',
     required: true
   },
+
+  // Team Event Fields
+  team: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ParticipantTeam',
+    default: null
+  },
+
+  teamAttendance: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TeamAttendance',
+    default: null
+  },
+
   scannedAt: {
     type: Date,
     default: Date.now

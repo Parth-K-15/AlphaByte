@@ -437,7 +437,7 @@ const MyRegistrations = () => {
             </p>
             {lastUpdated && (
               <p className="text-dark-200/60 text-xs mt-2 flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 bg-lime rounded-full animate-pulse"></div>
+                <span className="inline-block w-1.5 h-1.5 bg-lime rounded-full animate-pulse"></span>
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </p>
             )}
@@ -588,7 +588,7 @@ const MyRegistrations = () => {
                                   : "bg-light-400/50 dark:bg-white/10 text-dark-300 dark:text-zinc-400 border border-dark/10 dark:border-white/10"
                           }`}
                         >
-                          <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse mr-1"></div>
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse mr-1"></span>
                           {reg.event.status}
                         </span>
                       )}
@@ -596,6 +596,16 @@ const MyRegistrations = () => {
 
                     {/* Status Badges */}
                     <div className="mt-5 flex flex-wrap gap-2.5">
+                      {/* Team Badge */}
+                      {reg.teamInfo && (
+                        <span className="group/badge relative px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transition-all duration-300 hover:scale-105 hover:shadow-blue-500/50">
+                          <div className="flex items-center gap-1.5">
+                            <Users size={12} className="group-hover/badge:scale-110 transition-transform" />
+                            <span>{reg.teamInfo.isCaptain ? '👑 ' : ''}{reg.teamInfo.teamName}</span>
+                            <span className="opacity-75">({reg.teamInfo.role})</span>
+                          </div>
+                        </span>
+                      )}
                       <span
                         className={`group/badge relative px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all duration-300 hover:scale-105 ${getStatusBadge(reg.registrationStatus)}`}
                       >
