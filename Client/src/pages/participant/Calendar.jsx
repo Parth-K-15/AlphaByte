@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { FadeUp, FadeLeft } from "../../components/participant/ScrollAnimations";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -133,13 +134,16 @@ const Calendar = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <FadeUp>
       <div className="bg-dark rounded-3xl p-8 text-white">
         <h1 className="text-3xl md:text-4xl font-bold mb-2">Event Calendar</h1>
         <p className="text-dark-200">
           View all upcoming events and plan your participation
         </p>
       </div>
+      </FadeUp>
 
+      <FadeUp delay={0.1}>
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Calendar Grid */}
         <div className="lg:col-span-2">
@@ -367,6 +371,7 @@ const Calendar = () => {
           </div>
         </div>
       </div>
+      </FadeUp>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { FadeUp, FadeLeft, StaggerContainer, StaggerItem, ScaleUp, BlurIn } from "../../components/participant/ScrollAnimations";
 import {
   Calendar,
   Users,
@@ -19,6 +20,7 @@ import {
   CheckCircle,
   ArrowUpRight,
   Sparkles,
+  QrCode,
 } from "lucide-react";
 
 const API_BASE = "http://localhost:5000/api";
@@ -240,6 +242,7 @@ const EventsHome = () => {
   return (
     <div className="min-h-screen p-2 md:p-4">
       {/* Header */}
+      <FadeUp>
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-dark dark:text-white mb-1">
@@ -269,9 +272,10 @@ const EventsHome = () => {
           </button>
         </div>
       </div>
+      </FadeUp>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
           {
             label: "Events Attended",
@@ -298,8 +302,8 @@ const EventsHome = () => {
             variant: "dark",
           },
         ].map((stat, index) => (
+          <StaggerItem key={index}>
           <div
-            key={index}
             className={`group relative rounded-3xl p-6 transition-all duration-500 hover:scale-[1.03] overflow-hidden ${
               stat.variant === "dark"
                 ? "bg-gradient-to-br from-dark via-dark to-dark-500 text-white shadow-2xl hover:shadow-lime/20"
@@ -364,9 +368,11 @@ const EventsHome = () => {
               </div>
             </div>
           </div>
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerContainer>
 
+      <FadeUp delay={0.1}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Main Learning Progress Card */}
         <div className="lg:col-span-2 bg-dark rounded-3xl p-6 relative overflow-hidden">
@@ -558,7 +564,10 @@ const EventsHome = () => {
         </div>
       </div>
 
+      </FadeUp>
+
       {/* Upcoming + Quick Actions */}
+      <FadeUp delay={0.1}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Upcoming Events */}
         <div className="bg-white dark:bg-white/[0.03] rounded-3xl p-6 shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5">
@@ -781,6 +790,9 @@ const EventsHome = () => {
         </div>
       </div>
 
+      </FadeUp>
+
+      <FadeUp delay={0.1}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Learning Goal */}
         <div className="bg-lime rounded-3xl p-6">
@@ -955,6 +967,7 @@ const EventsHome = () => {
           </div>
         </div>
       </div>
+      </FadeUp>
 
       {/* Floating QR Scanner Button */}
       <Link
@@ -962,7 +975,7 @@ const EventsHome = () => {
         className="fixed bottom-6 right-6 z-50 bg-gradient-to-br from-lime to-lime/90 text-dark p-5 rounded-full shadow-2xl hover:shadow-lime/60 hover:scale-110 transition-all duration-300 group"
         title="Scan QR Code"
       >
-        <Zap size={24} className="group-hover:animate-pulse" />
+        <QrCode size={24} className="group-hover:animate-pulse" />
       </Link>
     </div>
   );

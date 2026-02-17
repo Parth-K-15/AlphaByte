@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { ScaleUp } from "../../components/participant/ScrollAnimations";
+import { getEventImageUrl } from "../../utils/eventImageResolver";
 import {
   Calendar,
   MapPin,
   Users,
+  User,
   Tag,
   Clock,
   ArrowLeft,
@@ -37,8 +40,16 @@ const EventDetails = () => {
     year: "",
     branch: "",
   });
+  const [teamData, setTeamData] = useState({
+    teamName: "",
+    members: [
+      { fullName: "", email: "", phone: "", college: "", year: "", branch: "" }
+    ],
+  });
   const [message, setMessage] = useState({ type: "", text: "" });
   const [rulebookExpanded, setRulebookExpanded] = useState(false);
+  const [userDetailsExpanded, setUserDetailsExpanded] = useState(false);
+  const [expandedMembers, setExpandedMembers] = useState({});
 
   useEffect(() => {
     fetchUserProfile();
@@ -72,6 +83,21 @@ const EventDetails = () => {
           college: data.data.college || "",
           year: data.data.year || "",
           branch: data.data.branch || "",
+        });
+
+        // Initialize team data with user's info as captain
+        setTeamData({
+          teamName: "",
+          members: [
+            {
+              fullName: data.data.name || "",
+              email: data.data.email || "",
+              phone: data.data.phone || "",
+              college: data.data.college || "",
+              year: data.data.year || "",
+              branch: data.data.branch || "",
+            }
+          ],
         });
       }
     } catch (error) {
@@ -119,41 +145,140 @@ const EventDetails = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    if (!formData.fullName || !formData.email) {
-      setMessage({ type: "error", text: "Name and email are required" });
+    // Check if this is a team event
+    const isTeamEvent = event?.participationType === 'TEAM';
+
+    if (isTeamEvent) {
+      // Validate team data
+      if (!teamData.teamName) {
+        setMessage({ type: "error", text: "Team name is required" });
+        return;
+      }
+
+      const validMembers = teamData.members.filter(m => m.fullName && m.email);
+      
+      if (validMembers.length < (event.teamConfig?.minSize || 2)) {
+        setMessage({ 
+          type: "error", 
+          text: `Team must have at least ${event.teamConfig?.minSize || 2} members` 
+        });
+        return;
+      }
+
+      if (validMembers.length > (event.teamConfig?.maxSize || 5)) {
+        setMessage({ 
+          type: "error", 
+          text: `Team cannot have more than ${event.teamConfig?.maxSize || 5} members` 
+        });
+        return;
+      }
+
+      // Register team
+      try {
+        setRegistering(true);
+        const response = await fetch(`${API_BASE}/participant/register-team`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventId,
+            teamName: teamData.teamName,
+            captain: validMembers[0], // First member is captain
+            members: validMembers,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setIsRegistered(true);
+          setShowRegisterModal(false);
+          setMessage({ type: "success", text: "Team registration successful!" });
+        } else {
+          setMessage({ type: "error", text: data.message });
+        }
+      } catch (error) {
+        console.error("Error registering team:", error);
+        setMessage({
+          type: "error",
+          text: "Team registration failed. Please try again.",
+        });
+      } finally {
+        setRegistering(false);
+      }
+    } else {
+      // Individual registration
+      if (!formData.fullName || !formData.email) {
+        setMessage({ type: "error", text: "Name and email are required" });
+        return;
+      }
+
+      try {
+        setRegistering(true);
+        const response = await fetch(`${API_BASE}/participant/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventId,
+            ...formData,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          setIsRegistered(true);
+          setRegistration(data.data);
+          setShowRegisterModal(false);
+          setMessage({ type: "success", text: "Registration successful!" });
+        } else {
+          setMessage({ type: "error", text: data.message });
+        }
+      } catch (error) {
+        console.error("Error registering:", error);
+        setMessage({
+          type: "error",
+          text: "Registration failed. Please try again.",
+        });
+      } finally {
+        setRegistering(false);
+      }
+    }
+  };
+
+  const addTeamMember = () => {
+    if (teamData.members.length >= (event?.teamConfig?.maxSize || 5)) {
+      setMessage({ 
+        type: "error", 
+        text: `Maximum ${event.teamConfig?.maxSize || 5} members allowed` 
+      });
       return;
     }
 
-    try {
-      setRegistering(true);
-      const response = await fetch(`${API_BASE}/participant/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventId,
-          ...formData,
-        }),
-      });
+    setTeamData({
+      ...teamData,
+      members: [
+        ...teamData.members,
+        { fullName: "", email: "", phone: "", college: "", year: "", branch: "" }
+      ],
+    });
+  };
 
-      const data = await response.json();
-
-      if (data.success) {
-        setIsRegistered(true);
-        setRegistration(data.data);
-        setShowRegisterModal(false);
-        setMessage({ type: "success", text: "Registration successful!" });
-      } else {
-        setMessage({ type: "error", text: data.message });
-      }
-    } catch (error) {
-      console.error("Error registering:", error);
-      setMessage({
-        type: "error",
-        text: "Registration failed. Please try again.",
-      });
-    } finally {
-      setRegistering(false);
+  const removeTeamMember = (index) => {
+    if (teamData.members.length <= 1) {
+      setMessage({ type: "error", text: "Team must have at least one member" });
+      return;
     }
+
+    setTeamData({
+      ...teamData,
+      members: teamData.members.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateTeamMember = (index, field, value) => {
+    const updatedMembers = [...teamData.members];
+    updatedMembers[index] = { ...updatedMembers[index], [field]: value };
+    setTeamData({ ...teamData, members: updatedMembers });
   };
 
   const handleCancelRegistration = async () => {
@@ -258,16 +383,15 @@ const EventDetails = () => {
       </button>
 
       {/* Event Header */}
+      <ScaleUp>
       <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none overflow-hidden border border-light-400/50 dark:border-white/5">
         {/* Banner */}
         <div className="h-48 md:h-64 bg-dark relative overflow-hidden">
-          {event.bannerImage && (
-            <img
-              src={event.bannerImage}
-              alt={event.title}
-              className="w-full h-full object-cover opacity-80"
-            />
-          )}
+          <img
+            src={getEventImageUrl(event || {})}
+            alt={event.title || "Event"}
+            className="w-full h-full object-cover opacity-80"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/60 to-transparent"></div>
 
           {/* Decorative lime accent */}
@@ -439,6 +563,149 @@ const EventDetails = () => {
                       </p>
                     )}
                   </div>
+
+                  {/* Registration Details */}
+                  <div className="bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden">
+                    <button
+                      onClick={() => setUserDetailsExpanded(!userDetailsExpanded)}
+                      className="w-full p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <h4 className="text-sm font-bold text-dark dark:text-white flex items-center gap-2">
+                        <User size={16} />
+                        Your Registration Details
+                      </h4>
+                      {userDetailsExpanded ? (
+                        <ChevronUp size={18} className="text-dark-300 dark:text-zinc-400" />
+                      ) : (
+                        <ChevronDown size={18} className="text-dark-300 dark:text-zinc-400" />
+                      )}
+                    </button>
+                    {userDetailsExpanded && (
+                      <div className="px-4 pb-4 space-y-2 text-sm border-t border-gray-200 dark:border-white/10 pt-3">
+                        <div className="flex justify-between">
+                          <span className="text-dark-300 dark:text-zinc-400">Name:</span>
+                          <span className="font-semibold text-dark dark:text-white">{registration?.fullName || registration?.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-dark-300 dark:text-zinc-400">Email:</span>
+                          <span className="font-medium text-dark dark:text-white text-xs">{registration?.email}</span>
+                        </div>
+                        {registration?.phone && (
+                          <div className="flex justify-between">
+                            <span className="text-dark-300 dark:text-zinc-400">Phone:</span>
+                            <span className="font-medium text-dark dark:text-white">{registration.phone}</span>
+                          </div>
+                        )}
+                        {registration?.college && (
+                          <div className="flex justify-between">
+                            <span className="text-dark-300 dark:text-zinc-400">College:</span>
+                            <span className="font-medium text-dark dark:text-white text-right">{registration.college}</span>
+                          </div>
+                        )}
+                        {registration?.year && (
+                          <div className="flex justify-between">
+                            <span className="text-dark-300 dark:text-zinc-400">Year:</span>
+                            <span className="font-medium text-dark dark:text-white">{registration.year}</span>
+                          </div>
+                        )}
+                        {registration?.branch && (
+                          <div className="flex justify-between">
+                            <span className="text-dark-300 dark:text-zinc-400">Branch:</span>
+                            <span className="font-medium text-dark dark:text-white">{registration.branch}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-white/10">
+                          <span className="text-dark-300 dark:text-zinc-400">Registration Type:</span>
+                          <span className="font-medium text-dark dark:text-white">{registration?.registrationType || 'ONLINE'}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Team Information */}
+                  {registration?.teamInfo && (
+                    <div className="bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 p-4 rounded-2xl">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="font-bold text-sm flex items-center gap-2">
+                          <Users size={16} />
+                          Team: {registration.teamInfo.teamName}
+                        </div>
+                        <span className="text-xs px-2 py-1 rounded-lg bg-blue-500/20 font-semibold">
+                          {registration.teamInfo.isCaptain && '👑 '}
+                          {registration.teamInfo.role}
+                        </span>
+                      </div>
+                      {registration.teamInfo.members && registration.teamInfo.members.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-blue-500/20">
+                          <p className="text-xs font-semibold mb-2">Team Members ({registration.teamInfo.totalMembers})</p>
+                          <div className="space-y-2">
+                            {registration.teamInfo.members.map((member, idx) => (
+                              <div key={idx} className="bg-white/50 dark:bg-white/5 rounded-lg overflow-hidden border border-blue-500/10">
+                                <button
+                                  onClick={() => setExpandedMembers(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                                  className="w-full px-3 py-2 flex items-center justify-between hover:bg-blue-500/5 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center font-bold">
+                                      {member.fullName?.charAt(0) || member.name?.charAt(0)}
+                                    </div>
+                                    <span className="font-semibold text-dark dark:text-white">
+                                      {member.fullName || member.name}
+                                    </span>
+                                    {member.isCaptain && <span className="text-yellow-500">👑</span>}
+                                  </div>
+                                  {expandedMembers[idx] ? (
+                                    <ChevronUp size={14} className="text-blue-600 dark:text-blue-400" />
+                                  ) : (
+                                    <ChevronDown size={14} className="text-blue-600 dark:text-blue-400" />
+                                  )}
+                                </button>
+                                {expandedMembers[idx] && (
+                                  <div className="px-3 pb-3 space-y-1.5 text-xs border-t border-blue-500/10 pt-2">
+                                    <div className="flex justify-between">
+                                      <span className="text-dark-300 dark:text-zinc-400">Email:</span>
+                                      <span className="font-medium text-dark dark:text-white text-[10px]">{member.email}</span>
+                                    </div>
+                                    {member.phone && (
+                                      <div className="flex justify-between">
+                                        <span className="text-dark-300 dark:text-zinc-400">Phone:</span>
+                                        <span className="font-medium text-dark dark:text-white">{member.phone}</span>
+                                      </div>
+                                    )}
+                                    {member.college && (
+                                      <div className="flex justify-between">
+                                        <span className="text-dark-300 dark:text-zinc-400">College:</span>
+                                        <span className="font-medium text-dark dark:text-white text-right max-w-[60%]">{member.college}</span>
+                                      </div>
+                                    )}
+                                    {member.year && (
+                                      <div className="flex justify-between">
+                                        <span className="text-dark-300 dark:text-zinc-400">Year:</span>
+                                        <span className="font-medium text-dark dark:text-white">{member.year}</span>
+                                      </div>
+                                    )}
+                                    {member.branch && (
+                                      <div className="flex justify-between">
+                                        <span className="text-dark-300 dark:text-zinc-400">Branch:</span>
+                                        <span className="font-medium text-dark dark:text-white">{member.branch}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex justify-between pt-1 border-t border-blue-500/10">
+                                      <span className="text-dark-300 dark:text-zinc-400">Role:</span>
+                                      <span className="font-semibold text-dark dark:text-white">
+                                        {member.isCaptain ? 'Captain' : (member.memberRole || 'Member')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   {registration?.registrationStatus !== "CANCELLED" &&
                     registration?.attendanceStatus !== "ATTENDED" && (
                       <button
@@ -494,6 +761,7 @@ const EventDetails = () => {
           )}
         </div>
       </div>
+      </ScaleUp>
 
       {/* Rulebook / Guidelines */}
       {event.rulebook && (
@@ -624,12 +892,19 @@ const EventDetails = () => {
       {/* Registration Modal */}
       {showRegisterModal && (
         <div className="fixed inset-0 bg-dark/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#1a1a2a] rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-white dark:bg-[#1a1a2a] rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-dark dark:text-white">
-                  Register for Event
-                </h3>
+                <div>
+                  <h3 className="text-xl font-bold text-dark dark:text-white">
+                    {event?.participationType === 'TEAM' ? 'Register Team' : 'Register for Event'}
+                  </h3>
+                  {event?.participationType === 'TEAM' && (
+                    <p className="text-sm text-dark-300 dark:text-zinc-400 mt-1">
+                      Team size: {event.teamConfig?.minSize}-{event.teamConfig?.maxSize} members
+                    </p>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowRegisterModal(false)}
                   className="p-2 hover:bg-light-300 dark:hover:bg-white/5 rounded-xl transition-colors"
@@ -639,20 +914,167 @@ const EventDetails = () => {
               </div>
 
               <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, fullName: e.target.value })
-                    }
-                    className="input-field"
-                    required
-                  />
-                </div>
+                {event?.participationType === 'TEAM' ? (
+                  /* Team Registration Form */
+                  <>
+                    {/* Team Name */}
+                    <div>
+                      <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
+                        Team Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={teamData.teamName}
+                        onChange={(e) => setTeamData({ ...teamData, teamName: e.target.value })}
+                        className="input-field"
+                        placeholder="Enter team name"
+                        required
+                      />
+                    </div>
+
+                    {/* Team Members */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="block text-sm font-bold text-dark dark:text-white">
+                          Team Members ({teamData.members.length}/{event.teamConfig?.maxSize || 5})
+                        </label>
+                        <button
+                          type="button"
+                          onClick={addTeamMember}
+                          disabled={teamData.members.length >= (event.teamConfig?.maxSize || 5)}
+                          className="px-3 py-1 bg-lime text-dark text-sm font-medium rounded-lg hover:bg-lime/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          + Add Member
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        {teamData.members.map((member, index) => (
+                          <div key={index} className="border border-light-400 dark:border-white/10 rounded-xl p-4 bg-light-300/50 dark:bg-white/5">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-sm font-bold text-dark dark:text-white">
+                                {index === 0 ? '👑 Captain' : `Member ${index + 1}`}
+                              </h4>
+                              {index > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeTeamMember(index)}
+                                  className="text-red-500 hover:text-red-600 text-sm font-medium"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-dark-300 dark:text-zinc-400 mb-1">
+                                  Full Name *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={member.fullName}
+                                  onChange={(e) => updateTeamMember(index, 'fullName', e.target.value)}
+                                  className="input-field text-sm"
+                                  required
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-dark-300 dark:text-zinc-400 mb-1">
+                                  Email *
+                                </label>
+                                <input
+                                  type="email"
+                                  value={member.email}
+                                  onChange={(e) => updateTeamMember(index, 'email', e.target.value)}
+                                  className="input-field text-sm"
+                                  required
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-dark-300 dark:text-zinc-400 mb-1">
+                                  Phone
+                                </label>
+                                <input
+                                  type="tel"
+                                  value={member.phone}
+                                  onChange={(e) => updateTeamMember(index, 'phone', e.target.value)}
+                                  className="input-field text-sm"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-dark-300 dark:text-zinc-400 mb-1">
+                                  College
+                                </label>
+                                <input
+                                  type="text"
+                                  value={member.college}
+                                  onChange={(e) => updateTeamMember(index, 'college', e.target.value)}
+                                  className="input-field text-sm"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-dark-300 dark:text-zinc-400 mb-1">
+                                  Year
+                                </label>
+                                <input
+                                  type="text"
+                                  value={member.year}
+                                  onChange={(e) => updateTeamMember(index, 'year', e.target.value)}
+                                  className="input-field text-sm"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-dark-300 dark:text-zinc-400 mb-1">
+                                  Branch
+                                </label>
+                                <input
+                                  type="text"
+                                  value={member.branch}
+                                  onChange={(e) => updateTeamMember(index, 'branch', e.target.value)}
+                                  className="input-field text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <p className="text-xs text-dark-200 dark:text-zinc-500 mt-2">
+                        * The first member will be the team captain
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={registering}
+                      className="w-full btn-primary py-3"
+                    >
+                      {registering ? "Registering Team..." : "Register Team"}
+                    </button>
+                  </>
+                ) : (
+                  /* Individual Registration Form */
+                  <>
+                    <div>
+                      <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.fullName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, fullName: e.target.value })
+                        }
+                        className="input-field"
+                        required
+                      />
+                    </div>
 
                 <div>
                   <label className="block text-sm font-bold text-dark dark:text-white mb-1.5">
@@ -741,6 +1163,8 @@ const EventDetails = () => {
                 >
                   {registering ? "Registering..." : "Complete Registration"}
                 </button>
+                  </>
+                )}
               </form>
             </div>
           </div>

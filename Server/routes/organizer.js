@@ -524,7 +524,7 @@ router.get('/participants/:eventId', async (req, res) => {
     if (filter === 'registered') query.registrationStatus = 'CONFIRMED';
     else if (filter === 'attended') query.attendanceStatus = 'ATTENDED';
     else if (filter === 'certified') query.certificateStatus = 'SENT';
-    let participants = await Participant.find(query).sort({ createdAt: -1 });
+    let participants = await Participant.find(query).populate('team').sort({ createdAt: -1 });
     if (search) {
       const searchLower = search.toLowerCase();
       participants = participants.filter(p => p.name?.toLowerCase().includes(searchLower) || p.email?.toLowerCase().includes(searchLower));
@@ -539,7 +539,9 @@ router.get('/participants/:eventId', async (req, res) => {
         attendedAt: attendance?.scannedAt || p.updatedAt,
         attendanceStatus: attendance ? 'ATTENDED' : (p.attendanceStatus || 'ABSENT'),
         hasCertificate: !!certificate,
-        certificateStatus: certificate?.status
+        certificateStatus: certificate?.status,
+        teamName: p.team?.teamName || null,
+        teamRole: p.isCaptain ? 'Captain' : (p.memberRole || (p.team ? 'Member' : null))
       };
     }));
     res.json({ success: true, count: enrichedParticipants.length, data: enrichedParticipants });

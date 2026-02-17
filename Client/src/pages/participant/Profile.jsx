@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { FadeUp, ScaleUp } from "../../components/participant/ScrollAnimations";
 import {
   User,
   Mail,
@@ -213,6 +214,7 @@ const Profile = () => {
       )}
 
       {/* Profile Header */}
+      <ScaleUp>
       <div className="bg-dark rounded-3xl p-8 text-white text-center relative overflow-hidden">
         <div className="absolute -left-10 -top-10 w-40 h-40 bg-lime/10 rounded-full blur-3xl"></div>
         <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-lime/5 rounded-full blur-3xl"></div>
@@ -248,8 +250,10 @@ const Profile = () => {
           <p className="text-dark-200 text-sm mt-1">{profile?.email}</p>
         </div>
       </div>
+      </ScaleUp>
 
       {/* Profile Form */}
+      <FadeUp delay={0.15}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5 p-6">
           <h2 className="text-lg font-bold text-dark dark:text-white mb-5">
@@ -383,8 +387,10 @@ const Profile = () => {
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </form>
+      </FadeUp>
 
       {/* Password Section */}
+      <FadeUp delay={0.2}>
       <div className="bg-white dark:bg-white/[0.03] rounded-3xl shadow-card dark:shadow-none border border-light-400/50 dark:border-white/5 p-6">
         <button
           onClick={() => setShowPasswordSection(!showPasswordSection)}
@@ -474,6 +480,7 @@ const Profile = () => {
           </form>
         )}
       </div>
+      </FadeUp>
     </div>
   );
 };

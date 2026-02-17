@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { FadeUp, StaggerContainer, StaggerItem } from "../../components/participant/ScrollAnimations";
 import {
   FileText,
   RefreshCw,
@@ -163,6 +164,7 @@ const Transcript = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <FadeUp>
       <div className="bg-dark rounded-3xl p-8 text-white">
         <div className="flex items-start justify-between">
           <div>
@@ -235,8 +237,10 @@ const Transcript = () => {
           </div>
         )}
       </div>
+      </FadeUp>
 
       {/* Role Filter */}
+      <FadeUp delay={0.1}>
       <div className="flex gap-2 overflow-x-auto pb-2">
         {[
           { key: "all", label: "All Roles" },
@@ -258,6 +262,7 @@ const Transcript = () => {
           </button>
         ))}
       </div>
+      </FadeUp>
 
       {/* Error */}
       {error && (

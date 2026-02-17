@@ -28,6 +28,19 @@ const AdminSignIn = () => {
     try {
       const result = await login(formData.email, formData.password);
       if (result.success) {
+        // Verify the logged-in role is appropriate for admin/organizer portal
+        const role = localStorage.getItem('role');
+        if (!['ADMIN', 'TEAM_LEAD', 'EVENT_STAFF'].includes(role)) {
+          // Wrong account type — clear session and show error
+          const { logout } = await import('../../context/AuthContext').then(m => ({ logout: null }));
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('user');
+          window.dispatchEvent(new Event('auth:expired'));
+          setError('This login is for Admin / Organizer accounts only. Please use the participant login page.');
+          return;
+        }
         navigate(result.redirectPath);
       } else {
         setError(result.message || 'Failed to sign in. Please check your credentials.');

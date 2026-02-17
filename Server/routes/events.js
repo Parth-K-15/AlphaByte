@@ -175,7 +175,10 @@ router.post('/', async (req, res) => {
       createdBy,
       rulebook,
       enableCertificates,
-      certificateTemplate
+      certificateTemplate,
+      // Team Event Fields
+      participationType,
+      teamConfig
     } = req.body;
 
     // Validate required fields
@@ -191,6 +194,22 @@ router.post('/', async (req, res) => {
         success: false,
         message: 'Invalid team lead ID'
       });
+    }
+
+    // Validate team configuration if participationType is TEAM
+    if (participationType === 'TEAM') {
+      if (!teamConfig || !teamConfig.minSize || !teamConfig.maxSize) {
+        return res.status(400).json({
+          success: false,
+          message: 'Team configuration (minSize and maxSize) is required for team events'
+        });
+      }
+      if (teamConfig.minSize < 1 || teamConfig.maxSize < teamConfig.minSize) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid team size configuration'
+        });
+      }
     }
 
     const event = await Event.create({
@@ -217,7 +236,10 @@ router.post('/', async (req, res) => {
       teamMembers: [],
       participants: [],
       enableCertificates: enableCertificates || false,
-      certificateTemplate: certificateTemplate || 'default'
+      certificateTemplate: certificateTemplate || 'default',
+      // Team Event Fields
+      participationType: participationType || 'INDIVIDUAL',
+      teamConfig: participationType === 'TEAM' ? teamConfig : undefined
     });
 
     const populatedEvent = await Event.findById(event._id)

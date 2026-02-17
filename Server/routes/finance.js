@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import { cache } from "../middleware/cache.js";
 import { CacheKeys, CacheTTL } from "../utils/cacheKeys.js";
 import { invalidateFinanceCache } from "../utils/cacheInvalidation.js";
+import { sendEmail } from "../utils/emailService.js";
 
 const router = express.Router();
 
@@ -39,6 +40,158 @@ const upload = multer({
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+const roleLabel = (role) => {
+  if (!role) return "Team Member";
+  if (role === "TEAM_LEAD") return "Team Lead";
+  if (role === "EVENT_STAFF") return "Event Staff";
+  return role;
+};
+
+const statusLabel = (status) => {
+  if (status === "CHANGES_REQUESTED") return "Reverted for Changes";
+  if (!status) return "Updated";
+  return status.replace(/_/g, " ");
+};
+
+const statusVisuals = (status) => {
+  if (status === "APPROVED") {
+    return {
+      emoji: "✅",
+      color: "#16a34a",
+      bg: "#dcfce7",
+      title: "Request Approved",
+    };
+  }
+  if (status === "REJECTED") {
+    return {
+      emoji: "❌",
+      color: "#dc2626",
+      bg: "#fee2e2",
+      title: "Request Rejected",
+    };
+  }
+  if (status === "CHANGES_REQUESTED") {
+    return {
+      emoji: "🔁",
+      color: "#d97706",
+      bg: "#fef3c7",
+      title: "Changes Requested",
+    };
+  }
+  if (status === "REIMBURSED") {
+    return {
+      emoji: "💸",
+      color: "#0ea5e9",
+      bg: "#e0f2fe",
+      title: "Reimbursement Processed",
+    };
+  }
+  return {
+    emoji: "📌",
+    color: "#4b5563",
+    bg: "#f3f4f6",
+    title: "Request Updated",
+  };
+};
+
+const escapeHtml = (text = "") =>
+  String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const sendFinanceDecisionEmail = async ({
+  recipient,
+  event,
+  requestType,
+  status,
+  notes,
+  details,
+  actionBy,
+}) => {
+  if (!recipient?.email) return;
+
+  const visual = statusVisuals(status);
+  const eventDate = event?.startDate || event?.eventDate;
+  const eventDateText = eventDate
+    ? new Date(eventDate).toLocaleDateString("en-US", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "TBA";
+
+  const subject = `${visual.emoji} ${requestType} ${statusLabel(status)} • ${event?.title || "Event"}`;
+
+  const plainText = [
+    `Hello ${recipient.name || "Team Member"},`,
+    "",
+    `Your ${requestType.toLowerCase()} for ${event?.title || "the event"} has been ${statusLabel(status).toLowerCase()}.`,
+    details ? `Details: ${details}` : "",
+    notes ? `Admin Note: ${notes}` : "",
+    actionBy ? `Reviewed By: ${actionBy}` : "",
+    "",
+    "Please check the finance section in your organizer dashboard for the latest details.",
+    "",
+    `- ${process.env.EMAIL_FROM_NAME || "AlphaByte Team"}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body style="margin:0;padding:0;background:#0f0f14;font-family:Arial,sans-serif;color:#e5e7eb;">
+      <div style="max-width:640px;margin:0 auto;padding:24px;">
+        <div style="border:1px solid #1f2937;border-radius:16px;overflow:hidden;background:#121826;">
+          <div style="padding:20px 24px;background:linear-gradient(135deg,#191A23 0%,#2a2f3c 100%);border-bottom:1px solid #2f3646;">
+            <div style="font-size:12px;letter-spacing:1.4px;color:#a3e635;font-weight:700;text-transform:uppercase;">AlphaByte Finance Desk</div>
+            <h1 style="margin:10px 0 0 0;font-size:24px;line-height:1.3;color:#ffffff;">${visual.title}</h1>
+          </div>
+
+          <div style="padding:24px;">
+            <p style="margin:0 0 14px 0;font-size:15px;color:#d1d5db;">Hi <strong style="color:#ffffff;">${escapeHtml(recipient.name || "Team Member")}</strong> (${escapeHtml(roleLabel(recipient.role))}),</p>
+            <p style="margin:0 0 18px 0;font-size:15px;color:#cbd5e1;">Your finance request has a new update from admin.</p>
+
+            <div style="background:${visual.bg};border-left:4px solid ${visual.color};padding:14px 16px;border-radius:10px;margin-bottom:18px;color:#1f2937;">
+              <div style="font-weight:700;font-size:14px;margin-bottom:6px;">${visual.emoji} ${escapeHtml(requestType)}: ${escapeHtml(statusLabel(status))}</div>
+              <div style="font-size:13px;line-height:1.5;">Event: ${escapeHtml(event?.title || "N/A")} • Date: ${escapeHtml(eventDateText)}</div>
+            </div>
+
+            ${details ? `<div style="margin-bottom:12px;padding:12px 14px;border:1px solid #273245;border-radius:10px;background:#0b1220;"><div style="font-size:12px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Request Details</div><div style="font-size:14px;color:#e5e7eb;line-height:1.5;white-space:pre-line;">${escapeHtml(details)}</div></div>` : ""}
+            ${notes ? `<div style="margin-bottom:12px;padding:12px 14px;border:1px solid #334155;border-radius:10px;background:#111827;"><div style="font-size:12px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Admin Note</div><div style="font-size:14px;color:#f3f4f6;line-height:1.5;">${escapeHtml(notes)}</div></div>` : ""}
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px dashed #334155;color:#9ca3af;font-size:13px;line-height:1.6;">
+              ${actionBy ? `Reviewed by: <strong style="color:#e5e7eb;">${escapeHtml(actionBy)}</strong><br/>` : ""}
+              Open Organizer Portal → Finance to view full breakdown and next steps.
+            </div>
+          </div>
+        </div>
+        <p style="text-align:center;color:#6b7280;font-size:12px;margin:14px 0 0 0;">This is an automated message from ${escapeHtml(process.env.EMAIL_FROM_NAME || "AlphaByte")}. Please do not reply.</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    await sendEmail({
+      to: recipient.email,
+      subject,
+      text: plainText,
+      html,
+    });
+  } catch (error) {
+    console.error("Finance decision email failed:", error.message);
+  }
+};
+
 // =====================
 // BUDGET ROUTES
 // =====================
@@ -57,26 +210,55 @@ router.post("/budget/request", async (req, res) => {
         .json({ success: false, message: "Invalid ID format" });
     }
 
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one budget category is required",
+      });
+    }
+
+    const hasInvalidCategory = categories.some(
+      (cat) =>
+        !cat?.name ||
+        cat?.requestedAmount === undefined ||
+        Number.isNaN(Number(cat?.requestedAmount)) ||
+        Number(cat?.requestedAmount) < 0 ||
+        !String(cat?.justification || "").trim(),
+    );
+
+    if (hasInvalidCategory) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Each category must include name, non-negative requestedAmount, and justification",
+      });
+    }
+
     const event = await Event.findById(eventId);
     if (!event)
       return res
         .status(404)
         .json({ success: false, message: "Event not found" });
 
-    // Verify user is team lead or authorized member
-    const isTeamLead = event.teamLead?.toString() === userId;
-    const isAuthorizedMember = event.teamMembers?.some(
-      (m) => m.user?.toString() === userId && m.role === "TEAM_LEAD",
-    );
-
-    if (!isTeamLead && !isAuthorizedMember) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Not authorized to request budget" });
-    }
-
     // Check if budget already exists
     let budget = await Budget.findOne({ event: eventId });
+
+    // Verify user is team lead, editable team member, or existing budget owner
+    const isTeamLead = event.teamLead?.toString() === userId;
+    const isEditableMember = event.teamMembers?.some(
+      (m) =>
+        m.user?.toString() === userId &&
+        (m.status === "active" || !m.status) &&
+        (m.role === "TEAM_LEAD" || m.permissions?.canEditEvent === true),
+    );
+    const isBudgetOwner = budget?.createdBy?.toString?.() === userId;
+
+    if (!isTeamLead && !isEditableMember && !isBudgetOwner) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to request budget",
+      });
+    }
 
     if (budget) {
       if (["APPROVED", "CLOSED"].includes(budget.status)) {
@@ -122,7 +304,11 @@ router.post("/budget/request", async (req, res) => {
     );
 
     // Invalidate finance cache
-    await invalidateFinanceCache(eventId);
+    try {
+      await invalidateFinanceCache(eventId);
+    } catch (cacheError) {
+      console.error("Finance cache invalidation warning:", cacheError.message);
+    }
 
     res.json({
       success: true,
@@ -263,7 +449,9 @@ router.put("/budget/:eventId/approval", async (req, res) => {
         .json({ success: false, message: "Invalid admin ID format" });
     }
 
-    const budget = await Budget.findOne({ event: eventId });
+    const budget = await Budget.findOne({ event: eventId })
+      .populate("event", "title startDate eventDate")
+      .populate("createdBy", "name email role");
     if (!budget)
       return res
         .status(404)
@@ -292,6 +480,30 @@ router.put("/budget/:eventId/approval", async (req, res) => {
     });
 
     await budget.save();
+
+    const adminUser = adminId ? await User.findById(adminId).select("name") : null;
+
+    const categoryAllocationDetails = (budget.categories || [])
+      .map(
+        (cat) =>
+          `${cat.name}: Requested ₹${Number(cat.requestedAmount || 0).toLocaleString("en-IN")}, Allocated ₹${Number(cat.allocatedAmount || 0).toLocaleString("en-IN")}`,
+      )
+      .join("\n");
+
+    await sendFinanceDecisionEmail({
+      recipient: budget.createdBy,
+      event: budget.event,
+      requestType: "Budget Request",
+      status,
+      notes: approvalNotes,
+      details: [
+        `Requested ₹${Number(budget.totalRequestAmount || 0).toLocaleString("en-IN")}, Allocated ₹${Number(budget.totalAllocatedAmount || 0).toLocaleString("en-IN")}`,
+        categoryAllocationDetails ? `\nCategory Allocation:\n${categoryAllocationDetails}` : "",
+      ]
+        .filter(Boolean)
+        .join(""),
+      actionBy: adminUser?.name || "Admin",
+    });
 
     // Invalidate finance cache
     await invalidateFinanceCache(eventId);
@@ -511,7 +723,9 @@ router.put("/expense/:expenseId/status", async (req, res) => {
         .status(400)
         .json({ success: false, message: "Invalid expense ID" });
 
-    const expense = await Expense.findById(expenseId);
+    const expense = await Expense.findById(expenseId)
+      .populate("incurredBy", "name email role")
+      .populate("event", "title startDate eventDate");
     if (!expense)
       return res
         .status(404)
@@ -551,6 +765,20 @@ router.put("/expense/:expenseId/status", async (req, res) => {
     }
 
     await expense.save();
+
+    const adminUser = adminId ? await User.findById(adminId).select("name") : null;
+
+    if (["APPROVED", "REJECTED", "CHANGES_REQUESTED", "REIMBURSED"].includes(status)) {
+      await sendFinanceDecisionEmail({
+        recipient: expense.incurredBy,
+        event: expense.event,
+        requestType: "Expense Request",
+        status,
+        notes: adminNotes,
+        details: `${expense.category} • ₹${Number(expense.amount || 0).toLocaleString("en-IN")} • ${expense.description || "No description"}`,
+        actionBy: adminUser?.name || "Admin",
+      });
+    }
 
     // Invalidate finance cache
     await invalidateFinanceCache(expense.event.toString());
@@ -722,16 +950,40 @@ router.put("/expenses/bulk-update", async (req, res) => {
       updateData.reimbursedAt = Date.now();
     }
 
+    const expenses = await Expense.find({ _id: { $in: expenseIds } })
+      .populate("incurredBy", "name email role")
+      .populate("event", "title startDate eventDate");
+
     const result = await Expense.updateMany(
       { _id: { $in: expenseIds } },
       { $set: updateData },
     );
 
     // Invalidate all related event caches
-    const expenses = await Expense.find({ _id: { $in: expenseIds } });
-    const eventIds = [...new Set(expenses.map(e => e.event.toString()))];
+    const eventIds = [
+      ...new Set(
+        expenses
+          .map((expense) => expense.event?._id?.toString?.() || expense.event?.toString?.())
+          .filter(Boolean),
+      ),
+    ];
     for (const eventId of eventIds) {
       await invalidateFinanceCache(eventId);
+    }
+
+    const adminUser = adminId ? await User.findById(adminId).select("name") : null;
+    if (["APPROVED", "REJECTED", "REIMBURSED"].includes(status)) {
+      for (const expense of expenses) {
+        await sendFinanceDecisionEmail({
+          recipient: expense.incurredBy,
+          event: expense.event,
+          requestType: "Expense Request",
+          status,
+          notes: adminNotes,
+          details: `${expense.category} • ₹${Number(expense.amount || 0).toLocaleString("en-IN")} • ${expense.description || "No description"}`,
+          actionBy: adminUser?.name || "Admin",
+        });
+      }
     }
 
     res.json({
@@ -827,7 +1079,8 @@ router.put("/budget/:eventId/amendment/:amendmentId", async (req, res) => {
         .json({ success: false, message: "Invalid ID format" });
     }
 
-    const budget = await Budget.findOne({ event: eventId });
+    const budget = await Budget.findOne({ event: eventId })
+      .populate("event", "title startDate eventDate");
     if (!budget) {
       return res
         .status(404)
@@ -878,6 +1131,28 @@ router.put("/budget/:eventId/amendment/:amendmentId", async (req, res) => {
     });
 
     await budget.save();
+
+    const requester = amendment.requestedBy
+      ? await User.findById(amendment.requestedBy).select("name email role")
+      : null;
+    const adminUser = adminId ? await User.findById(adminId).select("name") : null;
+
+    if (requester?.email) {
+      const amendmentRequestedTotal = (amendment.requestedCategories || []).reduce(
+        (sum, cat) => sum + Number(cat?.requestedAmount || 0),
+        0,
+      );
+
+      await sendFinanceDecisionEmail({
+        recipient: requester,
+        event: budget.event,
+        requestType: "Budget Amendment",
+        status,
+        notes: adminNotes,
+        details: `${(amendment.requestedCategories || []).length} categories • Requested ₹${amendmentRequestedTotal.toLocaleString("en-IN")}`,
+        actionBy: adminUser?.name || "Admin",
+      });
+    }
 
     // Invalidate cache
     await invalidateFinanceCache(eventId);
@@ -1385,7 +1660,6 @@ router.post("/upload-receipt", upload.single("receipt"), async (req, res) => {
 router.get("/ai/budget-suggestions/:eventId", async (req, res) => {
   try {
     const { eventId } = req.params;
-    const { category } = req.query;
 
     if (!isValidObjectId(eventId)) {
       return res.status(400).json({
@@ -1425,7 +1699,7 @@ router.get("/ai/budget-suggestions/:eventId", async (req, res) => {
     const historicalData = [];
     for (const event of similarEvents) {
       const budget = await Budget.findOne({ event: event._id, status: 'APPROVED' });
-      if (budget) {
+      if (budget && Array.isArray(budget.categories) && budget.categories.length > 0) {
         const expenses = await Expense.find({ event: event._id });
         historicalData.push({
           eventId: event._id,
@@ -1453,7 +1727,7 @@ router.get("/ai/budget-suggestions/:eventId", async (req, res) => {
         },
         historicalData: historicalData.map(h => ({
           eventName: h.eventName,
-          totalBudget: h.budget.categories.reduce((sum, cat) => sum + cat.allocatedAmount, 0),
+          totalBudget: (h.budget.categories || []).reduce((sum, cat) => sum + Number(cat?.allocatedAmount || 0), 0),
           totalSpent: h.totalExpenses
         }))
       }
@@ -1503,13 +1777,17 @@ function generateBudgetSuggestions(historicalData, currentEvent) {
 
     // Calculate average spending per category
     historicalData.forEach(event => {
-      event.budget.categories.forEach(cat => {
+      const categories = Array.isArray(event?.budget?.categories)
+        ? event.budget.categories
+        : [];
+
+      categories.forEach(cat => {
         if (!avgSpending[cat.name]) {
           avgSpending[cat.name] = { total: 0, count: 0 };
         }
-        avgSpending[cat.name].total += cat.allocatedAmount;
+        avgSpending[cat.name].total += Number(cat.allocatedAmount || 0);
         avgSpending[cat.name].count++;
-        totalSpending += cat.allocatedAmount;
+        totalSpending += Number(cat.allocatedAmount || 0);
       });
     });
 

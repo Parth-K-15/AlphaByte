@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { FadeUp, FadeLeft, StaggerContainer, StaggerItem } from "../../components/participant/ScrollAnimations";
 import {
   Clock,
   MapPin,
@@ -93,6 +94,7 @@ const History = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
+      <FadeUp>
       <div className="bg-dark rounded-3xl p-8 text-white">
         <div className="flex items-start justify-between">
           <div>
@@ -129,8 +131,10 @@ const History = () => {
           </div>
         </div>
       </div>
+      </FadeUp>
 
       {/* Filters */}
+      <FadeUp delay={0.1}>
       <div className="flex gap-2 overflow-x-auto pb-2">
         {[
           { key: "all", label: "All" },
@@ -151,6 +155,7 @@ const History = () => {
           </button>
         ))}
       </div>
+      </FadeUp>
 
       {/* History List */}
       {filteredHistory.length === 0 ? (

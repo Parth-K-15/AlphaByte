@@ -24,6 +24,7 @@ import {
   getAssignedEvents,
   updateEventLifecycle,
 } from "../../services/organizerApi";
+import { getEventImageUrl } from "../../utils/eventImageResolver";
 
 const EventCard = ({ event }) => {
   const statusColors = {
@@ -32,16 +33,6 @@ const EventCard = ({ event }) => {
     completed: { bg: "bg-blue-500", text: "text-blue-500", dot: "bg-blue-500" },
     draft: { bg: "bg-gray-400", text: "text-gray-400", dot: "bg-gray-400" },
   };
-
-  // Hackathon/Event themed background images from Unsplash
-  const eventImages = [
-    "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80", // Coding/Hackathon
-    "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80", // Team collaboration
-    "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&q=80", // Tech conference
-    "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&q=80", // Coding setup
-    "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80", // Tech team
-    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80", // Team meeting
-  ];
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "TBA";
@@ -53,7 +44,6 @@ const EventCard = ({ event }) => {
     });
   };
 
-  const imageIndex = Math.abs((event.title || "").length) % eventImages.length;
   const statusColor = statusColors[event.status] || statusColors.draft;
 
   return (
@@ -62,7 +52,7 @@ const EventCard = ({ event }) => {
       <div className="relative h-56 overflow-hidden bg-gray-900">
         {/* Background Image */}
         <img
-          src={eventImages[imageIndex]}
+          src={getEventImageUrl(event)}
           alt={event.title}
           className="absolute inset-0 w-full h-full object-cover"
           loading="lazy"

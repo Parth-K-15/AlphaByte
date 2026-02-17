@@ -150,6 +150,9 @@ const FinanceDashboard = () => {
     );
   }
 
+  const canRequestOrResubmitBudget =
+    !isEventStaff && (!budget || budget.status === "REJECTED");
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -166,13 +169,15 @@ const FinanceDashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 mt-4 md:mt-0">
-          {!budget && !isEventStaff && (
+          {canRequestOrResubmitBudget && (
             <Link
               to={`/organizer/events/${eventId}/finance/request`}
               className="flex items-center gap-2 px-5 py-2.5 border-2 border-gray-300 dark:border-white/10 text-[#191A23] dark:text-zinc-300 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-white/5 hover:border-[#191A23] dark:hover:border-white/30 transition-all"
             >
               <FileText size={16} />
-              Request Budget
+              {budget?.status === "REJECTED"
+                ? "Resubmit Budget Request"
+                : "Request Budget"}
             </Link>
           )}
           {budget && (budget.status === "APPROVED" || budget.status === "PARTIALLY_APPROVED") && (
@@ -640,6 +645,24 @@ const FinanceDashboard = () => {
               </div>
             ) : (
               <div>
+                {budget.status === "REJECTED" && !isEventStaff && (
+                  <div className="mb-5 p-4 rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-red-700 dark:text-red-300">
+                        Budget request was rejected.
+                      </p>
+                      <p className="text-xs text-red-600 dark:text-red-400">
+                        Update categories/amounts and submit a new request.
+                      </p>
+                    </div>
+                    <Link
+                      to={`/organizer/events/${eventId}/finance/request`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#B9FF66] text-[#191A23] rounded-lg hover:bg-[#A8EE55] transition-colors text-sm font-bold"
+                    >
+                      <Plus size={15} /> Resubmit Budget Request
+                    </Link>
+                  </div>
+                )}
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-[#191A23] dark:text-white text-lg">
                     Budget Breakdown by Category
