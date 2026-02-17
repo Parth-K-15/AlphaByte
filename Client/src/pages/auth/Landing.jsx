@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { 
   Users, Shield, Calendar, Zap, CheckCircle, BarChart3, 
   Award, Clock, TrendingUp, Star, ArrowRight, Sparkles,
@@ -8,14 +9,31 @@ import {
 
 const Landing = () => {
   const [scrollY, setScrollY] = useState(0);
-  const [email, setEmail] = useState('');
   const [currentFeature, setCurrentFeature] = useState(0);
   const [currentRole, setCurrentRole] = useState(0);
+  const [showPreloader, setShowPreloader] = useState(true);
+  const [preloaderStep, setPreloaderStep] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const stepOneDuration = 3000;
+    const stepTwoDuration = 2600;
+
+    const stepTimer = setTimeout(() => setPreloaderStep(1), stepOneDuration);
+    const endTimer = setTimeout(
+      () => setShowPreloader(false),
+      stepOneDuration + stepTwoDuration,
+    );
+
+    return () => {
+      clearTimeout(stepTimer);
+      clearTimeout(endTimer);
+    };
   }, []);
 
   const scrollToFeature = (index) => {
@@ -55,9 +73,46 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <>
+      <AnimatePresence>
+        {showPreloader && (
+          <Motion.div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.25, ease: 'easeInOut' }}
+          >
+            <div className="px-6 w-full text-center" style={{ maxWidth: '70vw' }}>
+              <AnimatePresence mode="wait">
+                <Motion.h1
+                  key={preloaderStep}
+                  initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, y: -18, filter: 'blur(8px)' }}
+                  transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                  className={`font-black tracking-tight leading-[1.1] text-4xl sm:text-5xl lg:text-6xl xl:text-7xl ${
+                    preloaderStep === 0 ? 'text-white' : 'text-lime'
+                  }`}
+                  style={{ fontFamily: '"Space Grotesk", sans-serif' }}
+                >
+                  {preloaderStep === 0
+                    ? 'Plan and execute events that people remember'
+                    : 'PLANIX'}
+                </Motion.h1>
+              </AnimatePresence>
+            </div>
+          </Motion.div>
+        )}
+      </AnimatePresence>
+
+    <div className={`min-h-screen bg-white overflow-hidden transition-opacity duration-[1400ms] ${showPreloader ? 'opacity-0 pointer-events-none select-none' : 'opacity-100'}`}>
       {/* Navbar */}
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 shadow-sm">
+      <Motion.nav
+        className="fixed top-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-100 z-50 shadow-sm"
+        initial={{ opacity: 0, y: -24 }}
+        animate={{ opacity: showPreloader ? 0 : 1, y: showPreloader ? -24 : 0 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200/50">
@@ -74,10 +129,15 @@ const Landing = () => {
             </a>
           </div>
         </div>
-      </nav>
+      </Motion.nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <Motion.section
+        className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden"
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: showPreloader ? 0 : 1, y: showPreloader ? 28 : 0 }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.28 }}
+      >
         {/* Animated Background Elements */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl animate-pulse"></div>
@@ -220,10 +280,17 @@ const Landing = () => {
             </div>
           </div>
         </div>
-      </section>
+      </Motion.section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+      <Motion.section
+        id="features"
+        className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white"
+        initial={{ opacity: 0, y: 48 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.18 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-full border border-indigo-100 mb-4">
@@ -376,10 +443,17 @@ const Landing = () => {
             ))}
           </div>
         </div>
-      </section>
+      </Motion.section>
 
       {/* Why Choose Us Section */}
-      <section id="why" className="py-24 px-4 sm:px-6 lg:px-8">
+      <Motion.section
+        id="why"
+        className="py-24 px-4 sm:px-6 lg:px-8"
+        initial={{ opacity: 0, y: 48 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.18 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
@@ -437,10 +511,17 @@ const Landing = () => {
             </div>
           </div>
         </div>
-      </section>
+      </Motion.section>
 
       {/* Role Selection Section */}
-      <section id="roles" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/30">
+      <Motion.section
+        id="roles"
+        className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/30"
+        initial={{ opacity: 0, y: 48 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.16 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-sm font-medium text-gray-600 mb-3 tracking-wide uppercase">Pro plus</p>
@@ -959,10 +1040,16 @@ const Landing = () => {
             </p>
           </div>
         </div>
-      </section>
+      </Motion.section>
 
       {/* CTA Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-orange-500 via-red-500 to-orange-600 relative overflow-hidden">
+      <Motion.section
+        className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-orange-500 via-red-500 to-orange-600 relative overflow-hidden"
+        initial={{ opacity: 0, y: 48 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
         {/* Wavy Pattern Background */}
         <div className="absolute inset-0">
           {/* Grid Lines */}
@@ -1012,10 +1099,16 @@ const Landing = () => {
             From small meetups to grand conferences, PLANIX has everything you need to organize spectacular events.
           </p>
         </div>
-      </section>
+      </Motion.section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white relative overflow-hidden">
+      <Motion.footer
+        className="bg-gray-900 text-white relative overflow-hidden"
+        initial={{ opacity: 0, y: 48 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.15 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           {/* Top Section with Links */}
           <div className="flex flex-col md:flex-row justify-between gap-12 mb-20">
@@ -1066,8 +1159,9 @@ const Landing = () => {
             </h2>
           </div>
         </div>
-      </footer>
+      </Motion.footer>
     </div>
+    </>
   );
 };
 

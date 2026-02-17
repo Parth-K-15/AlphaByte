@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Award, Download, CheckCircle, AlertCircle, Calendar, Clock } from 'lucide-react';
 import { getMyCertificates } from '../../services/participantApi';
 import { useAuth } from '../../context/AuthContext';
+import { FadeUp, StaggerContainer, StaggerItem } from '../../components/participant/ScrollAnimations';
 
 const Certificates = () => {
   const { user } = useAuth();
@@ -165,6 +166,7 @@ const Certificates = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f1015] p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
+        <FadeUp>
         <div className="mb-6 md:mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 md:p-4 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-lg">
@@ -188,9 +190,11 @@ const Certificates = () => {
             </div>
           )}
         </div>
+        </FadeUp>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+        <StaggerContainer className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+          <StaggerItem>
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/5 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
@@ -204,7 +208,9 @@ const Certificates = () => {
               {stats.total}
             </p>
           </div>
+          </StaggerItem>
 
+          <StaggerItem>
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/5 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-green-50 dark:bg-green-500/10 rounded-lg">
@@ -218,7 +224,9 @@ const Certificates = () => {
               {stats.attended}
             </p>
           </div>
+          </StaggerItem>
 
+          <StaggerItem>
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/5 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
@@ -232,9 +240,11 @@ const Certificates = () => {
               {stats.registered}
             </p>
           </div>
-        </div>
+          </StaggerItem>
+        </StaggerContainer>
 
         {/* Certificates Grid */}
+        <FadeUp delay={0.15}>
         {certificates.length === 0 ? (
           <div className="bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-200 dark:border-white/5 p-12 text-center shadow-sm">
             <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -323,6 +333,7 @@ const Certificates = () => {
             ))}
           </div>
         )}
+        </FadeUp>
 
         {/* Attended Events Without Certificates */}
         {attendedEvents.length > 0 && (

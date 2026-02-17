@@ -35,6 +35,14 @@ const fetchApi = async (endpoint, options = {}) => {
   const data = await response.json();
 
   if (!response.ok) {
+    // On 401, clear stale token and notify AuthContext
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('user');
+      window.dispatchEvent(new Event('auth:expired'));
+    }
     throw new Error(data.message || 'Something went wrong');
   }
 
