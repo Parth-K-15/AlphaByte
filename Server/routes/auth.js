@@ -6,6 +6,8 @@ import ParticipantAuth from '../models/ParticipantAuth.js';
 import SpeakerAuth from '../models/SpeakerAuth.js';
 import { cache } from "../middleware/cache.js";
 import { CacheKeys, CacheTTL } from "../utils/cacheKeys.js";
+import { tokenBucketRateLimit } from "../middleware/rateLimit.js";
+import { isEncryptedPii, maybeDecryptPii, maybeEncryptPii } from "../utils/piiCrypto.js";
 //
 
 const router = express.Router();
@@ -14,9 +16,32 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "alphabyte_jwt_secret_key_2026";
 const JWT_EXPIRES_IN = "7d";
 
+const authIpEmailKey = (req) => {
+  const xff = req.headers["x-forwarded-for"];
+  const ip = typeof xff === "string" && xff.trim() ? xff.split(",")[0].trim() : (req.ip || "unknown");
+  const email = (req.body?.email || "").toString().trim().toLowerCase();
+  return `${ip}:${email || "noemail"}`;
+};
+
+const loginLimiter = tokenBucketRateLimit({
+  name: "auth:login",
+  capacity: 10,
+  refillTokens: 10,
+  refillIntervalMs: 60_000,
+  identifier: authIpEmailKey,
+});
+
+const signupLimiter = tokenBucketRateLimit({
+  name: "auth:signup",
+  capacity: 5,
+  refillTokens: 5,
+  refillIntervalMs: 60_000,
+  identifier: authIpEmailKey,
+});
+
 // @desc    Participant Signup
 // @route   POST /api/auth/signup
-router.post("/signup", async (req, res) => {
+router.post("/signup", signupLimiter, async (req, res) => {
   try {
     const { name, email, password, phone, college, branch, year } = req.body;
 
@@ -102,7 +127,7 @@ router.post("/signup", async (req, res) => {
 
 // @desc    Speaker Signup
 // @route   POST /api/auth/speaker/signup
-router.post('/speaker/signup', async (req, res) => {
+router.post('/speaker/signup', signupLimiter, async (req, res) => {
   try {
     const { name, email, password, phone, bio, specializations } = req.body;
 
@@ -188,7 +213,7 @@ router.post('/speaker/signup', async (req, res) => {
 
 // @desc    Login for all roles (supports multiple roles per email)
 // @route   POST /api/auth/login
-router.post("/login", async (req, res) => {
+router.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -329,7 +354,10 @@ router.post("/login", async (req, res) => {
           name: user.name,
           email: user.email,
           role: role,
-          phone: user.phone,
+          phone: (() => {
+            const v = maybeDecryptPii(user.phone);
+            return isEncryptedPii(v) ? null : v;
+          })(),
           college: user.college,
           branch: user.branch,
           year: user.year,
@@ -414,9 +442,19 @@ router.get(
       });
     }
 
+    const userObj = user && typeof user.toObject === 'function' ? user.toObject() : user;
+
     res.json({
       success: true,
-      data: user,
+      data: userObj
+        ? {
+            ...userObj,
+            phone: (() => {
+              const v = maybeDecryptPii(userObj.phone);
+              return isEncryptedPii(v) ? null : v;
+            })(),
+          }
+        : userObj,
     });
   } catch (error) {
     if (error.name === "JsonWebTokenError") {
@@ -524,9 +562,9 @@ router.put("/profile", async (req, res) => {
     // Update user in appropriate collection
     let updatedUser;
     const updateData = {
-      name: nextName,
-      email: nextEmail,
-      phone: phone ?? currentUser.phone ?? "",
+      name,
+      email: email.toLowerCase(),
+      ...(phone !== undefined ? { phone: maybeEncryptPii(phone || "") } : {}),
     };
 
     // Add avatar if provided
@@ -573,7 +611,15 @@ router.put("/profile", async (req, res) => {
     res.json({
       success: true,
       message: "Profile updated successfully",
-      data: updatedUser,
+      data: updatedUser
+        ? {
+            ...updatedUser.toObject(),
+            phone: (() => {
+              const v = maybeDecryptPii(updatedUser.phone);
+              return isEncryptedPii(v) ? null : v;
+            })(),
+          }
+        : updatedUser,
     });
   } catch (error) {
     if (error.name === "JsonWebTokenError") {

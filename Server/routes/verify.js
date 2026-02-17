@@ -1,14 +1,22 @@
 import express from 'express';
 import Certificate from '../models/Certificate.js';
+import { tokenBucketRateLimit } from "../middleware/rateLimit.js";
 
 const router = express.Router();
+
+const verifyLimiter = tokenBucketRateLimit({
+  name: "public:verify:certificate",
+  capacity: 60,
+  refillTokens: 60,
+  refillIntervalMs: 60_000,
+});
 
 /**
  * @desc    Verify a certificate by its unique verificationId (public - no auth required)
  * @route   GET /api/verify/:verificationId
  * @access  Public
  */
-router.get('/:verificationId', async (req, res) => {
+router.get('/:verificationId', verifyLimiter, async (req, res) => {
   try {
     const { verificationId } = req.params;
 

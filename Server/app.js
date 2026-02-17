@@ -34,15 +34,21 @@ import logsRoutes from './routes/logs.js';
 import transcriptRoutes from './routes/transcript.js';
 import chatbotRoutes from './routes/chatbot.js';
 import verifyRoutes from './routes/verify.js';
+import reconciliationRoutes from './routes/reconciliation.js';
+import requestId from "./middleware/requestId.js";
 
 // Import email service
 import { testEmailConnection } from "./utils/emailService.js";
 import financeRoutes from "./routes/finance.js";
+import financeLedgerRoutes from "./routes/financeLedger.js";
 
 // Import Redis
 import { initRedis, closeRedis } from "./config/redis.js";
 
 const app = express();
+
+// Attach requestId early (for logs + audit trails)
+app.use(requestId());
 
 // Middleware
 const allowedOrigins = [
@@ -68,8 +74,8 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+    exposedHeaders: ["Content-Range", "X-Content-Range", "X-Request-Id"],
     maxAge: 600, // Cache preflight request for 10 minutes
   }),
 );
@@ -87,9 +93,30 @@ const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ MongoDB Connected Successfully");
+    
+    // Initialize reconciliation hooks after models are loaded
+    await initializeReconciliationHooks();
   } catch (error) {
     console.error("❌ MongoDB Connection Error:", error.message);
     process.exit(1);
+  }
+};
+
+// Initialize reconciliation hooks (after models are loaded)
+const initializeReconciliationHooks = async () => {
+  try {
+    const { addReconciliationHooks } = await import('./middleware/reconciliation.js');
+    const Participant = (await import('./models/Participant.js')).default;
+    const Attendance = (await import('./models/Attendance.js')).default;
+    const Certificate = (await import('./models/Certificate.js')).default;
+    
+    addReconciliationHooks(Participant.schema, 'participant');
+    addReconciliationHooks(Attendance.schema, 'attendance');
+    addReconciliationHooks(Certificate.schema, 'certificate');
+    
+    console.log("✅ Reconciliation hooks initialized");
+  } catch (error) {
+    console.error("⚠️  Failed to initialize reconciliation hooks:", error.message);
   }
 };
 
@@ -97,6 +124,7 @@ const connectDB = async () => {
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/finance/ledger', financeLedgerRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/access-control', accessControlRoutes);
@@ -110,6 +138,7 @@ app.use('/api/participant', participantProfileRoutes); // Must be before partici
 app.use('/api/participant', participantRoutes);
 app.use('/api/transcript', transcriptRoutes);
 app.use("/api/finance", financeRoutes);
+app.use('/api/reconciliation', reconciliationRoutes);
 
 // Health check route
 app.get("/api/health", (req, res) => {

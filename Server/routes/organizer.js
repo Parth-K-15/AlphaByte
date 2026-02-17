@@ -12,6 +12,7 @@ import Session from '../models/Session.js';
 import SpeakerReview from '../models/SpeakerReview.js';
 import SpeakerRequest from '../models/SpeakerRequest.js';
 import Log from '../models/Log.js';
+import IdempotencyKey from '../models/IdempotencyKey.js';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
@@ -22,9 +23,62 @@ import { getRecommendedSpeakers } from '../utils/speakerRecommendation.js';
 import { verifyToken, isOrganizer } from '../middleware/auth.js';
 import { cache } from '../middleware/cache.js';
 import { CacheKeys, CacheTTL } from '../utils/cacheKeys.js';
+import { isEncryptedPii, maybeDecryptPii, maybeEncryptPii, maskPhone } from '../utils/piiCrypto.js';
+import { auditPiiAccess } from '../utils/piiAudit.js';
 
 const router = express.Router();
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id) && /^[a-fA-F0-9]{24}$/.test(id);
+
+const buildRequestHash = (payload) => {
+  try {
+    return crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+  } catch {
+    return null;
+  }
+};
+
+const getOrCreateIdempotencyRecord = async ({ scope, key, requestHash, ttlMs }) => {
+  const existing = await IdempotencyKey.findOne({ scope, key }).lean();
+  if (existing?.status === 'COMPLETED') {
+    return { kind: 'HIT', record: existing };
+  }
+
+  const expiresAt = new Date(Date.now() + ttlMs);
+
+  try {
+    const created = await IdempotencyKey.create({
+      scope,
+      key,
+      requestHash,
+      status: 'IN_PROGRESS',
+      expiresAt,
+    });
+    return { kind: 'MISS', record: created.toObject() };
+  } catch (error) {
+    if (error?.code === 11000) {
+      const concurrent = await IdempotencyKey.findOne({ scope, key }).lean();
+      if (concurrent?.status === 'COMPLETED') {
+        return { kind: 'HIT', record: concurrent };
+      }
+      return { kind: 'IN_PROGRESS', record: concurrent || null };
+    }
+    throw error;
+  }
+};
+
+const finalizeIdempotency = async ({ scope, key, statusCode, responseBody }) => {
+  await IdempotencyKey.updateOne(
+    { scope, key },
+    {
+      $set: {
+        status: 'COMPLETED',
+        statusCode,
+        responseBody,
+        completedAt: new Date(),
+      },
+    },
+  );
+};
 
 // ─── Apply verifyToken + isOrganizer to ALL organizer routes ───
 router.use(verifyToken, isOrganizer);
@@ -339,7 +393,19 @@ router.get('/events/:id', async (req, res) => {
     const participantCount = await Participant.countDocuments({ event: event._id });
     const attendanceCount = await Attendance.countDocuments({ event: event._id });
     const certificateCount = await Certificate.countDocuments({ event: event._id });
-    res.json({ success: true, data: { ...event.toObject(), participantCount, attendanceCount, certificateCount } });
+
+    const eventObj = event.toObject();
+    if (eventObj.teamLead) {
+      eventObj.teamLead.phone = maskPhone(maybeDecryptPii(eventObj.teamLead.phone));
+    }
+    if (Array.isArray(eventObj.teamMembers)) {
+      eventObj.teamMembers = eventObj.teamMembers.map((member) => ({
+        ...member,
+        phone: maskPhone(maybeDecryptPii(member.phone)),
+      }));
+    }
+
+    res.json({ success: true, data: { ...eventObj, participantCount, attendanceCount, certificateCount } });
   } catch (error) {
     console.error('Error fetching event details:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -468,6 +534,7 @@ router.get('/participants/:eventId', async (req, res) => {
       const certificate = await Certificate.findOne({ event: eventId, participant: p._id });
       return {
         ...p.toObject(),
+        phone: maskPhone(maybeDecryptPii(p.phone)),
         hasAttended: !!attendance || p.attendanceStatus === 'ATTENDED',
         attendedAt: attendance?.scannedAt || p.updatedAt,
         attendanceStatus: attendance ? 'ATTENDED' : (p.attendanceStatus || 'ABSENT'),
@@ -478,6 +545,65 @@ router.get('/participants/:eventId', async (req, res) => {
     res.json({ success: true, count: enrichedParticipants.length, data: enrichedParticipants });
   } catch (error) {
     console.error('Error fetching participants:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Privileged PII fetch (requires reason)
+// GET /api/organizer/participants/:eventId/:participantId/pii?reason=...
+router.get('/participants/:eventId/:participantId/pii', async (req, res) => {
+  try {
+    const { eventId, participantId } = req.params;
+    const reason = (req.query?.reason || '').toString().trim();
+
+    // Permission check: canViewParticipants
+    const perm = await checkPermission(req, eventId, 'canViewParticipants');
+    if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
+
+    // Only ADMIN / TEAM_LEAD can decrypt PII
+    if (!['ADMIN', 'TEAM_LEAD'].includes(req.user?.role)) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    if (!reason) {
+      return res.status(400).json({ success: false, message: 'Reason is required to view PII' });
+    }
+
+    if (!isValidObjectId(eventId) || !isValidObjectId(participantId)) {
+      return res.status(400).json({ success: false, message: 'Invalid ID format' });
+    }
+
+    const participant = await Participant.findOne({ _id: participantId, event: eventId });
+    if (!participant) {
+      return res.status(404).json({ success: false, message: 'Participant not found' });
+    }
+
+    const phone = maybeDecryptPii(participant.phone);
+    if (isEncryptedPii(phone)) {
+      return res.status(503).json({
+        success: false,
+        message: 'PII decryption unavailable (missing/invalid encryption key)'
+      });
+    }
+
+    await auditPiiAccess({
+      req,
+      entityType: 'USER',
+      targetParticipantId: participant._id,
+      fields: ['phone'],
+      reason,
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        participantId: participant._id,
+        eventId,
+        phone,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching participant PII:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -517,7 +643,9 @@ router.post('/participants/:eventId', async (req, res) => {
       newState: { name, email, registrationType: 'WALK_IN', registrationStatus: 'CONFIRMED' }
     });
 
-    res.status(201).json({ success: true, message: 'Participant added successfully', data: participant });
+    const participantObj = participant.toObject();
+    participantObj.phone = maskPhone(maybeDecryptPii(participantObj.phone));
+    res.status(201).json({ success: true, message: 'Participant added successfully', data: participantObj });
   } catch (error) {
     console.error('Error adding participant:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -536,7 +664,13 @@ router.put('/participants/:eventId/:participantId', async (req, res) => {
     const oldParticipant = await Participant.findOne({ _id: participantId, event: eventId });
     if (!oldParticipant) return res.status(404).json({ success: false, message: 'Participant not found' });
 
-    const updateData = { email, phone };
+    const updateData = {};
+    if (email !== undefined) {
+      updateData.email = email;
+    }
+    if (phone !== undefined) {
+      updateData.phone = maybeEncryptPii(phone);
+    }
     if (name) { updateData.name = name; updateData.fullName = name; }
     const participant = await Participant.findOneAndUpdate({ _id: participantId, event: eventId }, updateData, { new: true, runValidators: true });
 
@@ -558,11 +692,13 @@ router.put('/participants/:eventId/:participantId', async (req, res) => {
       actorName: organizer?.name || 'Organizer',
       actorEmail: organizer?.email,
       severity: 'INFO',
-      oldState: { name: oldParticipant.name, email: oldParticipant.email, phone: oldParticipant.phone },
-      newState: { name: participant.name, email: participant.email, phone: participant.phone }
+      oldState: { name: oldParticipant.name, email: oldParticipant.email },
+      newState: { name: participant.name, email: participant.email }
     });
 
-    res.json({ success: true, message: 'Participant updated successfully', data: participant });
+    const participantObj = participant.toObject();
+    participantObj.phone = maskPhone(maybeDecryptPii(participantObj.phone));
+    res.json({ success: true, message: 'Participant updated successfully', data: participantObj });
   } catch (error) {
     console.error('Error updating participant:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -828,7 +964,18 @@ router.get('/attendance/:eventId', async (req, res) => {
     if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
-    const attendance = await Attendance.find({ event: eventId }).populate('participant', 'name email phone').populate('markedBy', 'name email').sort({ scannedAt: -1 });
+    const attendanceDocs = await Attendance.find({ event: eventId })
+      .populate('participant', 'name email phone')
+      .populate('markedBy', 'name email')
+      .sort({ scannedAt: -1 });
+
+    const attendance = attendanceDocs.map((a) => {
+      const obj = a.toObject();
+      if (obj.participant) {
+        obj.participant.phone = maskPhone(maybeDecryptPii(obj.participant.phone));
+      }
+      return obj;
+    });
     const totalRegistered = await Participant.countDocuments({ event: eventId });
     res.json({ success: true, data: { attendance, stats: { totalRegistered, totalAttended: attendance.length, attendanceRate: totalRegistered > 0 ? Math.round((attendance.length / totalRegistered) * 100) : 0 } } });
   } catch (error) {
@@ -931,6 +1078,38 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
     if (!isValidObjectId(eventId)) return res.status(400).json({ success: false, message: 'Invalid event ID format' });
 
     const { organizerId, template = 'default', achievement = 'Participation', competitionName, participantIds } = req.body;
+
+    // Idempotency for bulk generation (prevents duplicate concurrent bulk runs)
+    const providedKey = (req.get('Idempotency-Key') || '').trim();
+    const derivedKey = crypto
+      .createHash('sha256')
+      .update(
+        JSON.stringify({ eventId, organizerId, template, achievement, competitionName: competitionName || null }),
+      )
+      .digest('hex');
+    const idempotencyKey = providedKey || derivedKey;
+    const idemScope = `CERT_GENERATE_EVENT:${eventId}`;
+    const idemHash = buildRequestHash({ organizerId, template, achievement, competitionName: competitionName || null });
+
+    const idem = await getOrCreateIdempotencyRecord({
+      scope: idemScope,
+      key: idempotencyKey,
+      requestHash: idemHash,
+      ttlMs: 24 * 60 * 60 * 1000,
+    });
+
+    if (idem.kind === 'HIT') {
+      return res.status(idem.record.statusCode || 200).json(idem.record.responseBody);
+    }
+
+    if (idem.kind === 'IN_PROGRESS') {
+      res.setHeader('Retry-After', '2');
+      return res.status(409).json({
+        success: false,
+        message: 'Certificate generation is already in progress for this event. Please retry.',
+        code: 'IDEMPOTENCY_IN_PROGRESS',
+      });
+    }
 
     console.log('🎯 Generating certificates for event:', eventId);
     console.log('Request body:', req.body);
@@ -1043,6 +1222,7 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
     const results = [];
     let successCount = 0;
     let failCount = 0;
+    let alreadyIssuedCount = 0;
 
     for (const att of eligibleParticipants) {
       try {
@@ -1129,6 +1309,19 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
             successCount++;
             console.log(`✅ Generated certificate for ${participant.name} (${successCount}/${eligibleParticipants.length})`);
           } catch (dbError) {
+            // If another concurrent process created it first, treat as already issued
+            if (dbError?.code === 11000) {
+              const existing = await Certificate.findOne({
+                event: eventId,
+                participant: participant._id,
+              });
+              if (existing) {
+                results.push({ participant: participant.name, status: 'ALREADY_EXISTS', certificate: existing });
+                alreadyIssuedCount++;
+                console.log(`ℹ️ Certificate already exists for ${participant.name} (duplicate prevented)`);
+                continue;
+              }
+            }
             console.error(`❌ DATABASE ERROR saving certificate:`, dbError);
             console.error('Error name:', dbError.name);
             console.error('Error message:', dbError.message);
@@ -1186,16 +1379,26 @@ router.post('/certificates/:eventId/generate', async (req, res) => {
       console.log('✅ [Certificates] Log created successfully');
     }
 
-    res.json({
+    const responseBody = {
       success: true,
-      message: `Generated ${successCount} certificates${failCount > 0 ? `, ${failCount} failed` : ''}`,
+      message: `Generated ${successCount} certificates${alreadyIssuedCount > 0 ? `, ${alreadyIssuedCount} already existed` : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
       data: {
         generated: successCount,
+        alreadyIssued: alreadyIssuedCount,
         failed: failCount,
         total: eligibleParticipants.length,
         results
       }
+    };
+
+    await finalizeIdempotency({
+      scope: idemScope,
+      key: idempotencyKey,
+      statusCode: 200,
+      responseBody,
     });
+
+    res.json(responseBody);
   } catch (error) {
     console.error('Error generating certificates:', error);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
@@ -1717,6 +1920,14 @@ router.get('/certificates/:eventId/requests', async (req, res) => {
       .populate('certificate')
       .sort({ requestedAt: -1 });
 
+    const sanitizedRequests = requests.map((r) => {
+      const obj = r.toObject();
+      if (obj.participant) {
+        obj.participant.phone = maskPhone(maybeDecryptPii(obj.participant.phone));
+      }
+      return obj;
+    });
+
     const stats = {
       total: requests.length,
       pending: requests.filter(r => r.status === 'PENDING').length,
@@ -1727,7 +1938,7 @@ router.get('/certificates/:eventId/requests', async (req, res) => {
 
     res.json({
       success: true,
-      data: requests,
+      data: sanitizedRequests,
       stats
     });
   } catch (error) {
@@ -1741,6 +1952,36 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
   try {
     const { requestId } = req.params;
     const { achievement, competitionName, template = 'default', organizerId } = req.body;
+
+    // Idempotency for single certificate issuance
+    const providedKey = (req.get('Idempotency-Key') || '').trim();
+    const derivedKey = crypto
+      .createHash('sha256')
+      .update(JSON.stringify({ requestId, organizerId, template, achievement: achievement || null, competitionName: competitionName || null }))
+      .digest('hex');
+    const idempotencyKey = providedKey || derivedKey;
+    const idemScope = `CERT_ISSUE_REQUEST:${requestId}`;
+    const idemHash = buildRequestHash({ organizerId, template, achievement: achievement || null, competitionName: competitionName || null });
+
+    const idem = await getOrCreateIdempotencyRecord({
+      scope: idemScope,
+      key: idempotencyKey,
+      requestHash: idemHash,
+      ttlMs: 24 * 60 * 60 * 1000,
+    });
+
+    if (idem.kind === 'HIT') {
+      return res.status(idem.record.statusCode || 200).json(idem.record.responseBody);
+    }
+
+    if (idem.kind === 'IN_PROGRESS') {
+      res.setHeader('Retry-After', '2');
+      return res.status(409).json({
+        success: false,
+        message: 'Certificate issuance is already in progress. Please retry.',
+        code: 'IDEMPOTENCY_IN_PROGRESS',
+      });
+    }
 
     if (!isValidObjectId(requestId)) {
       return res.status(400).json({ success: false, message: 'Invalid request ID' });
@@ -1759,10 +2000,13 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
     if (!perm.allowed) return res.status(perm.status).json({ success: false, message: perm.message });
 
     if (request.status !== 'PENDING') {
-      return res.status(400).json({
-        success: false,
-        message: `Request already ${request.status.toLowerCase()}`
-      });
+      const body = {
+        success: true,
+        message: `Request already ${request.status.toLowerCase()}`,
+        data: { request },
+      };
+      await finalizeIdempotency({ scope: idemScope, key: idempotencyKey, statusCode: 200, responseBody: body });
+      return res.json(body);
     }
 
     // Check if certificate already exists
@@ -1772,10 +2016,24 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
     });
 
     if (existingCert) {
-      return res.status(400).json({
-        success: false,
-        message: 'Certificate already exists for this participant'
-      });
+      // Treat as idempotent success: certificate already issued
+      request.status = 'GENERATED';
+      request.processedAt = request.processedAt || new Date();
+      request.processedBy = request.processedBy || organizerId;
+      request.certificate = request.certificate || existingCert._id;
+      await request.save();
+
+      const body = {
+        success: true,
+        message: 'Certificate already exists for this participant',
+        code: 'ALREADY_EXISTS',
+        data: {
+          request,
+          certificate: existingCert,
+        },
+      };
+      await finalizeIdempotency({ scope: idemScope, key: idempotencyKey, statusCode: 200, responseBody: body });
+      return res.json(body);
     }
 
     // Generate certificate
@@ -1799,22 +2057,39 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
 
     if (pdfResult.success) {
       // Create certificate
-      const certificate = await Certificate.create({
-        event: request.event._id,
-        participant: request.participant._id,
-        certificateId: certificateData.certificateId,
-        verificationId: certVerificationId,
-        issuedBy: organizerId,
-        template,
-        achievement: achievement || 'Participation',
-        competitionName: competitionName || request.event.title || request.event.name,
-        pdfPath: pdfResult.filepath,
-        pdfFilename: pdfResult.filename,
-        certificateUrl: pdfResult.url,
-        cloudinaryUrl: pdfResult.cloudinaryUrl,
-        cloudinaryPublicId: pdfResult.cloudinaryPublicId,
-        status: 'GENERATED'
-      });
+      let certificate;
+      try {
+        certificate = await Certificate.create({
+          event: request.event._id,
+          participant: request.participant._id,
+          certificateId: certificateData.certificateId,
+          verificationId: certVerificationId,
+          issuedBy: organizerId,
+          template,
+          achievement: achievement || 'Participation',
+          competitionName: competitionName || request.event.title || request.event.name,
+          pdfPath: pdfResult.filepath,
+          pdfFilename: pdfResult.filename,
+          certificateUrl: pdfResult.url,
+          cloudinaryUrl: pdfResult.cloudinaryUrl,
+          cloudinaryPublicId: pdfResult.cloudinaryPublicId,
+          status: 'GENERATED'
+        });
+      } catch (dbError) {
+        if (dbError?.code === 11000) {
+          const existing = await Certificate.findOne({
+            event: request.event._id,
+            participant: request.participant._id,
+          });
+          if (existing) {
+            certificate = existing;
+          } else {
+            throw dbError;
+          }
+        } else {
+          throw dbError;
+        }
+      }
 
       // Update request
       request.status = 'GENERATED';
@@ -1846,19 +2121,35 @@ router.post('/certificates/request/:requestId/approve', async (req, res) => {
         newState: { status: 'GENERATED', certificateId: certificate.certificateId, achievement }
       });
 
-      res.json({
+      const responseBody = {
         success: true,
         message: 'Certificate generated successfully',
         data: {
           request,
           certificate
         }
+      };
+
+      await finalizeIdempotency({
+        scope: idemScope,
+        key: idempotencyKey,
+        statusCode: 200,
+        responseBody,
       });
+
+      res.json(responseBody);
     } else {
-      res.status(500).json({
+      const responseBody = {
         success: false,
         message: 'Failed to generate certificate'
+      };
+      await finalizeIdempotency({
+        scope: idemScope,
+        key: idempotencyKey,
+        statusCode: 500,
+        responseBody,
       });
+      res.status(500).json(responseBody);
     }
   } catch (error) {
     console.error('Error approving certificate request:', error);

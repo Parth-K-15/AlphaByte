@@ -15,8 +15,64 @@ import { cache } from "../middleware/cache.js";
 import { CacheKeys, CacheTTL } from "../utils/cacheKeys.js";
 import { invalidateEventCache, invalidateParticipantCache } from "../utils/cacheInvalidation.js";
 import { CachePatterns } from "../utils/cacheKeys.js";
+import { tokenBucketRateLimit } from "../middleware/rateLimit.js";
+import IdempotencyKey from "../models/IdempotencyKey.js";
+import crypto from "crypto";
+import { maybeDecryptPii, maybeEncryptPii, maskPhone } from "../utils/piiCrypto.js";
 
 const router = express.Router();
+
+const attendanceScanLimiter = tokenBucketRateLimit({
+  name: "participant:attendance:scan",
+  capacity: 10,
+  refillTokens: 10,
+  refillIntervalMs: 60_000,
+  identifier: (req) => {
+    const xff = req.headers["x-forwarded-for"];
+    const ip = typeof xff === "string" && xff.trim() ? xff.split(",")[0].trim() : (req.ip || "unknown");
+    const email = (req.body?.email || "").toString().trim().toLowerCase();
+    const eventId = (req.body?.eventId || "").toString().trim();
+    return `${ip}:${email || "noemail"}:${eventId || "noevent"}`;
+  },
+});
+
+const buildRequestHash = (payload) => {
+  try {
+    return crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+  } catch {
+    return null;
+  }
+};
+
+const getOrCreateIdempotencyRecord = async ({ scope, key, requestHash, ttlMs }) => {
+  const existing = await IdempotencyKey.findOne({ scope, key }).lean();
+  if (existing?.status === "COMPLETED") {
+    return { kind: "HIT", record: existing };
+  }
+
+  const expiresAt = new Date(Date.now() + ttlMs);
+
+  try {
+    const created = await IdempotencyKey.create({
+      scope,
+      key,
+      requestHash,
+      status: "IN_PROGRESS",
+      expiresAt,
+    });
+    return { kind: "MISS", record: created.toObject() };
+  } catch (error) {
+    // If another request created it concurrently, re-fetch
+    if (error?.code === 11000) {
+      const concurrent = await IdempotencyKey.findOne({ scope, key }).lean();
+      if (concurrent?.status === "COMPLETED") {
+        return { kind: "HIT", record: concurrent };
+      }
+      return { kind: "IN_PROGRESS", record: concurrent || null };
+    }
+    throw error;
+  }
+};
 
 // Helper function to validate ObjectId
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -507,7 +563,7 @@ router.delete("/registration/:eventId", async (req, res) => {
 // =====================
 
 // POST /api/participant/attendance/scan - Scan QR to mark attendance
-router.post("/attendance/scan", async (req, res) => {
+router.post("/attendance/scan", attendanceScanLimiter, async (req, res) => {
   try {
     const { eventId, email, sessionId, latitude, longitude } = req.body;
 
@@ -576,6 +632,37 @@ router.post("/attendance/scan", async (req, res) => {
       }
     }
 
+    // Idempotency: after basic QR validations, but before any DB writes.
+    // If client provides Idempotency-Key, we honor it. Otherwise we derive one from payload.
+    const providedKey = (req.get("Idempotency-Key") || "").trim();
+    const derivedKey = crypto
+      .createHash("sha256")
+      .update(`${eventId}|${email.toLowerCase()}|${sessionId}`)
+      .digest("hex");
+    const idempotencyKey = providedKey || derivedKey;
+    const scope = `ATTENDANCE_SCAN:${eventId}:${email.toLowerCase()}`;
+    const requestHash = buildRequestHash({ eventId, email: email.toLowerCase(), sessionId });
+
+    const idem = await getOrCreateIdempotencyRecord({
+      scope,
+      key: idempotencyKey,
+      requestHash,
+      ttlMs: 24 * 60 * 60 * 1000,
+    });
+
+    if (idem.kind === "HIT") {
+      return res.status(idem.record.statusCode || 200).json(idem.record.responseBody);
+    }
+
+    if (idem.kind === "IN_PROGRESS") {
+      res.setHeader("Retry-After", "1");
+      return res.status(409).json({
+        success: false,
+        message: "Attendance scan is already being processed. Please retry.",
+        code: "IDEMPOTENCY_IN_PROGRESS",
+      });
+    }
+
     // Verify event exists and is active
     const event = await Event.findById(eventId);
     if (!event) {
@@ -640,7 +727,43 @@ router.post("/attendance/scan", async (req, res) => {
     }
     const attendance = new Attendance(attendanceData);
 
-    await attendance.save();
+    try {
+      await attendance.save();
+    } catch (saveError) {
+      // Unique index exists on (event, participant). If a concurrent request already inserted, treat as already marked.
+      if (saveError?.code === 11000) {
+        const already = await Attendance.findOne({
+          event: eventId,
+          participant: participant._id,
+        });
+        if (already) {
+          const body = {
+            success: true,
+            message: "Attendance already marked",
+            code: "ALREADY_MARKED",
+            data: {
+              participantName: participant.fullName,
+              eventId,
+              eventTitle: event.title,
+              scannedAt: already.scannedAt,
+            },
+          };
+          await IdempotencyKey.updateOne(
+            { scope, key: idempotencyKey },
+            {
+              $set: {
+                status: "COMPLETED",
+                statusCode: 200,
+                responseBody: body,
+                completedAt: new Date(),
+              },
+            },
+          );
+          return res.json(body);
+        }
+      }
+      throw saveError;
+    }
 
     // Update participant's attendance status
     participant.attendanceStatus = "ATTENDED";
@@ -649,7 +772,7 @@ router.post("/attendance/scan", async (req, res) => {
     }
     await participant.save();
 
-    res.json({
+    const responseBody = {
       success: true,
       message: "Attendance marked successfully!",
       code: "SUCCESS",
@@ -659,12 +782,28 @@ router.post("/attendance/scan", async (req, res) => {
         eventTitle: event.title,
         scannedAt: attendance.scannedAt,
       },
-    });
+    };
+
+    await IdempotencyKey.updateOne(
+      { scope, key: idempotencyKey },
+      {
+        $set: {
+          status: "COMPLETED",
+          statusCode: 200,
+          responseBody,
+          completedAt: new Date(),
+        },
+      },
+    );
+
+    res.json(responseBody);
   } catch (error) {
     console.error("Error marking attendance:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 });
 
@@ -956,7 +1095,7 @@ router.get("/profile", async (req, res) => {
       data: {
         fullName: latestParticipant.fullName,
         email: latestParticipant.email,
-        phone: latestParticipant.phone,
+        phone: maskPhone(maybeDecryptPii(latestParticipant.phone)),
         college: latestParticipant.college,
         branch: latestParticipant.branch,
         year: latestParticipant.year,
@@ -995,7 +1134,7 @@ router.put("/profile", async (req, res) => {
         $set: {
           fullName: fullName || undefined,
           name: fullName || undefined,
-          phone: phone || undefined,
+          phone: phone !== undefined ? maybeEncryptPii(phone || "") : undefined,
           college: college || undefined,
           branch: branch || undefined,
           year: year || undefined,

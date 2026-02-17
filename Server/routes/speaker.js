@@ -6,6 +6,7 @@ import SpeakerAuth from '../models/SpeakerAuth.js';
 import SpeakerReview from '../models/SpeakerReview.js';
 import SpeakerRequest from '../models/SpeakerRequest.js';
 import EventRole from '../models/EventRole.js';
+import { isEncryptedPii, maybeDecryptPii, maybeEncryptPii } from '../utils/piiCrypto.js';
 
 const router = express.Router();
 
@@ -484,6 +485,10 @@ router.get('/profile', async (req, res) => {
       success: true,
       data: {
         ...speaker.toObject(),
+        phone: (() => {
+          const v = maybeDecryptPii(speaker.phone);
+          return isEncryptedPii(v) ? null : v;
+        })(),
         reviews,
         avgRating: parseFloat(avgRating),
         totalReviews: reviews.length,
@@ -507,7 +512,7 @@ router.put('/profile', async (req, res) => {
 
     const updateData = {};
     if (name) updateData.name = name;
-    if (phone !== undefined) updateData.phone = phone;
+    if (phone !== undefined) updateData.phone = maybeEncryptPii(phone);
     if (bio !== undefined) updateData.bio = bio;
     if (specializations !== undefined) updateData.specializations = specializations;
     if (socialLinks !== undefined) updateData.socialLinks = socialLinks;
@@ -531,7 +536,13 @@ router.put('/profile', async (req, res) => {
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: speaker,
+      data: {
+        ...speaker.toObject(),
+        phone: (() => {
+          const v = maybeDecryptPii(speaker.phone);
+          return isEncryptedPii(v) ? null : v;
+        })(),
+      },
     });
   } catch (error) {
     console.error('Update profile error:', error);
