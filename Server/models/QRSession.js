@@ -24,6 +24,21 @@ const qrSessionSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    // Geo-fence fields (optional - only set when organizer enables geo-fenced attendance)
+    geoFenceEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    geoLatitude: {
+      type: Number,
+    },
+    geoLongitude: {
+      type: Number,
+    },
+    geoRadiusMeters: {
+      type: Number,
+      default: 200,
+    },
   },
   { timestamps: false }
 );

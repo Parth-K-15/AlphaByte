@@ -63,7 +63,7 @@ export const updateParticipant = (eventId, participantId, data) => fetchApi(`/or
 export const removeParticipant = (eventId, participantId, organizerId) => fetchApi(`/organizer/participants/${eventId}/${participantId}`, { method: 'DELETE', body: { organizerId } });
 
 // Attendance
-export const generateQRCode = (eventId) => fetchApi(`/organizer/attendance/${eventId}/generate-qr`, { method: 'POST' });
+export const generateQRCode = (eventId, geoData = {}) => fetchApi(`/organizer/attendance/${eventId}/generate-qr`, { method: 'POST', body: geoData });
 export const markAttendance = (data) => fetchApi('/organizer/attendance/mark', { method: 'POST', body: data });
 export const getAttendanceLogs = (eventId, params = {}) => {
   const query = new URLSearchParams(params).toString();

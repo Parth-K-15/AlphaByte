@@ -6,16 +6,24 @@ import QRSession from '../models/QRSession.js';
 
 const activeSessions = {
   async set(sessionId, data) {
+    const updateData = {
+      sessionId,
+      eventId: data.eventId,
+      organizerId: data.organizerId || 'system',
+      createdAt: data.createdAt,
+      expiresAt: data.expiresAt,
+      expiresAtDate: new Date(data.expiresAt),
+      // Geo-fence fields (only stored when organizer enables geo-fenced attendance)
+      geoFenceEnabled: data.geoFenceEnabled || false,
+    };
+    if (data.geoFenceEnabled) {
+      updateData.geoLatitude = data.geoLatitude;
+      updateData.geoLongitude = data.geoLongitude;
+      updateData.geoRadiusMeters = data.geoRadiusMeters || 200;
+    }
     await QRSession.findOneAndUpdate(
       { sessionId },
-      {
-        sessionId,
-        eventId: data.eventId,
-        organizerId: data.organizerId || 'system',
-        createdAt: data.createdAt,
-        expiresAt: data.expiresAt,
-        expiresAtDate: new Date(data.expiresAt),
-      },
+      updateData,
       { upsert: true, new: true }
     );
   },
@@ -23,12 +31,22 @@ const activeSessions = {
   async get(sessionId) {
     const session = await QRSession.findOne({ sessionId });
     if (!session) return undefined;
-    return {
+    const result = {
       eventId: session.eventId,
       organizerId: session.organizerId,
       createdAt: session.createdAt,
       expiresAt: session.expiresAt,
     };
+    // Include geo-fence data if enabled
+    if (session.geoFenceEnabled) {
+      result.geoFence = {
+        enabled: true,
+        latitude: session.geoLatitude,
+        longitude: session.geoLongitude,
+        radiusMeters: session.geoRadiusMeters,
+      };
+    }
+    return result;
   },
 
   async delete(sessionId) {

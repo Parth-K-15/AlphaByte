@@ -147,7 +147,9 @@ const MyRegistrations = () => {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
         });
-      } catch {
+      } catch (camError) {
+        // If permission was denied entirely, don't bother with fallback
+        if (camError.name === "NotAllowedError") throw camError;
         // Fallback: try without specific facing mode (front camera)
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
       }
@@ -167,10 +169,17 @@ const MyRegistrations = () => {
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
-      setMessage({
-        type: "error",
-        text: "Unable to access camera. Please allow camera permissions.",
-      });
+      let errorText = "Unable to access camera.";
+      if (error.name === "NotAllowedError") {
+        errorText = "Camera permission denied. Please allow camera access in your browser settings (click the lock/camera icon in the address bar), then try again.";
+      } else if (error.name === "NotFoundError") {
+        errorText = "No camera found on this device.";
+      } else if (error.name === "NotReadableError") {
+        errorText = "Camera is in use by another application. Please close it and try again.";
+      } else if (error.name === "OverconstrainedError") {
+        errorText = "Camera does not meet requirements. Please try a different device.";
+      }
+      setMessage({ type: "error", text: errorText });
       setScanning(false);
     }
   };
@@ -237,14 +246,39 @@ const MyRegistrations = () => {
       sessionId: qrCodeData.sessionId,
     });
     try {
+      // Capture participant's GPS for geo-fenced attendance
+      let participantLat = null;
+      let participantLng = null;
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0,
+            });
+          });
+          participantLat = position.coords.latitude;
+          participantLng = position.coords.longitude;
+        } catch (geoErr) {
+          console.warn("Geolocation unavailable:", geoErr.message);
+        }
+      }
+
+      const scanBody = {
+        eventId: qrCodeData.eventId || selectedEvent._id,
+        email: email,
+        sessionId: qrCodeData.sessionId,
+      };
+      if (participantLat != null && participantLng != null) {
+        scanBody.latitude = participantLat;
+        scanBody.longitude = participantLng;
+      }
+
       const response = await fetch(`${API_BASE}/participant/attendance/scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventId: qrCodeData.eventId || selectedEvent._id,
-          email: email,
-          sessionId: qrCodeData.sessionId,
-        }),
+        body: JSON.stringify(scanBody),
       });
 
       const data = await response.json();
@@ -261,9 +295,15 @@ const MyRegistrations = () => {
         fetchRegistrations();
         setTimeout(() => handleCloseScanner(), 2000);
       } else {
+        let errorMsg = data.message || "Failed to mark attendance";
+        if (data.code === 'LOCATION_REQUIRED') {
+          errorMsg = "Location access is required for this event. Please enable GPS/Location in your browser settings and try again.";
+        } else if (data.code === 'OUT_OF_RANGE') {
+          errorMsg = data.message || "You are too far from the event venue. Move closer and try again.";
+        }
         setScannedData({
           success: false,
-          message: data.message || "Failed to mark attendance",
+          message: errorMsg,
         });
       }
     } catch (error) {

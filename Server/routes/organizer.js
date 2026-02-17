@@ -628,7 +628,20 @@ router.post('/attendance/:eventId/generate-qr', async (req, res) => {
     const sessionId = crypto.randomBytes(16).toString('hex');
     const timestamp = Date.now();
     const expiresAt = timestamp + (5 * 60 * 1000);
-    await activeSessions.set(sessionId, { eventId, organizerId, createdAt: timestamp, expiresAt });
+
+    // Build session data with optional geo-fence
+    const sessionData = { eventId, organizerId, createdAt: timestamp, expiresAt };
+
+    // Geo-fence: organizer can optionally enable location-based attendance
+    const { geoFenceEnabled, geoLatitude, geoLongitude, geoRadius } = req.body;
+    if (geoFenceEnabled && geoLatitude != null && geoLongitude != null) {
+      sessionData.geoFenceEnabled = true;
+      sessionData.geoLatitude = parseFloat(geoLatitude);
+      sessionData.geoLongitude = parseFloat(geoLongitude);
+      sessionData.geoRadiusMeters = parseInt(geoRadius) || 200;
+    }
+
+    await activeSessions.set(sessionId, sessionData);
     const qrData = { eventId, sessionId, timestamp, expiresAt };
 
     // Log QR generation

@@ -10,6 +10,7 @@ import User from '../models/User.js';
 import EventRole from '../models/EventRole.js';
 import Log from '../models/Log.js';
 import activeSessions from "../utils/sessionStore.js";
+import { isWithinGeoFence } from "../utils/geoUtils.js";
 import { cache } from "../middleware/cache.js";
 import { CacheKeys, CacheTTL } from "../utils/cacheKeys.js";
 import { invalidateEventCache, invalidateParticipantCache } from "../utils/cacheInvalidation.js";
@@ -508,7 +509,7 @@ router.delete("/registration/:eventId", async (req, res) => {
 // POST /api/participant/attendance/scan - Scan QR to mark attendance
 router.post("/attendance/scan", async (req, res) => {
   try {
-    const { eventId, email, sessionId } = req.body;
+    const { eventId, email, sessionId, latitude, longitude } = req.body;
 
     if (!eventId || !email) {
       return res.status(400).json({
@@ -548,6 +549,30 @@ router.post("/attendance/scan", async (req, res) => {
           message: 'QR code does not match this event.',
           code: 'EVENT_MISMATCH'
         });
+      }
+
+      // Geo-fence validation: only enforced when organizer enabled it for this session
+      if (session.geoFence && session.geoFence.enabled) {
+        if (latitude == null || longitude == null) {
+          return res.status(400).json({
+            success: false,
+            message: 'Location is required for this event. Please enable GPS and try again.',
+            code: 'LOCATION_REQUIRED'
+          });
+        }
+        const geoCheck = isWithinGeoFence(
+          { latitude: parseFloat(latitude), longitude: parseFloat(longitude) },
+          session.geoFence
+        );
+        if (!geoCheck.allowed) {
+          return res.status(403).json({
+            success: false,
+            message: `You are ${geoCheck.distance}m away from the event venue. You must be within ${session.geoFence.radiusMeters}m to mark attendance.`,
+            code: 'OUT_OF_RANGE',
+            distance: geoCheck.distance,
+            requiredRadius: session.geoFence.radiusMeters,
+          });
+        }
       }
     }
 
