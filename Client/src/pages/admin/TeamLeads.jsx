@@ -51,6 +51,13 @@ const TeamLeads = () => {
       setShowAddModal(false);
       setFormData({ name: '', email: '', phone: '' });
       fetchTeamLeads();
+      alert(
+        `✅ Team Lead Created Successfully!\n\n` +
+        `Name: ${formData.name}\n` +
+        `Email: ${formData.email}\n` +
+        `Default Password: 12345678\n\n` +
+        `Please share these credentials with the team lead.`
+      );
     } catch (error) {
       console.error('Error adding team lead:', error);
       alert('Failed to add team lead');
@@ -218,6 +225,12 @@ const TeamLeads = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-gray-800 mb-6">Add New Team Lead</h2>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> The team lead will be created with default password: <code className="bg-blue-100 px-2 py-0.5 rounded font-mono">12345678</code>
+              </p>
+            </div>
 
             <div className="space-y-4">
               <div>

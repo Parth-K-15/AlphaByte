@@ -20,7 +20,7 @@ router.get('/leads', async (req, res) => {
     }
     
     const teamLeads = await User.find(query)
-      .select('name email phone role permissions isActive isSuspended');
+      .select('name email phone role permissions isActive isSuspended createdAt');
     
     console.log('Team leads fetched:', teamLeads.length);
     if (teamLeads.length > 0) {
@@ -80,7 +80,7 @@ router.get('/members', async (req, res) => {
 // POST /api/teams/leads - Create a team lead
 router.post('/leads', async (req, res) => {
   try {
-    const { name, email, password = '12345678' } = req.body;
+    const { name, email, phone, password = '12345678' } = req.body;
     
     if (!name || !email) {
       return res.status(400).json({ 
@@ -105,6 +105,7 @@ router.post('/leads', async (req, res) => {
     const teamLead = new User({
       name,
       email: email.toLowerCase(),
+      phone: phone || undefined,
       password: hashedPassword,
       role: 'TEAM_LEAD',
       isActive: true
@@ -119,6 +120,7 @@ router.post('/leads', async (req, res) => {
         _id: teamLead._id,
         name: teamLead.name,
         email: teamLead.email,
+        phone: teamLead.phone,
         role: teamLead.role
       }
     });
@@ -245,6 +247,50 @@ router.put('/:userId', async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating user:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error', 
+      error: error.message 
+    });
+  }
+});
+
+// DELETE /api/teams/users/:userId - Delete a user (team lead or member)
+router.delete('/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid user ID' 
+      });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+    
+    // Prevent deletion of ADMIN users
+    if (user.role === 'ADMIN') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Cannot delete admin users' 
+      });
+    }
+    
+    await User.findByIdAndDelete(userId);
+    
+    res.json({ 
+      success: true, 
+      message: 'User deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error', 

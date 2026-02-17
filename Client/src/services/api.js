@@ -89,6 +89,7 @@ export const teamsApi = {
   // Team Leads
   getTeamLeads: (includeInactive = false) => fetchApi(`/teams/leads${includeInactive ? '?includeInactive=true' : ''}`),
   createTeamLead: (data) => fetchApi('/teams/leads', { method: 'POST', body: data }),
+  deleteTeamLead: (id) => fetchApi(`/teams/users/${id}`, { method: 'DELETE' }),
 
   // Event Staff / Members
   getMembers: (includeInactive = false) => fetchApi(`/teams/members${includeInactive ? '?includeInactive=true' : ''}`),

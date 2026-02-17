@@ -67,7 +67,12 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     {
       title: 'Team',
       icon: Users,
-      path: '/admin/team',
+      key: 'team',
+      children: [
+        { title: 'Event Teams', path: '/admin/team', badge: null },
+        { title: 'Team Leads', path: '/admin/team/leads', badge: null },
+        { title: 'Members', path: '/admin/team/members', badge: null },
+      ],
     },
     {
       title: 'Access Control',
