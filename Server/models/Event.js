@@ -30,6 +30,39 @@ const eventSchema = new mongoose.Schema(
       default: 'draft'
     },
 
+    // Participation Type - Individual or Team Events
+    participationType: {
+      type: String,
+      enum: ['INDIVIDUAL', 'TEAM'],
+      default: 'INDIVIDUAL'
+    },
+
+    // Team Event Configuration (only applicable when participationType is 'TEAM')
+    teamConfig: {
+      minSize: {
+        type: Number,
+        default: 2,
+        min: 1
+      },
+      maxSize: {
+        type: Number,
+        default: 5,
+        min: 1
+      },
+      requireTeamName: {
+        type: Boolean,
+        default: true
+      },
+      allowMixedGender: {
+        type: Boolean,
+        default: true
+      },
+      minMembersForCertificate: {
+        type: Number,
+        default: null // null means all members must attend
+      }
+    },
+
     registrationFee: {
       type: Number,
       default: 0

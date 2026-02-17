@@ -37,6 +37,7 @@ const logSchema = new mongoose.Schema(
         
         // Participation & Attendance
         'STUDENT_REGISTERED',
+        'TEAM_REGISTERED',
         'REGISTRATION_CANCELLED',
         'PARTICIPANT_ADDED',
         'PARTICIPANT_UPDATED',

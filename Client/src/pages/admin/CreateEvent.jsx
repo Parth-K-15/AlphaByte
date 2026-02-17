@@ -41,6 +41,13 @@ const CreateEvent = () => {
     category: '',
     tags: '',
     rulebook: '',
+    // Team Event Fields
+    participationType: 'INDIVIDUAL',
+    teamMinSize: 2,
+    teamMaxSize: 5,
+    requireTeamName: true,
+    allowMixedGender: true,
+    minMembersForCertificate: '',
   });
 
   const categories = ['Conference', 'Workshop', 'Hackathon', 'Seminar', 'Webinar', 'Competition'];
@@ -69,6 +76,13 @@ const CreateEvent = () => {
               category: event.category || '',
               tags: event.tags ? event.tags.join(', ') : '',
               rulebook: event.rulebook || '',
+              // Team Event Fields
+              participationType: event.participationType || 'INDIVIDUAL',
+              teamMinSize: event.teamConfig?.minSize || 2,
+              teamMaxSize: event.teamConfig?.maxSize || 5,
+              requireTeamName: event.teamConfig?.requireTeamName !== false,
+              allowMixedGender: event.teamConfig?.allowMixedGender !== false,
+              minMembersForCertificate: event.teamConfig?.minMembersForCertificate || '',
             });
             if (event.bannerImage) {
               setBannerPreview(event.bannerImage);
@@ -142,6 +156,15 @@ const CreateEvent = () => {
         enableCertificates: formData.enableCertificates,
         certificateTemplate: formData.certificateTemplate,
         rulebook: formData.rulebook,
+        // Team Event Fields
+        participationType: formData.participationType,
+        teamConfig: formData.participationType === 'TEAM' ? {
+          minSize: parseInt(formData.teamMinSize) || 2,
+          maxSize: parseInt(formData.teamMaxSize) || 5,
+          requireTeamName: formData.requireTeamName,
+          allowMixedGender: formData.allowMixedGender,
+          minMembersForCertificate: formData.minMembersForCertificate ? parseInt(formData.minMembersForCertificate) : null,
+        } : undefined,
       };
       
       let eventId = id;
@@ -341,7 +364,180 @@ const CreateEvent = () => {
                   min={1}
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.participationType === 'TEAM' 
+                  ? 'Max number of teams allowed' 
+                  : 'Max number of individual participants'}
+              </p>
             </div>
+          </div>
+        </div>
+
+        {/* Participation Type Configuration */}
+        <div className="card">
+          <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+            <Users size={20} className="text-primary-600" />
+            Participation Type
+          </h2>
+
+          <div className="space-y-6">
+            {/* Participation Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Registration Type *
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className={`relative flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                  formData.participationType === 'INDIVIDUAL'
+                    ? 'border-primary-500 bg-primary-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="participationType"
+                    value="INDIVIDUAL"
+                    checked={formData.participationType === 'INDIVIDUAL'}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                  <div className="ml-3">
+                    <p className="font-semibold text-gray-900">Individual Registration</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Each participant registers alone with their own details
+                    </p>
+                  </div>
+                </label>
+
+                <label className={`relative flex items-start p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                  formData.participationType === 'TEAM'
+                    ? 'border-primary-500 bg-primary-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="participationType"
+                    value="TEAM"
+                    checked={formData.participationType === 'TEAM'}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
+                  <div className="ml-3">
+                    <p className="font-semibold text-gray-900">Team Registration</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Captain registers entire team with all member details
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Team Configuration (shown only when TEAM is selected) */}
+            {formData.participationType === 'TEAM' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 space-y-6">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Users size={18} className="text-blue-600" />
+                  Team Configuration
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Team Size *
+                    </label>
+                    <input
+                      type="number"
+                      name="teamMinSize"
+                      value={formData.teamMinSize}
+                      onChange={handleChange}
+                      min={1}
+                      max={formData.teamMaxSize || 100}
+                      className="input-field"
+                      required={formData.participationType === 'TEAM'}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Minimum number of members required per team
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Maximum Team Size *
+                    </label>
+                    <input
+                      type="number"
+                      name="teamMaxSize"
+                      value={formData.teamMaxSize}
+                      onChange={handleChange}
+                      min={formData.teamMinSize || 1}
+                      className="input-field"
+                      required={formData.participationType === 'TEAM'}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Maximum number of members allowed per team
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Min Members for Certificate
+                    </label>
+                    <input
+                      type="number"
+                      name="minMembersForCertificate"
+                      value={formData.minMembersForCertificate}
+                      onChange={handleChange}
+                      min={1}
+                      max={formData.teamMaxSize || 100}
+                      placeholder="Leave empty for all"
+                      className="input-field"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Minimum team members who must attend to be eligible for certificates (leave empty to require all)
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="requireTeamName"
+                        checked={formData.requireTeamName}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Require Team Name
+                      </span>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="allowMixedGender"
+                        checked={formData.allowMixedGender}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Allow Mixed Gender Teams
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <p className="text-sm text-gray-700">
+                    <strong>Team Registration Process:</strong>
+                  </p>
+                  <ul className="text-sm text-gray-600 mt-2 space-y-1 list-disc list-inside">
+                    <li>Team captain fills out registration form</li>
+                    <li>Captain enters details for all team members ({formData.teamMinSize}-{formData.teamMaxSize} members)</li>
+                    <li>All members get linked to the same team</li>
+                    <li>Attendance can be tracked for individual members</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

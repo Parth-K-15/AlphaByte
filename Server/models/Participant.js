@@ -54,6 +54,23 @@ const participantSchema = new mongoose.Schema(
       default: 'PENDING'
     },
 
+    // Team Event Fields
+    team: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ParticipantTeam",
+      default: null
+    },
+
+    isCaptain: {
+      type: Boolean,
+      default: false
+    },
+
+    memberRole: {
+      type: String,
+      default: null // e.g., "Captain", "Vice Captain", "Member"
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // Lead or EVENT_STAFF who added walk-in participant
@@ -93,11 +110,10 @@ const participantSchema = new mongoose.Schema(
 // Compound unique index: same email can register for multiple events, but not the same event twice
 participantSchema.index({ email: 1, event: 1 }, { unique: true });
 
-participantSchema.pre("save", function (next) {
+participantSchema.pre("save", async function () {
   if (this.isModified("phone")) {
     this.phone = maybeEncryptPii(this.phone);
   }
-  next();
 });
 
 export default mongoose.model("Participant", participantSchema);
